@@ -1,6 +1,11 @@
 # Unikube CLI
 
-This is the CLI for [unikube][link_unikube].
+This is the command line interface for [unikube][link_unikube].
+
+--------------------------------------------------------------------------------
+![Build Status](https://github.com/unikubehq/cli/actions/workflows/python-app.yaml/badge.svg)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=Blueshoe_django-hurricane&metric=alert_status)](https://sonarcloud.io/dashboard?id=Blueshoe_django-hurricane)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 ## Documentation
 
