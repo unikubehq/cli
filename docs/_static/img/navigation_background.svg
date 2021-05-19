@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="320px" height="492px" viewBox="0 0 320 492" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>Path 4 + Path 4 Copy Mask</title>
+    <defs>
+        <rect id="path-1" x="0" y="0" width="320" height="492"></rect>
+        <linearGradient x1="0%" y1="50%" x2="100%" y2="50%" id="linearGradient-3">
+            <stop stop-color="#FFFFFF" stop-opacity="0.0956894668" offset="0%"></stop>
+            <stop stop-color="#FFFFFF" stop-opacity="0" offset="100%"></stop>
+        </linearGradient>
+        <linearGradient x1="0%" y1="50%" x2="100%" y2="50%" id="linearGradient-4">
+            <stop stop-color="#FFFFFF" stop-opacity="0.0644667832" offset="0%"></stop>
+            <stop stop-color="#FFFFFF" stop-opacity="0" offset="100%"></stop>
+        </linearGradient>
+    </defs>
+    <g id="Unikube-Central-Library" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Components/Navigation/Overview" transform="translate(0.000000, -588.000000)">
+            <g id="Path-4-+-Path-4-Copy-Mask" transform="translate(0.000000, 588.000000)">
+<!--                <mask id="mask-2" fill="white">-->
+<!--                    <use xlink:href="#path-1"></use>-->
+<!--                </mask>-->
+                <g id="Mask"></g>
+                <path d="M-127,324.003455 L-41.4805613,244.738654 C-31.6264168,235.605212 -16.6737454,234.758852 -5.85189123,242.721979 L283,455.27006 L283,455.27006 L283,760.503336 L-127,760.503336 L-127,324.003455 Z" id="Path-4" fill="url(#linearGradient-3)" mask="url(#mask-2)"></path>
+                <path d="M95,193.835852 L180.519439,114.57105 C190.373583,105.437608 205.326255,104.591248 216.148109,112.554376 L505,325.102456 L505,325.102456 L505,630.335732 L95,630.335732 L95,193.835852 Z" id="Path-4-Copy" fill="url(#linearGradient-4)" mask="url(#mask-2)" transform="translate(300.000000, 364.584064) scale(-1, 1) translate(-300.000000, -364.584064) "></path>
+            </g>
+        </g>
+    </g>
+</svg>

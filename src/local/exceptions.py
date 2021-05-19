@@ -1,0 +1,2 @@
+class UnikubeClusterUnavailableError(Exception):
+    pass

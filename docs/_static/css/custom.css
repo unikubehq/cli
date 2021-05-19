@@ -1,0 +1,101 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap');
+
+body {
+    font-family: 'DM Sans', sans-serif;
+}
+a {
+    color: #45D093;
+}
+a:visited, a:hover {
+    color: #246b50;
+}
+.rst-content .toctree-wrapper>p.caption, h1, h2, h3, h4, h5, h6, legend {
+    font-family: 'DM Sans', sans-serif;
+}
+.wy-nav-side {
+    background-image: linear-gradient(18deg, #0e132e -13%, #252e65 64%);
+}
+.wy-nav-side:after {
+    z-index: -1;
+    background-image: url(../img/navigation_background.svg);
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 300px;
+
+    content: '';
+    background-position: center;
+    display: block;
+}
+.wy-side-nav-search {
+    background-color: #252e65;
+    text-align: left;
+}
+.wy-side-nav-search .wy-dropdown>a:hover, .wy-side-nav-search>a:hover {
+    background-color: transparent;
+}
+.wy-menu-vertical a {
+    color: #fff;
+    padding: 1em 24px 1em 24px;
+    font-weight: 200;
+}
+.wy-menu-vertical a:hover {
+    opacity: 1;
+    background: transparent linear-gradient(to right, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0));
+}
+.wy-menu-vertical li.current {
+    background-color: transparent;
+}
+.wy-menu-vertical li.current>a,
+.wy-menu-vertical li.current a:hover {
+    background: transparent linear-gradient(to right, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0)) !important;
+}
+.wy-menu-vertical li.toctree-l2.current>a, .wy-menu-vertical li.toctree-l2.current li.toctree-l3>a {
+    background: transparent;
+}
+.wy-menu-vertical>ul>li.current {
+    background: transparent linear-gradient(to right, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0));
+    color: #fff;
+}
+.wy-menu-vertical li.toctree-l2 a, .wy-menu-vertical li.toctree-l3 a, .wy-menu-vertical li.toctree-l4 a, .wy-menu-vertical li.toctree-l5 a, .wy-menu-vertical li.toctree-l6 a, .wy-menu-vertical li.toctree-l7 a, .wy-menu-vertical li.toctree-l8 a, .wy-menu-vertical li.toctree-l9 a, .wy-menu-vertical li.toctree-l10 a {
+    color: #fff;
+}
+.wy-menu-vertical li.toctree-l1.current>a {
+    opacity: 1;
+    border-left: 4px solid #45D093;
+    border-top: 0;
+    border-bottom: 0;
+    background-color: transparent;
+    color: #fff;
+    padding: 1em 24px 1em 20px;
+}
+.wy-menu-vertical li.toctree-l2.current>a, .wy-menu-vertical li.toctree-l2.current li.toctree-l3>a,
+.wy-menu-vertical li.toctree-l3.current>a, .wy-menu-vertical li.toctree-l3.current li.toctree-l4>a {
+    background-color: transparent;
+    color: #fff;
+}
+.wy-menu-vertical li span.toctree-expand,
+.wy-menu-vertical li.current>a:hover span.toctree-expand, .wy-menu-vertical li.on a:hover span.toctree-expand {
+    color: #fff !important;
+}
+.wy-side-nav-search .wy-dropdown>a img.logo, .wy-side-nav-search>a img.logo {
+    width: 160px;
+}
+html.writer-html4 .rst-content dl:not(.docutils)>dt, html.writer-html5 .rst-content dl[class]:not(.option-list):not(.field-list):not(.footnote):not(.glossary):not(.simple)>dt {
+    color: #36BE82;
+    border-top: 3px solid #65E2AB;
+    background: #E3FFF0;
+}
+.highlight {
+    background: #E1E9FF;
+}
+.wy-nav-content {
+    background-color: #FCFCFD;
+}
+@media screen and (min-width: 1100px) {
+    .wy-nav-content {
+        margin: 0;
+        background-color: #FCFCFD;
+    }
+}
