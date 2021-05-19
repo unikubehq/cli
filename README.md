@@ -67,5 +67,5 @@ Create release (e.g.: 1.0.0-dev2 -> 1.0.0):
 
 TODO
 
-[link_unikube]: unikube.io
-[link_unikube_cli_documentation]: cli.unikube.io
+[link_unikube]: https://unikube.io
+[link_unikube_cli_documentation]: https://cli.unikube.io
