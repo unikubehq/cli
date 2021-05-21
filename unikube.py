@@ -5,7 +5,6 @@ import click
 import src.cli.console as console
 from src.cli import app as app_cmd
 from src.cli import auth as auth_cmd
-from src.cli import develop as develop
 from src.cli import orga as orga_cmd
 from src.cli import package as package_cmd
 from src.cli import project as project_cmd
@@ -24,10 +23,6 @@ if version.major == 2:
 @click.pass_context
 def cli(ctx, **kwargs):
     ctx.obj = ClickContext()
-
-
-# test
-cli.add_command(develop.develop)
 
 
 # system
