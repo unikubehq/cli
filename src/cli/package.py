@@ -4,9 +4,9 @@ import src.cli.console as console
 from src.graphql import ClusterLevelType, GraphQL
 from src.helpers import download_specs
 from src.local.system import KubeAPI, KubeCtl
+from src.storage.user import get_local_storage_user
 
 
-# click -----
 @click.command()
 @click.option("--organization", "-o", help="Select an organization")
 @click.option("--project", "-p", help="Select a project")
@@ -77,9 +77,80 @@ def info(package_name, **kwargs):
 
 
 @click.command()
-@click.argument("package_name", required=False)
-def use(package_name, **kwargs):
-    raise NotImplementedError
+@click.argument("package_id", required=False)
+@click.option("--remove", "-r", is_flag=True, default=False, help="Remove local package context")
+@click.pass_obj
+def use(ctx, package_id, remove, **kwargs):
+    """
+    Set local package context.
+    """
+
+    # user_data / context
+    local_storage_user = get_local_storage_user()
+    user_data = local_storage_user.get()
+    context = user_data.context
+
+    # option: --remove
+    if remove:
+        user_data.context.package_id = None
+        local_storage_user.set(user_data)
+        console.success("Package context removed.")
+        return None
+
+    # GraphQL
+    try:
+        graph_ql = GraphQL(authentication=ctx.auth)
+        data = graph_ql.query(
+            """
+            query($organization_id: UUID, $project_id: UUID) {
+                allPackages(organizationId: $organization_id, projectId: $project_id) {
+                    results {
+                        title
+                        id
+                        project {
+                            id
+                            organization {
+                                id
+                            }
+                        }
+                    }
+                }
+            }
+            """,
+            query_variables={
+                "organization_id": context.organization_id,
+                "project_id": context.project_id,
+            },
+        )
+    except Exception as e:
+        data = None
+        console.debug(e)
+        console.exit_generic_error()
+
+    package_list = data["allPackages"]["results"]
+    package_dict = {package["id"]: package for package in package_list}
+
+    # argument
+    if not package_id:
+        package_title = console.list(
+            message="Please select a package",
+            choices=[package["title"] for package in package_dict.values()],
+        )
+        if package_title is None:
+            return False
+
+        for id, package in package_dict.items():
+            if package["title"] == package_title:
+                package_id = id
+
+    # set package
+    package = package_dict[package_id]
+    user_data.context.organization_id = package["project"]["organization"]["id"]
+    user_data.context.project_id = package["project"]["id"]
+    user_data.context.package_id = package["id"]
+    local_storage_user.set(user_data)
+
+    console.success(f"Package context: {package_dict.get(package_id, package_id)}")
 
 
 @click.command()
