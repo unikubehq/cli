@@ -7,6 +7,7 @@ from src import settings
 from src.graphql import GraphQL
 from src.keycloak.permissions import KeycloakPermissions
 from src.local.providers.types import K8sProviderType
+from src.storage.user import get_local_storage_user
 
 
 @click.command()
@@ -145,7 +146,70 @@ def info(ctx, project_title, **kwargs):
 @click.option("--remove", "-r", is_flag=True, default=False, help="Remove local organization context")
 @click.pass_obj
 def use(ctx, project_id, remove, **kwargs):
-    raise NotImplementedError
+    """
+    Set local project context.
+    """
+
+    # option: --remove
+    if remove:
+        local_storage_user = get_local_storage_user()
+        user_data = local_storage_user.get()
+        user_data.context.project_id = None
+        local_storage_user.set(user_data)
+        console.success("Project context removed.")
+        return None
+
+    # context
+    local_storage_user = get_local_storage_user()
+    user_data = local_storage_user.get()
+    # context = user_data.context
+
+    # GraphQL
+    try:
+        graph_ql = GraphQL(authentication=ctx.auth)
+        data = graph_ql.query(
+            """
+            query {
+                allProjects {
+                    results {
+                        title
+                        id
+                        organization {
+                            id
+                        }
+                    }
+                }
+            }
+            """
+        )
+    except Exception as e:
+        data = None
+        console.debug(e)
+        console.exit_generic_error()
+
+    project_list = data["allProjects"]["results"]
+    project_dict = {project["id"]: project["title"] for project in project_list}
+
+    # argument
+    if not project_id:
+        project_title = console.list(
+            message="Please select a project",
+            choices=project_dict.values(),
+        )
+        if project_title is None:
+            return False
+
+        for id, title in project_dict.items():
+            if title == project_title:
+                project_id = id
+
+    # set project
+    local_storage_user = get_local_storage_user()
+    user_data = local_storage_user.get()
+    user_data.context.project_id = project_id
+    local_storage_user.set(user_data)
+
+    console.success(f"Project context: {project_dict.get(project_id, project_id)}")
 
 
 @click.command()
