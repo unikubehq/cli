@@ -5,8 +5,8 @@ import click
 import src.cli.console as console
 from src.cli import app as app_cmd
 from src.cli import auth as auth_cmd
-from src.cli import orga as orga_cmd
 from src.cli import deck as deck_cmd
+from src.cli import orga as orga_cmd
 from src.cli import project as project_cmd
 from src.cli import system as system_cmd
 from src.context import ClickContext

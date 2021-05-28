@@ -262,9 +262,11 @@ def install(ctx, deck_title, **kwargs):
         )
     except HTTPError as e:
         if e.response.status_code == 404:
-            console.warning("This deck does potentially not specify a valid Environment of type 'local'. "
-                            f"Please go to https://app.unikube.io/project/{project_id}/decks "
-                            f"and save a valid values path.")
+            console.warning(
+                "This deck does potentially not specify a valid Environment of type 'local'. "
+                f"Please go to https://app.unikube.io/project/{project_id}/decks "
+                f"and save a valid values path."
+            )
             exit(1)
         else:
             console.error("Could not load manifest: " + str(e))
