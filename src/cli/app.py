@@ -10,7 +10,7 @@ from src.settings import UNIKUBE_FILE
 from src.unikubefile.selector import unikube_file_selector
 
 
-def get_required_information(ctx, project_title: str, package_title: str):
+def get_required_information(ctx, project_title: str, deck_title: str):
     ## project_id
     cluster_list = ctx.cluster_manager.get_cluster_list(ready=True)
     cluster_title_list = [item.name for item in cluster_list]
@@ -44,14 +44,14 @@ def get_required_information(ctx, project_title: str, package_title: str):
     if not project_id:
         console.error("The project id could not be determined.", _exit=True)
 
-    ## package_id
+    ## deck_id
     # GraphQL
     try:
         graph_ql = GraphQL(authentication=ctx.auth)
         data = graph_ql.query(
             """
             query($id: UUID) {
-                allPackages(projectId: $id) {
+                allDecks(projectId: $id) {
                     results {
                         id
                         title
@@ -69,31 +69,31 @@ def get_required_information(ctx, project_title: str, package_title: str):
         console.debug(e)
         console.exit_generic_error()
 
-    package_list = data["allPackages"]["results"]
-    package_title_list = [item["title"] for item in package_list]
+    deck_list = data["allDecks"]["results"]
+    deck_title_list = [item["title"] for item in deck_list]
 
     # argument
-    if not package_title:
+    if not deck_title:
         # argument from console
-        package_title = console.list(
-            message="Please select a package",
-            message_no_choices="No package found.",
-            choices=package_title_list,
+        deck_title = console.list(
+            message="Please select a deck",
+            message_no_choices="No deck found.",
+            choices=deck_title_list,
         )
-        if package_title is None:
+        if deck_title is None:
             console.exit_generic_error()
 
-    # check if package exists
-    if package_title not in package_title_list:
-        console.error("The package could not be found.", _exit=True)
+    # check if deck exists
+    if deck_title not in deck_title_list:
+        console.error("The deck could not be found.", _exit=True)
 
-    # get package
-    package = None
-    for package in package_list:
-        if package["title"] == package_title:
+    # get deck
+    deck = None
+    for deck in deck_list:
+        if deck["title"] == deck_title:
             break
 
-    return project_id, project_title, package
+    return project_id, project_title, deck
 
 
 @click.command()
@@ -113,19 +113,20 @@ def use(**kwargs):
 
 @click.command()
 @click.argument("project_title", required=False)
-@click.argument("package_title", required=False)
+@click.argument("deck_title", required=False)
 @click.argument("pod_title", required=False)
 @click.pass_obj
-def shell(ctx, project_title, package_title, pod_title, **kwargs):
+def shell(ctx, project_title, deck_title, pod_title, **kwargs):
     """Drop into an interactive shell."""
 
     ctx.auth.check()
 
-    project_id, project_title, package = get_required_information(ctx, project_title, package_title)
+    project_id, project_title, deck = get_required_information(ctx, project_title, deck_title)
 
     ## shell
     # check if cluster is ready
     cluster_data = ctx.cluster_manager.get(id=project_id)
+    print(project_id)
     cluster = ctx.cluster_manager.select(cluster_data=cluster_data)
     if not cluster:
         console.error("The project cluster does not exist.")
@@ -134,7 +135,7 @@ def shell(ctx, project_title, package_title, pod_title, **kwargs):
     provider_data = cluster.storage.get()
 
     # shell
-    k8s = KubeAPI(provider_data, package)
+    k8s = KubeAPI(provider_data, deck)
 
     if not pod_title:
         pod_list_choices = [pod.metadata.name for pod in k8s.get_pods().items]
@@ -157,7 +158,7 @@ def shell(ctx, project_title, package_title, pod_title, **kwargs):
 
         # the container name generated in "app switch" for that pod
         container_name = settings.TELEPRESENCE_DOCKER_IMAGE_FORMAT.format(
-            project=project_title, package=package["title"], name=deployment
+            project=project_title, deck=deck["title"], name=deployment
         ).replace(":", "")
 
         if Docker().check_running(container_name):
@@ -172,22 +173,22 @@ def shell(ctx, project_title, package_title, pod_title, **kwargs):
 
     else:
         # 2.b connect using kubernetes
-        KubeCtl(provider_data).exec_pod(pod_title, package["namespace"], "/bin/sh", interactive=True)
+        KubeCtl(provider_data).exec_pod(pod_title, deck["namespace"], "/bin/sh", interactive=True)
 
 
 @click.command()
 @click.argument("project_title", required=False)
-@click.argument("package_title", required=False)
+@click.argument("deck_title", required=False)
 @click.option("--deployment", help="Specify the deployment if not set in the Unikubefile")
 @click.option("--image", help="Specify the Docker image from your local registry")
 @click.option("--unikubefile", help="Specify the path to the Unikubefile", type=str)
 @click.pass_obj
-def switch(ctx, project_title, package_title, deployment, image, unikubefile, **kwargs):
+def switch(ctx, project_title, deck_title, deployment, image, unikubefile, **kwargs):
     """Switch a running deployment with a local Docker image"""
 
     ctx.auth.check()
 
-    project_id, project_title, package = get_required_information(ctx, project_title, package_title)
+    project_id, project_title, deck = get_required_information(ctx, project_title, deck_title)
 
     ## switch
     # check if cluster is ready
@@ -220,7 +221,7 @@ def switch(ctx, project_title, package_title, deployment, image, unikubefile, **
         data = graph_ql.query(
             """
             query($id: UUID) {
-                package(id: $id) {
+                deck(id: $id) {
                     deployments(level: "local") {
                         id
                         title
@@ -232,7 +233,7 @@ def switch(ctx, project_title, package_title, deployment, image, unikubefile, **
             }
             """,
             query_variables={
-                "id": package["id"],
+                "id": deck["id"],
             },
         )
     except Exception as e:
@@ -242,7 +243,7 @@ def switch(ctx, project_title, package_title, deployment, image, unikubefile, **
 
     target_deployment = None
 
-    for _deployment in data["package"]["deployments"]:
+    for _deployment in data["deck"]["deployments"]:
         if _deployment["title"] == deployment:
             target_deployment = _deployment
 
@@ -255,7 +256,7 @@ def switch(ctx, project_title, package_title, deployment, image, unikubefile, **
 
     ports = target_deployment["ports"].split(",")
     deployment = target_deployment["title"]
-    namespace = package["namespace"]
+    namespace = deck["namespace"]
 
     # 3: Build an new Docker image
     # 3.1 Grab the docker file
@@ -265,7 +266,7 @@ def switch(ctx, project_title, package_title, deployment, image, unikubefile, **
 
     # 3.2 Set an image name
     image_name = settings.TELEPRESENCE_DOCKER_IMAGE_FORMAT.format(
-        project=project_title, package=package["title"], name=deployment
+        project=project_title, deck=deck["title"], name=deployment
     )
 
     # 3.3 Build image
@@ -301,17 +302,17 @@ def pulldb(**kwargs):
 
 @click.command()
 @click.argument("project_title", required=False)
-@click.argument("package_title", required=False)
+@click.argument("deck_title", required=False)
 @click.argument("pod_title", required=False)
 @click.argument("pod_title", required=False)
 @click.option("--watch", "-w", is_flag=True, default=False, help="Watch logs.")
 @click.pass_obj
-def logs(ctx, project_title, package_title, pod_title, watch, **kwargs):
+def logs(ctx, project_title, deck_title, pod_title, watch, **kwargs):
     """Display the container's logs"""
 
     ctx.auth.check()
 
-    project_id, project_title, package = get_required_information(ctx, project_title, package_title)
+    project_id, project_title, deck = get_required_information(ctx, project_title, deck_title)
 
     ## logs
     # check if cluster is ready
@@ -324,7 +325,7 @@ def logs(ctx, project_title, package_title, pod_title, watch, **kwargs):
     provider_data = cluster.storage.get()
 
     # log
-    k8s = KubeAPI(provider_data, package)
+    k8s = KubeAPI(provider_data, deck)
 
     if not pod_title:
         pod_list_choices = [pod.metadata.name for pod in k8s.get_pods().items]

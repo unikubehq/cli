@@ -1,7 +1,8 @@
 import click
+from requests import HTTPError
 
 import src.cli.console as console
-from src.graphql import ClusterLevelType, GraphQL
+from src.graphql import EnvironmentType, GraphQL
 from src.helpers import download_specs
 from src.local.system import KubeAPI, KubeCtl
 from src.storage.user import get_local_storage_user
@@ -13,7 +14,7 @@ from src.storage.user import get_local_storage_user
 @click.pass_obj
 def list(ctx, organization=None, project=None, **kwargs):
     """
-    List all packages.
+    List all decks.
     """
 
     context = ctx.context(organization=organization, project=project)
@@ -24,7 +25,7 @@ def list(ctx, organization=None, project=None, **kwargs):
         data = graph_ql.query(
             """
             query($organization_id: UUID, $project_id: UUID) {
-                allPackages(organizationId: $organization_id, projectId: $project_id) {
+                allDecks(organizationId: $organization_id, projectId: $project_id) {
                     results {
                         id
                         title
@@ -48,41 +49,41 @@ def list(ctx, organization=None, project=None, **kwargs):
         console.debug(e)
         console.exit_generic_error()
 
-    package_list = data["allPackages"]["results"]
-
+    deck_list = data["allDecks"]["results"]
+    if not deck_list:
+        console.info("No decks available. Please go to https://app.unikube.io and create a project.")
+        exit(0)
     # format list to table
     table_data = []
-    for package in package_list:
+    for deck in deck_list:
         data = {}
 
         if not context.organization_id:
-            data["organization"] = package["project"]["organization"]["title"]
+            data["organization"] = deck["project"]["organization"]["title"]
 
         if not context.project_id:
-            data["project"] = package["project"]["title"]
+            data["project"] = deck["project"]["title"]
 
-        data["id"] = package["id"]
-        data["title"] = package["title"]
-
+        data["id"] = deck["id"]
+        data["title"] = deck["title"]
         table_data.append(data)
-
     # console
     console.table(data=table_data)
 
 
 @click.command()
-@click.argument("package_name", required=False)
-def info(package_name, **kwargs):
+@click.argument("deck_name", required=False)
+def info(deck_name, **kwargs):
     raise NotImplementedError
 
 
 @click.command()
-@click.argument("package_id", required=False)
-@click.option("--remove", "-r", is_flag=True, default=False, help="Remove local package context")
+@click.argument("deck_id", required=False)
+@click.option("--remove", "-r", is_flag=True, default=False, help="Remove local deck context")
 @click.pass_obj
-def use(ctx, package_id, remove, **kwargs):
+def use(ctx, deck_id, remove, **kwargs):
     """
-    Set local package context.
+    Set local deck context.
     """
 
     # user_data / context
@@ -92,9 +93,9 @@ def use(ctx, package_id, remove, **kwargs):
 
     # option: --remove
     if remove:
-        user_data.context.package_id = None
+        user_data.context.deck_id = None
         local_storage_user.set(user_data)
-        console.success("Package context removed.")
+        console.success("Deck context removed.")
         return None
 
     # GraphQL
@@ -103,7 +104,7 @@ def use(ctx, package_id, remove, **kwargs):
         data = graph_ql.query(
             """
             query($organization_id: UUID, $project_id: UUID) {
-                allPackages(organizationId: $organization_id, projectId: $project_id) {
+                allDecks(organizationId: $organization_id, projectId: $project_id) {
                     results {
                         title
                         id
@@ -127,38 +128,38 @@ def use(ctx, package_id, remove, **kwargs):
         console.debug(e)
         console.exit_generic_error()
 
-    package_list = data["allPackages"]["results"]
-    package_dict = {package["id"]: package for package in package_list}
+    deck_list = data["allDecks"]["results"]
+    deck_dict = {deck["id"]: deck for deck in deck_list}
 
     # argument
-    if not package_id:
-        package_title = console.list(
-            message="Please select a package",
-            choices=[package["title"] for package in package_dict.values()],
+    if not deck_id:
+        deck_title = console.list(
+            message="Please select a deck",
+            choices=[deck["title"] for deck in deck_dict.values()],
         )
-        if package_title is None:
+        if deck_title is None:
             return False
 
-        for id, package in package_dict.items():
-            if package["title"] == package_title:
-                package_id = id
+        for id, deck in deck_dict.items():
+            if deck["title"] == deck_title:
+                deck_id = id
 
-    # set package
-    package = package_dict[package_id]
-    user_data.context.organization_id = package["project"]["organization"]["id"]
-    user_data.context.project_id = package["project"]["id"]
-    user_data.context.package_id = package["id"]
+    # set deck
+    deck = deck_dict[deck_id]
+    user_data.context.organization_id = deck["project"]["organization"]["id"]
+    user_data.context.project_id = deck["project"]["id"]
+    user_data.context.deck_id = deck["id"]
     local_storage_user.set(user_data)
 
-    console.success(f"Package context: {package_dict.get(package_id, package_id)}")
+    console.success(f"Deck context: {deck_dict.get(deck_id, deck_id)}")
 
 
 @click.command()
-@click.argument("package_title", required=False)
+@click.argument("deck_title", required=False)
 @click.pass_obj
-def install(ctx, package_title, **kwargs):
+def install(ctx, deck_title, **kwargs):
     """
-    Install package.
+    Install deck.
     """
 
     # GraphQL
@@ -167,12 +168,12 @@ def install(ctx, package_title, **kwargs):
         data = graph_ql.query(
             """
             {
-                allPackages {
+                allDecks {
                     results {
                         id
                         title
                         namespace
-                        clusterLevel {
+                        environment {
                             id
                             type
                             valuesPath
@@ -194,38 +195,38 @@ def install(ctx, package_title, **kwargs):
         console.debug(e)
         console.exit_generic_error()
 
-    package_list = data["allPackages"]["results"]
+    deck_list = data["allDecks"]["results"]
 
     # argument
-    if not package_title:
+    if not deck_title:
         # argument from context
         context = ctx.context()
-        if context.package_id:
+        if context.deck_id:
             # TODO
-            package_title = context.package_id
+            deck_title = context.deck_id
 
         # argument from console
         else:
-            package_list_choices = [item["title"] for item in package_list]
-            package_title = console.list(
+            deck_list_choices = [item["title"] for item in deck_list]
+            deck_title = console.list(
                 message="Please select a project",
-                choices=package_list_choices,
+                choices=deck_list_choices,
             )
-            if package_title is None:
+            if deck_title is None:
                 return False
 
-    # check access to the package
-    package_title_list = [package["title"] for package in package_list]
-    if package_title not in package_title_list:
-        console.info(f"The package '{package_title}' could not be found.")
+    # check access to the deck
+    deck_title_list = [deck["title"] for deck in deck_list]
+    if deck_title not in deck_title_list:
+        console.info(f"The deck '{deck_title}' could not be found.")
         return None
 
     # get project_id
     project_id = None
-    package = None
-    for package in package_list:
-        if package["title"] == package_title:
-            project_id = package["project"]["id"]
+    deck = None
+    for deck in deck_list:
+        if deck["title"] == deck_title:
+            project_id = deck["project"]["id"]
             break
 
     # check if cluster is ready
@@ -242,33 +243,39 @@ def install(ctx, package_title, **kwargs):
 
     # check cluster level
     try:
-        cluster_level = ClusterLevelType(package["clusterLevel"][0]["type"])
+        environment = EnvironmentType(deck["environment"][0]["type"])
     except Exception as e:
         console.debug(e)
-        cluster_level = None
+        environment = None
 
-    if cluster_level != ClusterLevelType.LOCAL:
-        console.error("This package cannot be installed locally.")
+    if environment != EnvironmentType.LOCAL:
+        console.error("This deck cannot be installed locally.")
         return None
 
     # download manifest
     try:
-        cluster_level_id = package["clusterLevel"][0]["id"]
+        environment_id = deck["environment"][0]["id"]
         general_data = ctx.storage_general.get()
         all_specs = download_specs(
             access_token=general_data.authentication.access_token,
-            cluster_level_id=cluster_level_id,
+            environment_id=environment_id,
         )
-    except Exception as e:
-        console.error("Could not load manifest: " + str(e))
-        return None
+    except HTTPError as e:
+        if e.response.status_code == 404:
+            console.warning("This deck does potentially not specify a valid Environment of type 'local'. "
+                            f"Please go to https://app.unikube.io/project/{project_id}/decks "
+                            f"and save a valid values path.")
+            exit(1)
+        else:
+            console.error("Could not load manifest: " + str(e))
+            exit(1)
 
     provider_data = cluster.storage.get()
 
     # KubeCtl
     kubectl = KubeCtl(provider_data=provider_data)
 
-    namespace = package["namespace"]
+    namespace = deck["namespace"]
     kubectl.create_namespace(namespace)
     with click.progressbar(
         all_specs,
@@ -278,7 +285,7 @@ def install(ctx, package_title, **kwargs):
             kubectl.apply_str(namespace, file["content"])
     console.info("The cluster is currently applying all changes, this may takes several minutes")
 
-    ingresss = KubeAPI(provider_data, package).get_ingress()
+    ingresss = KubeAPI(provider_data, deck).get_ingress()
     ingress_data = []
     for ingress in ingresss.items:
         hosts = []
@@ -307,20 +314,20 @@ def install(ctx, package_title, **kwargs):
 
 
 @click.command()
-@click.argument("package_name", required=False)
-def uninstall(package_name, **kwargs):
+@click.argument("deck_name", required=False)
+def uninstall(deck_name, **kwargs):
     raise NotImplementedError
 
 
 @click.command()
-@click.argument("package_name", required=False)
+@click.argument("deck_name", required=False)
 @click.option("--app", "-a", help="Stream aggregated logs")
-def logs(package_name, **kwargs):
+def logs(deck_name, **kwargs):
     raise NotImplementedError
 
 
 @click.command()
-@click.argument("package_name", required=False)
+@click.argument("deck_name", required=False)
 @click.option("--app", "-a", help="Request a new environment variable")
-def request_env(package_name, **kwargs):
+def request_env(deck_name, **kwargs):
     raise NotImplementedError

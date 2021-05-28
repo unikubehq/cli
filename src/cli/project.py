@@ -50,6 +50,10 @@ def list(ctx, organization, **kwargs):
             }
         )
 
+    if not project_list:
+        console.info("No projects available. Please go to https://app.unikube.io and create a project.")
+        exit(0)
+
     console.table(
         data=project_list,
         headers={

@@ -99,7 +99,7 @@ class ProjectApps(GQLQueryExecutor):
           slug
           description
           namespace
-          clusterlevel(level:"local"){
+          environment(level:"local"){
                specsUrl
           }
         }
@@ -131,7 +131,7 @@ class AppSpecs(GQLQueryExecutor):
     {
         applications(id: "$id") {
             namespace
-            clusterlevel(level:"local"){
+            environment(level:"local"){
                specsUrl
             }
         }

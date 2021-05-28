@@ -26,7 +26,7 @@ class UnikubeFile_1_0(UnikubeFile):
         return ContextData(
             organization=context.get("organization", None),
             project=context.get("project", None),
-            package=context.get("package", None),
+            deck=context.get("deck", None),
         )
 
     def _verify(self):

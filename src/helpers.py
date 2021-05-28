@@ -12,14 +12,13 @@ def get_requests_session(access_token) -> Session:
     return session
 
 
-def download_specs(access_token: str, cluster_level_id: str):
+def download_specs(access_token: str, environment_id: str):
     session = get_requests_session(access_token=access_token)
 
-    manifest_url = urljoin(settings.MANIFEST_DEFAULT_HOST, cluster_level_id)
+    manifest_url = urljoin(settings.MANIFEST_DEFAULT_HOST, environment_id)
 
     r = session.get(manifest_url)
-    if r.status_code != 200:
-        raise Exception(f"Access to manifest service failed (status {r.status_code})")
+    r.raise_for_status()
 
     manifest = r.json()
     return manifest
