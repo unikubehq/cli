@@ -130,7 +130,7 @@ def use(ctx, organization_id, remove, **kwargs):
 
     # option: --remove
     if remove:
-        user_data.context.package_id = None
+        user_data.context.deck_id = None
         user_data.context.project_id = None
         user_data.context.organization_id = None
         local_storage_user.set(user_data)
@@ -174,7 +174,7 @@ def use(ctx, organization_id, remove, **kwargs):
                 organization_id = id
 
     # set organization
-    user_data.context.package_id = None
+    user_data.context.deck_id = None
     user_data.context.project_id = None
     user_data.context.organization_id = organization_id
     local_storage_user.set(user_data)

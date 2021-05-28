@@ -50,20 +50,20 @@ class ClickOptionContext(IContext):
         else:
             project_id = None
 
-        # package
-        package = self.click_options.get("package", None)
-        if package:
-            if is_valid_uuid4(package):
-                package_id = package
+        # deck
+        deck = self.click_options.get("deck", None)
+        if deck:
+            if is_valid_uuid4(deck):
+                deck_id = deck
             else:
                 raise NotImplementedError
         else:
-            package_id = None
+            deck_id = None
 
         return ContextData(
             organization_id=organization_id,
             project_id=project_id,
-            package_id=package_id,
+            deck_id=deck_id,
         )
 
 
@@ -129,7 +129,7 @@ def get_context(**kwargs) -> ContextData:
     context_logic = ContextLogic(
         [
             ClickOptionContext(
-                click_options={key: kwargs[key] for key in ("organization", "project", "package") if key in kwargs}
+                click_options={key: kwargs[key] for key in ("organization", "project", "deck") if key in kwargs}
             ),
             UnikubeFileContext(
                 unikube_file=unikube_file_selector.get(

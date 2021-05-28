@@ -5,8 +5,8 @@ import click
 import src.cli.console as console
 from src.cli import app as app_cmd
 from src.cli import auth as auth_cmd
+from src.cli import deck as deck_cmd
 from src.cli import orga as orga_cmd
-from src.cli import package as package_cmd
 from src.cli import project as project_cmd
 from src.cli import system as system_cmd
 from src.context import ClickContext
@@ -69,22 +69,22 @@ project.add_command(project_cmd.down)
 project.add_command(project_cmd.delete)
 
 
-# package
+# deck
 @cli.group()
 @click.pass_obj
-def package(ctx):
+def deck(ctx):
     """
-    Manage your packages.
+    Manage your decks.
     """
 
 
-package.add_command(package_cmd.list)
-package.add_command(package_cmd.info)
-package.add_command(package_cmd.use)
-package.add_command(package_cmd.install)
-package.add_command(package_cmd.uninstall)
-package.add_command(package_cmd.logs)
-package.add_command(package_cmd.request_env)
+deck.add_command(deck_cmd.list)
+deck.add_command(deck_cmd.info)
+deck.add_command(deck_cmd.use)
+deck.add_command(deck_cmd.install)
+deck.add_command(deck_cmd.uninstall)
+deck.add_command(deck_cmd.logs)
+deck.add_command(deck_cmd.request_env)
 
 
 # application
@@ -127,7 +127,7 @@ auth.add_command(auth_cmd.status)
 cli.add_command(auth_cmd.login)
 cli.add_command(auth_cmd.logout)
 cli.add_command(project_cmd.up)
-cli.add_command(package_cmd.install)
+cli.add_command(deck_cmd.install)
 cli.add_command(app_cmd.shell)
 
 

@@ -10,8 +10,8 @@ import src.cli.console as console
 from src import settings
 
 
-# ClusterLevelType
-class ClusterLevelType(Enum):
+# EnvironmentType
+class EnvironmentType(Enum):
     LOCAL = "LOCAL"
     REMOTE = "REMOTE"
 
