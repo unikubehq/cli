@@ -293,7 +293,7 @@ def install(ctx, deck_title, **kwargs):
         hosts = []
         paths = []
         for rule in ingress.spec.rules:
-            hosts.append(f"http://{rule.host}:{provider_data.publisher_port}")
+            hosts.append(f"http://{rule.host}:{provider_data.publisher_port}")  # NOSONAR
             for path in rule.http.paths:
                 paths.append(f"{path.path} -> {path.backend.service_name}")
                 # this is an empty line in output
