@@ -124,10 +124,14 @@ def use(ctx, organization_id, remove, **kwargs):
     Set local organization context.
     """
 
+    # user_data / context
+    local_storage_user = get_local_storage_user()
+    user_data = local_storage_user.get()
+
     # option: --remove
     if remove:
-        local_storage_user = get_local_storage_user()
-        user_data = local_storage_user.get()
+        user_data.context.package_id = None
+        user_data.context.project_id = None
         user_data.context.organization_id = None
         local_storage_user.set(user_data)
         console.success("Organization context removed.")
@@ -170,8 +174,8 @@ def use(ctx, organization_id, remove, **kwargs):
                 organization_id = id
 
     # set organization
-    local_storage_user = get_local_storage_user()
-    user_data = local_storage_user.get()
+    user_data.context.package_id = None
+    user_data.context.project_id = None
     user_data.context.organization_id = organization_id
     local_storage_user.set(user_data)
 
