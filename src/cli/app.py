@@ -98,17 +98,17 @@ def get_required_information(ctx, project_title: str, deck_title: str):
 
 @click.command()
 def list(**kwargs):
-    click.echo("list")
+    raise NotImplementedError
 
 
 @click.command()
 def info(**kwargs):
-    click.echo("info")
+    raise NotImplementedError
 
 
 @click.command()
 def use(**kwargs):
-    click.echo("use")
+    raise NotImplementedError
 
 
 @click.command()
@@ -297,7 +297,7 @@ def switch(ctx, project_title, deck_title, deployment, image, unikubefile, **kwa
 
 @click.command()
 def pulldb(**kwargs):
-    click.echo("pulldb")
+    raise NotImplementedError
 
 
 @click.command()
@@ -346,19 +346,19 @@ def logs(ctx, project_title, deck_title, pod_title, watch, **kwargs):
 
 @click.command()
 def expose(**kwargs):
-    click.echo("expose")
+    raise NotImplementedError
 
 
 @click.command()
 def env(**kwargs):
-    click.echo("env")
+    raise NotImplementedError
 
 
 @click.command()
 def request_env(**kwargs):
-    click.echo("request_env")
+    raise NotImplementedError
 
 
 @click.command()
 def exec(**kwargs):
-    click.echo("exec")
+    raise NotImplementedError
