@@ -209,7 +209,7 @@ def install(ctx, deck_title, **kwargs):
         else:
             deck_list_choices = [item["title"] for item in deck_list]
             deck_title = console.list(
-                message="Please select a project",
+                message="Please select a deck",
                 choices=deck_list_choices,
             )
             if deck_title is None:
