@@ -1,4 +1,4 @@
-![Unikube Logo](https://raw.githubusercontent.com/unikubehq/cli/main/docs/img/Unikube-Logo-H-NoShadow.svg)
+![Unikube Logo](https://raw.githubusercontent.com/unikubehq/cli/main/docs/_static/img/Unikube-Logo-H-NoShadow.svg)
 
 
 # The Unikube CLI
