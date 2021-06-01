@@ -1,4 +1,7 @@
-# Unikube CLI
+![Unikube Logo](https://raw.githubusercontent.com/unikubehq/cli/main/docs/unikube_logo.svg)
+
+
+# The Unikube CLI
 
 This is the command line interface for [unikube][link_unikube].
 
@@ -34,8 +37,9 @@ k3d cluster start unikube
 
 ### Install CLI
 
+To install the latest (pre-)release of the Unikube CLI type
 ```bash
-sudo pip3 install unikube==<VERSION> --upgrade
+sudo pip3 install unikube==<VERSION> --upgrade --pre
 ```
 
 ### Virtual Environment + Requirements

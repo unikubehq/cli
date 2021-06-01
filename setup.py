@@ -6,12 +6,18 @@ base_dir = os.path.abspath(os.path.dirname(__file__))
 with open(os.path.join(base_dir, "VERSION")) as f:
     VERSION = f.read()
 
-DESCRIPTION = "Unikube CLI"
+
+with open(os.path.join(base_dir, "README.md"), encoding="utf-8") as f:
+    long_description = f.read()
+
+DESCRIPTION = "This is the unikube.io command line interface"
 
 
 setup(
     name="unikube",
     description=DESCRIPTION,
+    long_description=long_description,
+    long_description_content_type="text/markdown",
     version=VERSION,
     py_modules=["unikube"],
     install_requires=[
@@ -31,6 +37,12 @@ setup(
     ],
     python_requires="~=3.7",
     packages=find_packages(),
+    url="https://github.com/unikubehq/cli",
+    project_urls={
+        "Source": "https://github.com/unikubehq/cli",
+        "Documentation": "https://cli.unikube.io",
+        "Bug Tracker": "https://github.com/unikubehq/cli/issues",
+    },
     author="Michael Schilonka",
     author_email="michael@blueshoe.de",
     include_package_data=True,
