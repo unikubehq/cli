@@ -11,7 +11,14 @@ The Unikube CLI can be installed using :code:`pip`:
 
 .. code-block:: shell
 
-   pip install unikube
+   pip install --upgrade unikube
+
+In order to install the latest pre-release use
+:code:`pip`:
+
+.. code-block:: shell
+
+   pip install --upgrade unikube --pre
 
 After the installation has completed, open up a new shell and run :code:`unikube --version` to verify your installation. 
 Now you can get started by logging in into your account. You don't have an Unikube account? Register at `unikube.io <https://unikube.io>`__!
