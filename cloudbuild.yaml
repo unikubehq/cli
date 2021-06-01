@@ -1,0 +1,12 @@
+steps:
+# static docs
+- name: eu.gcr.io/unikube-io/sphinx
+  entrypoint: bash
+  args:
+    - '-c'
+    - |
+      pip install -r requirements.txt \
+      && make html
+  dir: 'docs'
+- name: gcr.io/cloud-builders/gsutil
+  args: ["-m", "rsync", "-r", "-c", "-d", "./docs/build/html", "gs://unikube-cli-docs"]
