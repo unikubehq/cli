@@ -7,6 +7,7 @@ from src import settings
 from src.graphql import GraphQL
 from src.keycloak.permissions import KeycloakPermissions
 from src.local.providers.types import K8sProviderType
+from src.storage.user import get_local_storage_user
 
 
 @click.command()
@@ -17,7 +18,7 @@ def list(ctx, organization, **kwargs):
     List all your projects.
     """
 
-    context = ctx.context(organization=organization)
+    context = ctx.context.get(organization=organization)
 
     # keycloak
     try:
@@ -99,9 +100,10 @@ def info(ctx, project_title, **kwargs):
     # argument
     if not project_title:
         # argument from context
-        context = ctx.context()
-        if hasattr(context, "project"):
-            project_title = context.project
+        context = ctx.context.get()
+        if context.project_id:
+            project = ctx.context.get_project()
+            project_title = project["title"]
 
         # argument from console
         else:
@@ -145,7 +147,76 @@ def info(ctx, project_title, **kwargs):
 @click.option("--remove", "-r", is_flag=True, default=False, help="Remove local organization context")
 @click.pass_obj
 def use(ctx, project_id, remove, **kwargs):
-    raise NotImplementedError
+    """
+    Set local project context.
+    """
+
+    # user_data / context
+    local_storage_user = get_local_storage_user()
+    user_data = local_storage_user.get()
+    context = user_data.context
+
+    # option: --remove
+    if remove:
+        user_data.context.deck_id = None
+        user_data.context.project_id = None
+        local_storage_user.set(user_data)
+        console.success("Project context removed.")
+        return None
+
+    # GraphQL
+    try:
+        graph_ql = GraphQL(authentication=ctx.auth)
+        data = graph_ql.query(
+            """
+            query($organization_id: UUID) {
+                allProjects(organizationId: $organization_id) {
+                    results {
+                        title
+                        id
+                        organization {
+                            id
+                        }
+                    }
+                }
+            }
+            """,
+            query_variables={
+                "organization_id": context.organization_id,
+            },
+        )
+    except Exception as e:
+        data = None
+        console.debug(e)
+        console.exit_generic_error()
+
+    project_list = data["allProjects"]["results"]
+    project_dict = {project["id"]: project["title"] for project in project_list}
+
+    # argument
+    if not project_id:
+        project_title = console.list(
+            message="Please select a project",
+            choices=project_dict.values(),
+        )
+        if project_title is None:
+            return False
+
+        for id, title in project_dict.items():
+            if title == project_title:
+                project_id = id
+
+    project = project_dict.get(project_id, None)
+    if not project:
+        console.error(f"Unknown project with id: {project_id}.")
+
+    # set project
+    user_data.context.deck_id = None
+    user_data.context.project_id = project["id"]
+    user_data.context.organization_id = project["organization"]["id"]
+    local_storage_user.set(user_data)
+
+    console.success(f"Project context: {user_data.context}")
 
 
 @click.command()
@@ -190,10 +261,10 @@ def up(ctx, project_title, organization, ingress, provider, workers, **kwargs):
     # argument
     if not project_title:
         # argument from context
-        context = ctx.context(organization=organization)
+        context = ctx.context.get(organization=organization)
         if context.project_id:
-            # TODO
-            project_title = context.project_id
+            project = ctx.context.get_project()
+            project_title = project["title"]
 
         # argument from console
         else:
@@ -278,14 +349,21 @@ def down(ctx, project_title, **kwargs):
 
     # argument
     if not project_title:
+        project = ctx.context.get_project()
+
+        # argument from context
+        if project:
+            project_title = project["title"]
+
         # argument from console
-        project_title = console.list(
-            message="Please select a project",
-            message_no_choices="No cluster is running.",
-            choices=cluster_title_list,
-        )
-        if project_title is None:
-            return None
+        else:
+            project_title = console.list(
+                message="Please select a project",
+                message_no_choices="No cluster is running.",
+                choices=cluster_title_list,
+            )
+            if project_title is None:
+                return None
 
     # check if project is in local storage
     if project_title not in cluster_title_list:
@@ -334,10 +412,10 @@ def delete(ctx, project_title, **kwargs):
     # argument
     if not project_title:
         # argument from context
-        context = ctx.context()
+        context = ctx.context.get()
         if context.project_id:
-            # TODO
-            project_title = context.project_id
+            project = ctx.context.get_project()
+            project_title = project["title"]
 
         # argument from console
         else:

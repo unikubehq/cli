@@ -13,7 +13,7 @@ def list(ctx, **kwargs):
     List all your organizations.
     """
 
-    context = ctx.context()
+    context = ctx.context.get()
 
     # keycloak
     try:
@@ -81,10 +81,10 @@ def info(ctx, organization_title, **kwargs):
     # argument
     if not organization_title:
         # argument from context
-        context = ctx.context()
+        context = ctx.context.get()
         if context.organization_id:
-            # TODO
-            organization_title = context.organization_id
+            organization = ctx.context.get_organization()
+            organization_title = organization["title"]
 
         # argument from console
         else:
@@ -179,4 +179,4 @@ def use(ctx, organization_id, remove, **kwargs):
     user_data.context.organization_id = organization_id
     local_storage_user.set(user_data)
 
-    console.success(f"Organization context: {organization_dict.get(organization_id, organization_id)}")
+    console.success(f"Organization context: {user_data.context}")

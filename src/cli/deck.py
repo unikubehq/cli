@@ -17,7 +17,7 @@ def list(ctx, organization=None, project=None, **kwargs):
     List all decks.
     """
 
-    context = ctx.context(organization=organization, project=project)
+    context = ctx.context.get(organization=organization, project=project)
 
     # GraphQL
     try:
@@ -144,14 +144,17 @@ def use(ctx, deck_id, remove, **kwargs):
             if deck["title"] == deck_title:
                 deck_id = id
 
+    deck = deck_dict.get(deck_id, None)
+    if not deck:
+        console.error(f"Unknown deck with id: {deck_id}.")
+
     # set deck
-    deck = deck_dict[deck_id]
     user_data.context.organization_id = deck["project"]["organization"]["id"]
     user_data.context.project_id = deck["project"]["id"]
     user_data.context.deck_id = deck["id"]
     local_storage_user.set(user_data)
 
-    console.success(f"Deck context: {deck_dict.get(deck_id, deck_id)}")
+    console.success(f"Deck context: {user_data.context}")
 
 
 @click.command()
@@ -200,7 +203,7 @@ def install(ctx, deck_title, **kwargs):
     # argument
     if not deck_title:
         # argument from context
-        context = ctx.context()
+        context = ctx.context
         if context.deck_id:
             # TODO
             deck_title = context.deck_id
