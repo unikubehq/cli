@@ -6,6 +6,7 @@ from uuid import UUID
 from src import settings
 from src.cli import console
 from src.context.types import ContextData
+from src.graphql import GraphQL
 from src.storage.user import LocalStorageUser, get_local_storage_user
 from src.unikubefile.selector import unikube_file_selector
 from src.unikubefile.unikube_file import UnikubeFile
@@ -123,30 +124,84 @@ class ContextLogic:
         return context
 
 
-def get_context(**kwargs) -> ContextData:
-    local_storage_user = get_local_storage_user()
+class Context:
+    def __init__(self, auth):
+        self._auth = auth
 
-    context_logic = ContextLogic(
-        [
-            ClickOptionContext(
-                click_options={key: kwargs[key] for key in ("organization", "project", "deck") if key in kwargs}
-            ),
-            UnikubeFileContext(
-                unikube_file=unikube_file_selector.get(
-                    path_unikube_file=os.path.join(
-                        os.getcwd(),
-                        "unikube.yaml",
+    def get(self, **kwargs) -> ContextData:
+        local_storage_user = get_local_storage_user()
+
+        context_logic = ContextLogic(
+            [
+                ClickOptionContext(
+                    click_options={key: kwargs[key] for key in ("organization", "project", "deck") if key in kwargs}
+                ),
+                UnikubeFileContext(
+                    unikube_file=unikube_file_selector.get(
+                        path_unikube_file=os.path.join(
+                            os.getcwd(),
+                            "unikube.yaml",
+                        )
                     )
-                )
-            ),
-            LocalContext(local_storage_user=local_storage_user),
-            ImplizitContext(),
-        ]
-    )
-    context = context_logic.get()
+                ),
+                LocalContext(local_storage_user=local_storage_user),
+                ImplizitContext(),
+            ]
+        )
+        context = context_logic.get()
 
-    # show context
-    if settings.CLI_ALWAYS_SHOW_CONTEXT:
-        console.info(f"context: {context}")
+        # show context
+        if settings.CLI_ALWAYS_SHOW_CONTEXT:
+            console.info(f"context: {context}")
 
-    return context
+        return context
+
+    def get_organization(self) -> Union[dict, None]:
+        # GraphQL
+        try:
+            graph_ql = GraphQL(authentication=self._auth)
+            data = graph_ql.query(
+                """
+                query($id: UUID!) {
+                    organization(id: $id) {
+                        title
+                        id
+                    }
+                }
+                """,
+                query_variables={
+                    "id": self.get().organization_id,
+                },
+            )
+            data = data["organization"]
+        except Exception as e:
+            data = None
+            console.debug(e)
+            console.exit_generic_error()
+
+        return data
+
+    def get_project(self) -> Union[dict, None]:
+        # GraphQL
+        try:
+            graph_ql = GraphQL(authentication=self._auth)
+            data = graph_ql.query(
+                """
+                query($id: UUID) {
+                    project(id: $id) {
+                        title
+                        id
+                    }
+                }
+                """,
+                query_variables={
+                    "id": self.get().project_id,
+                },
+            )
+            data = data["project"]
+        except Exception as e:
+            data = None
+            console.debug(e)
+            console.exit_generic_error()
+
+        return data
