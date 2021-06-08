@@ -266,10 +266,10 @@ def install(ctx, deck_title, **kwargs):
     # argument
     if not deck_title:
         # argument from context
-        context = ctx.context
+        context = ctx.context.get()
         if context.deck_id:
-            # TODO
-            deck_title = context.deck_id
+            deck = ctx.context.get_deck()
+            deck_title = deck["title"]
 
         # argument from console
         else:
