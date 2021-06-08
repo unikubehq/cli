@@ -205,3 +205,28 @@ class Context:
             console.exit_generic_error()
 
         return data
+
+    def get_deck(self) -> Union[dict, None]:
+        # GraphQL
+        try:
+            graph_ql = GraphQL(authentication=self._auth)
+            data = graph_ql.query(
+                """
+                query($id: UUID) {
+                    deck(id: $id) {
+                        title
+                        id
+                    }
+                }
+                """,
+                query_variables={
+                    "id": self.get().deck_id,
+                },
+            )
+            data = data["deck"]
+        except Exception as e:
+            data = None
+            console.debug(e)
+            console.exit_generic_error()
+
+        return data
