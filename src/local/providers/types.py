@@ -5,7 +5,7 @@ from pydantic.main import BaseModel
 
 
 class K8sProviderType(Enum):
-    K3D = "k3d"
+    k3d = "k3d"
 
 
 class K8sProviderData(BaseModel):

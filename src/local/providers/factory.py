@@ -20,4 +20,4 @@ class K8sClusterFactory:
 
 
 kubernetes_cluster_factory = K8sClusterFactory()
-kubernetes_cluster_factory.register_builder(K8sProviderType.K3D, K3dBuilder())
+kubernetes_cluster_factory.register_builder(K8sProviderType.k3d, K3dBuilder())

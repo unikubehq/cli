@@ -149,7 +149,7 @@ class K3s(LocalDependency):
 
 class K3d(LocalDependency):
     cmd = ("k3d", "--version")
-    verbose_name = "K3D"
+    verbose_name = "k3d"
     website = settings.K3D_WEBSITE
     required_version = settings.K3D_CLI_MIN_VERSION
     installation_steps = ["curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | sudo bash"]
