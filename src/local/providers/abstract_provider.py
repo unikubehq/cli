@@ -41,7 +41,7 @@ class AbstractK8SProviderStorage(IK8sProviderStorage):
 
 class IK8sProvider(ABC):
     @abstractmethod
-    def create(self) -> bool:
+    def create(self, ingress_port: int = None) -> bool:
         raise NotImplementedError
 
     @abstractmethod

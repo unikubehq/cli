@@ -23,7 +23,7 @@ AUTH_DEFAULT_HOST = "https://login.unikube.io"  # "http://keycloak.127.0.0.1.nip
 
 # unikube
 UNIKUBE_FILE = "unikube.yaml"
-UNIKUBE_DEFAULT_PROVIDER_TYPE = K8sProviderType.K3D
+UNIKUBE_DEFAULT_PROVIDER_TYPE = K8sProviderType.k3d
 
 # token
 TOKEN_REALM = "unikube"

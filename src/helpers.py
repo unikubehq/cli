@@ -1,5 +1,6 @@
 from urllib.parse import urljoin
 
+import click_spinner
 import requests
 from requests import Session
 
@@ -16,8 +17,8 @@ def download_specs(access_token: str, environment_id: str):
     session = get_requests_session(access_token=access_token)
 
     manifest_url = urljoin(settings.MANIFEST_DEFAULT_HOST, environment_id)
-
-    r = session.get(manifest_url)
+    with click_spinner.spinner():
+        r = session.get(manifest_url)
     r.raise_for_status()
 
     manifest = r.json()

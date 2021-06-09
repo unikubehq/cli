@@ -11,7 +11,7 @@ from src.local.system import CMDWrapper
 
 
 class K3d(AbstractK8sProvider, CMDWrapper):
-    kubernetes_cluster_type = K8sProviderType.K3D
+    kubernetes_cluster_type = K8sProviderType.k3d
 
     base_command = "k3d"
     _cluster = []
@@ -111,11 +111,14 @@ class K3d(AbstractK8sProvider, CMDWrapper):
 
     def create(
         self,
-        ingress_port=settings.K3D_DEFAULT_INGRESS_PORT,
+        ingress_port=None,
         workers=settings.K3D_DEFAULT_WORKERS,
     ):
         api_port = self._get_random_unused_port()
-        publisher_port = self._get_random_unused_port()
+        if not ingress_port:
+            publisher_port = self._get_random_unused_port()
+        else:
+            publisher_port = ingress_port
         arguments = [
             "cluster",
             "create",
@@ -125,7 +128,7 @@ class K3d(AbstractK8sProvider, CMDWrapper):
             "--api-port",
             str(api_port),
             "--port",
-            f"{publisher_port}:{ingress_port}@agent[0]",
+            f"{publisher_port}:{settings.K3D_DEFAULT_INGRESS_PORT}@agent[0]",
             "--servers",
             str(1),
             "--wait",
