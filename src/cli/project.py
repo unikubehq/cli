@@ -217,14 +217,14 @@ def use(ctx, project_id, remove, **kwargs):
 @click.command()
 @click.argument("project_title", required=False)
 @click.option("--organization", "-o", help="Select an organization")
-@click.option("--ingress", help="Specify the ingress port for the project", default=80)
+@click.option("--ingress", help="Specify the ingress port for the project", default=None)
 @click.option(
     "--provider",
     "-p",
     help="Specify the Kubernetes provider type for this cluster",
     default=settings.UNIKUBE_DEFAULT_PROVIDER_TYPE.name,
 )
-@click.option("--workers", help="Specify count of K3D worker nodes", default=1)
+@click.option("--workers", help="Specify count of k3d worker nodes", default=1)
 @click.pass_obj
 def up(ctx, project_title, organization, ingress, provider, workers, **kwargs):
     """
@@ -241,6 +241,10 @@ def up(ctx, project_title, organization, ingress, provider, workers, **kwargs):
                     results {
                         id
                         title
+                        clusterSettings {
+                            id
+                            port
+                        }
                     }
                 }
             }
@@ -286,6 +290,8 @@ def up(ctx, project_title, organization, ingress, provider, workers, **kwargs):
     for project in project_list:
         if project["title"] == project_title:
             project_id = project["id"]
+            if ingress is None:
+                ingress = project["clusterSettings"]["port"]
             break
 
     # cluster up

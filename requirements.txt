@@ -1,5 +1,6 @@
 # click + console
 click==7.1.2
+click-spinner==0.1.10
 colorama~=0.4.4  # color logging windows
 inquirer~=2.7.0
 tabulate~=0.8.7
