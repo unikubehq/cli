@@ -18,9 +18,11 @@ CLI_TABLEFMT = "psql"
 CLI_LOG_LEVEL = "DEBUG"  # DEBUG, INFO, WARNING, ERROR/SUCCESS
 CLI_ALWAYS_SHOW_CONTEXT = False
 
+# authentication
+AUTH_DEFAULT_HOST = "https://login.unikube.io"  # "http://keycloak.127.0.0.1.nip.io:8085"
+
 # unikube
 UNIKUBE_FILE = "unikube.yaml"
-UNIKUBE_DEFAULT_HOST = "https://login.unikube.io"  # "http://keycloak.127.0.0.1.nip.io:8085"
 UNIKUBE_DEFAULT_PROVIDER_TYPE = K8sProviderType.K3D
 
 # token

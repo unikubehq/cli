@@ -13,7 +13,7 @@ class IAuthentication:
     def check(self):
         raise NotImplementedError
 
-    def login(self, email, password) -> dict:
+    def login(self, email: str, password: str) -> dict:
         raise NotImplementedError
 
     def logout(self):
@@ -54,9 +54,15 @@ class TokenAuthentication(IAuthentication):
         try:
             local_storage_user = LocalStorageUser(user_email=self.general_data.authentication.email)
             user_data = local_storage_user.get()
-            return user_data.config.host
+            auth_host = user_data.config.auth_host
+
+            if not auth_host:
+                raise Exception("User data config does not specify an authentication host.")
+
+            return auth_host
+
         except Exception:
-            return settings.UNIKUBE_DEFAULT_HOST
+            return settings.AUTH_DEFAULT_HOST
 
     def _get_requesting_party_token(self, response_token):
         # requesting party token (RPT)
@@ -86,9 +92,15 @@ class TokenAuthentication(IAuthentication):
 
     def login(
         self,
-        email,
-        password,
+        email: str,
+        password: str,
     ) -> dict:
+        # set/update user config
+        local_storage_user = LocalStorageUser(user_email=email)
+        user_data = local_storage_user.get()
+        user_data.config.auth_host = settings.AUTH_DEFAULT_HOST
+        local_storage_user.set(user_data)
+
         # access token + refresh token
         response_token = self.__request(
             url=self.url_login,
@@ -125,6 +137,7 @@ class TokenAuthentication(IAuthentication):
             refresh_token=response["response"]["refresh_token"],
             requesting_party_token=requesting_party_token,
         )
+
         self.local_storage_general.set(self.general_data)
 
         return response
