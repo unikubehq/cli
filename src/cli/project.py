@@ -126,11 +126,6 @@ def info(ctx, project_title, **kwargs):
         project_selected["repository"] = project_selected.pop("specRepository")
         project_selected["repository branch"] = project_selected.pop("specRepositoryBranch")
 
-        data = {
-            "key": [k for k in project_selected.keys()],
-            "value": [v for v in project_selected.values()],
-        }
-
         console.table(
             data={
                 "key": [k for k in project_selected.keys()],

@@ -73,8 +73,71 @@ def list(ctx, organization=None, project=None, **kwargs):
 
 @click.command()
 @click.argument("deck_name", required=False)
-def info(deck_name, **kwargs):
-    raise NotImplementedError
+@click.pass_obj
+def info(ctx, deck_name, **kwargs):
+    """
+    Display further information of the selected deck.
+    """
+
+    # GraphQL
+    try:
+        graph_ql = GraphQL(authentication=ctx.auth)
+        data = graph_ql.query(
+            """
+            {
+                allDecks {
+                    results {
+                        id
+                        title
+                        description
+                        namespace
+                        type
+                    }
+                }
+            }
+            """
+        )
+    except Exception:
+        data = None
+        console.exit_generic_error()
+
+    deck_list = data["allDecks"]["results"]
+
+    # argument
+    if not deck_name:
+        # argument from context
+        context = ctx.context.get()
+        if context.deck_id:
+            deck = ctx.context.get_deck()
+            deck_name = deck["title"]
+
+        # argument from console
+        else:
+            deck_name = console.list(
+                message="Please select a deck",
+                choices=[deck["title"] for deck in deck_list],
+            )
+            if deck_name is None:
+                return None
+
+    # select
+    deck_selected = None
+    for deck in deck_list:
+        if deck["title"] == deck_name:
+            deck_selected = deck
+            break
+
+    # console
+    if deck_selected:
+        console.table(
+            data={
+                "key": [k for k in deck_selected.keys()],
+                "value": [v for v in deck_selected.values()],
+            },
+            headers=["Key", "Value"],
+        )
+    else:
+        console.error("Deck does not exist.")
 
 
 @click.command()
@@ -203,10 +266,10 @@ def install(ctx, deck_title, **kwargs):
     # argument
     if not deck_title:
         # argument from context
-        context = ctx.context
+        context = ctx.context.get()
         if context.deck_id:
-            # TODO
-            deck_title = context.deck_id
+            deck = ctx.context.get_deck()
+            deck_title = deck["title"]
 
         # argument from console
         else:

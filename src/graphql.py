@@ -67,7 +67,7 @@ class GraphQL:
     @retry(retry_on_exception=retry_exception, stop_max_attempt_number=2)
     def query(
         self,
-        query,
+        query: str,
         query_variables: dict = None,
     ) -> Union[dict, None]:
         try:

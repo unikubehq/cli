@@ -156,52 +156,64 @@ class Context:
 
         return context
 
-    def get_organization(self) -> Union[dict, None]:
+    def __graph_ql(self, query: str, query_variables: dict) -> Union[dict, None]:
         # GraphQL
         try:
             graph_ql = GraphQL(authentication=self._auth)
-            data = graph_ql.query(
-                """
-                query($id: UUID!) {
-                    organization(id: $id) {
-                        title
-                        id
-                    }
-                }
-                """,
-                query_variables={
-                    "id": self.get().organization_id,
-                },
+            result = graph_ql.query(
+                query,
+                query_variables=query_variables,
             )
-            data = data["organization"]
+            key = next(iter(result))
+            data = result[key]
         except Exception as e:
             data = None
             console.debug(e)
             console.exit_generic_error()
 
         return data
+
+    def get_organization(self) -> Union[dict, None]:
+        return self.__graph_ql(
+            """
+            query($id: UUID!) {
+                organization(id: $id) {
+                    title
+                    id
+                }
+            }
+            """,
+            query_variables={
+                "id": self.get().organization_id,
+            },
+        )
 
     def get_project(self) -> Union[dict, None]:
-        # GraphQL
-        try:
-            graph_ql = GraphQL(authentication=self._auth)
-            data = graph_ql.query(
-                """
-                query($id: UUID) {
-                    project(id: $id) {
-                        title
-                        id
-                    }
+        return self.__graph_ql(
+            """
+            query($id: UUID) {
+                project(id: $id) {
+                    title
+                    id
                 }
-                """,
-                query_variables={
-                    "id": self.get().project_id,
-                },
-            )
-            data = data["project"]
-        except Exception as e:
-            data = None
-            console.debug(e)
-            console.exit_generic_error()
+            }
+            """,
+            query_variables={
+                "id": self.get().project_id,
+            },
+        )
 
-        return data
+    def get_deck(self) -> Union[dict, None]:
+        return self.__graph_ql(
+            """
+            query($id: UUID) {
+                deck(id: $id) {
+                    title
+                    id
+                }
+            }
+            """,
+            query_variables={
+                "id": self.get().deck_id,
+            },
+        )
