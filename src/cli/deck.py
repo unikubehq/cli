@@ -234,7 +234,8 @@ def install(ctx, deck_title, **kwargs):
         data = graph_ql.query(
             """
             {
-                allDecks {
+                allDecks(limit:100) {
+                    totalCount
                     results {
                         id
                         title
@@ -254,8 +255,10 @@ def install(ctx, deck_title, **kwargs):
                     }
                 }
             }
-            """
+            """,
+            query_variables={},
         )
+
     except Exception as e:
         data = None
         console.debug(e)
@@ -322,6 +325,7 @@ def install(ctx, deck_title, **kwargs):
     try:
         environment_id = deck["environment"][0]["id"]
         general_data = ctx.storage_general.get()
+        console.info("Now requesting manifests. This process may takes a few seconds.")
         all_specs = download_specs(
             access_token=general_data.authentication.access_token,
             environment_id=environment_id,
