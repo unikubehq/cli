@@ -350,10 +350,10 @@ def down(ctx, project_title, **kwargs):
 
     # argument
     if not project_title:
-        project = ctx.context.get_project()
-
         # argument from context
-        if project:
+        context = ctx.context.get()
+        if context.project_id:
+            project = ctx.context.get_project()
             project_title = project["title"]
 
         # argument from console
