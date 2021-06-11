@@ -304,10 +304,9 @@ def pulldb(**kwargs):
 @click.argument("project_title", required=False)
 @click.argument("deck_title", required=False)
 @click.argument("pod_title", required=False)
-@click.argument("pod_title", required=False)
-@click.option("--watch", "-w", is_flag=True, default=False, help="Watch logs.")
+@click.option("--follow", "-f", is_flag=True, default=False, help="Follow logs.")
 @click.pass_obj
-def logs(ctx, project_title, deck_title, pod_title, watch, **kwargs):
+def logs(ctx, project_title, deck_title, pod_title, follow=False, **kwargs):
     """Display the container's logs"""
 
     ctx.auth.check()
@@ -338,7 +337,7 @@ def logs(ctx, project_title, deck_title, pod_title, watch, **kwargs):
         console.error("No pods available.")
         return None
 
-    logs = k8s.get_logs(pod_title, watch)
+    logs = k8s.get_logs(pod_title, follow)
 
     # output
     click.echo(logs)

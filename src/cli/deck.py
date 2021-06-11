@@ -393,7 +393,7 @@ def uninstall(deck_name, **kwargs):
 
 @click.command()
 @click.argument("deck_name", required=False)
-@click.option("--app", "-a", help="Stream aggregated logs")
+@click.option("--follow", "-f", is_flag=True, default=False, help="Follow logs.")
 def logs(deck_name, **kwargs):
     raise NotImplementedError
 
