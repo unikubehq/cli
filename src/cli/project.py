@@ -186,19 +186,19 @@ def use(ctx, project_id, remove, **kwargs):
         console.exit_generic_error()
 
     project_list = data["allProjects"]["results"]
-    project_dict = {project["id"]: project["title"] for project in project_list}
+    project_dict = {project["id"]: project for project in project_list}
 
     # argument
     if not project_id:
         project_title = console.list(
             message="Please select a project",
-            choices=project_dict.values(),
+            choices=[project["title"] for project in project_dict.values()],
         )
         if project_title is None:
             return False
 
-        for id, title in project_dict.items():
-            if title == project_title:
+        for id, project in project_dict.items():
+            if project["title"] == project_title:
                 project_id = id
 
     project = project_dict.get(project_id, None)
