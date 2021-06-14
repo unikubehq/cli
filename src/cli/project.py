@@ -1,6 +1,7 @@
 import re
 
 import click
+import click_spinner
 
 import src.cli.console as console
 from src import settings
@@ -328,7 +329,8 @@ def up(ctx, project_title, organization, ingress, provider, workers, **kwargs):
 
         else:
             console.info(f"Kubernetes cluster for '{cluster.display_name}' already exists, starting it now.")
-            success = cluster.start()
+            with click_spinner.spinner():
+                success = cluster.start()
 
     # console
     if success:

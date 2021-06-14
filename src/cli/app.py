@@ -1,6 +1,7 @@
 import os
 
 import click
+import click_spinner
 
 from src import settings
 from src.cli import console
@@ -266,11 +267,12 @@ def switch(ctx, project_title, deck_title, deployment, image, unikubefile, **kwa
 
     # 3.2 Set an image name
     image_name = settings.TELEPRESENCE_DOCKER_IMAGE_FORMAT.format(
-        project=project_title, deck=deck["title"], name=deployment
+        project=project_title.replace(" ", "").lower(), deck=deck["title"], name=deployment
     )
 
     # 3.3 Build image
-    status, msg = Docker().build(image_name, context, dockerfile, target)
+    with click_spinner.spinner():
+        status, msg = Docker().build(image_name, context, dockerfile, target)
     if not status:
         console.debug(msg)
         console.error("Failed to build Docker image.", _exit=True)
