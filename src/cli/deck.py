@@ -2,6 +2,8 @@ import click
 from requests import HTTPError
 
 import src.cli.console as console
+from src.cli.app import get_required_information
+from src.cli.console.logger import LogLevel, color_mapping
 from src.graphql import EnvironmentType, GraphQL
 from src.helpers import download_specs
 from src.local.system import KubeAPI, KubeCtl
@@ -392,10 +394,36 @@ def uninstall(deck_name, **kwargs):
 
 
 @click.command()
-@click.argument("deck_name", required=False)
-@click.option("--follow", "-f", is_flag=True, default=False, help="Follow logs.")
-def logs(deck_name, **kwargs):
-    raise NotImplementedError
+@click.argument("project_title", required=False)
+@click.argument("deck_title", required=False)
+@click.pass_obj
+def logs(ctx, project_title, deck_title, **kwargs):
+    """Display the container's logs"""
+
+    ctx.auth.check()
+
+    project_id, project_title, deck = get_required_information(ctx, project_title, deck_title)
+
+    ## logs
+    # check if cluster is ready
+    cluster_data = ctx.cluster_manager.get(id=project_id)
+    cluster = ctx.cluster_manager.select(cluster_data=cluster_data)
+    if not cluster:
+        console.error("The project cluster does not exist.")
+        return None
+
+    provider_data = cluster.storage.get()
+
+    # log
+    k8s = KubeAPI(provider_data, deck)
+    for pod_name in [pod.metadata.name for pod in k8s.get_pods().items]:
+        # get logs
+        logs = k8s.get_logs(pod_name, follow=False)
+
+        # output
+        fg = color_mapping.get(LogLevel.SUCCESS, "")
+        click.secho(f"[APP] {pod_name}", fg=fg)
+        click.echo(logs)
 
 
 @click.command()
