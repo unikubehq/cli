@@ -2,7 +2,7 @@ import click
 from requests import HTTPError
 
 import src.cli.console as console
-from src.cli.app import get_required_information
+from src.cli.app import get_deck_from_arguments
 from src.cli.console.logger import LogLevel, color_mapping
 from src.graphql import EnvironmentType, GraphQL
 from src.helpers import download_specs
@@ -402,7 +402,7 @@ def logs(ctx, project_title, deck_title, **kwargs):
 
     ctx.auth.check()
 
-    project_id, project_title, deck = get_required_information(ctx, project_title, deck_title)
+    project_id, project_title, deck = get_deck_from_arguments(ctx, project_title, deck_title)
 
     ## logs
     # check if cluster is ready
