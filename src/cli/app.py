@@ -11,7 +11,7 @@ from src.settings import UNIKUBE_FILE
 from src.unikubefile.selector import unikube_file_selector
 
 
-def get_required_information(ctx, project_title: str, deck_title: str):
+def get_deck_from_arguments(ctx, project_title: str, deck_title: str):
     ## project_id
     cluster_list = ctx.cluster_manager.get_cluster_list(ready=True)
     cluster_title_list = [item.name for item in cluster_list]
@@ -122,7 +122,7 @@ def shell(ctx, project_title, deck_title, pod_title, **kwargs):
 
     ctx.auth.check()
 
-    project_id, project_title, deck = get_required_information(ctx, project_title, deck_title)
+    project_id, project_title, deck = get_deck_from_arguments(ctx, project_title, deck_title)
 
     ## shell
     # check if cluster is ready
@@ -189,7 +189,7 @@ def switch(ctx, project_title, deck_title, deployment, image, unikubefile, **kwa
 
     ctx.auth.check()
 
-    project_id, project_title, deck = get_required_information(ctx, project_title, deck_title)
+    project_id, project_title, deck = get_deck_from_arguments(ctx, project_title, deck_title)
 
     ## switch
     # check if cluster is ready
@@ -310,15 +310,14 @@ def pulldb(**kwargs):
 @click.argument("project_title", required=False)
 @click.argument("deck_title", required=False)
 @click.argument("pod_title", required=False)
-@click.argument("pod_title", required=False)
-@click.option("--watch", "-w", is_flag=True, default=False, help="Watch logs.")
+@click.option("--follow", "-f", is_flag=True, default=False, help="Follow logs.")
 @click.pass_obj
-def logs(ctx, project_title, deck_title, pod_title, watch, **kwargs):
+def logs(ctx, project_title, deck_title, pod_title, follow=False, **kwargs):
     """Display the container's logs"""
 
     ctx.auth.check()
 
-    project_id, project_title, deck = get_required_information(ctx, project_title, deck_title)
+    project_id, project_title, deck = get_deck_from_arguments(ctx, project_title, deck_title)
 
     ## logs
     # check if cluster is ready
@@ -344,7 +343,7 @@ def logs(ctx, project_title, deck_title, pod_title, watch, **kwargs):
         console.error("No pods available.")
         return None
 
-    logs = k8s.get_logs(pod_title, watch)
+    logs = k8s.get_logs(pod_title, follow)
 
     # output
     click.echo(logs)
