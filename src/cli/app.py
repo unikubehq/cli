@@ -271,8 +271,9 @@ def switch(ctx, project_title, deck_title, deployment, image, unikubefile, **kwa
     )
 
     # 3.3 Build image
+    docker = Docker()
     with click_spinner.spinner():
-        status, msg = Docker().build(image_name, context, dockerfile, target)
+        status, msg = docker.build(image_name, context, dockerfile, target)
     if not status:
         console.debug(msg)
         console.error("Failed to build Docker image.", _exit=True)
@@ -295,6 +296,9 @@ def switch(ctx, project_title, deck_title, deployment, image, unikubefile, **kwa
     console.info("Starting your container, this may takes a while to become effective")
     provider_data = cluster.storage.get()
     Telepresence(provider_data, debug_output=True).swap(deployment, image_name, command, namespace, envs, mounts)
+    # if something went wrong with Telepresence
+    if docker.check_running(image_name):
+        docker.kill(name=image_name)
 
 
 @click.command()

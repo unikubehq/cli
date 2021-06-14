@@ -34,7 +34,10 @@ class CMDWrapper(object):
                 process.terminate()
             except OSError:
                 pass
-            process.wait()
+            try:
+                process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                pass
         return process
 
     def _run(self, arguments) -> subprocess.CompletedProcess:
@@ -171,6 +174,20 @@ class Docker(CMDWrapper):
             output = process.stdout.read()
         return output
 
+    def kill(self, _id=None, name=None):
+        if _id:
+            pass
+        elif name:
+            _id = self.get_container_id(name)
+        arguments = ["kill", _id]
+        self._execute(arguments)
+
+    def get_container_id(self, name):
+        arguments = ["ps", "-aq", "--filter", f"ancestor={name}"]
+        process = self._execute(arguments)
+        output = process.stdout.read()
+        return output.strip()
+
 
 class Telepresence(KubeCtl):
     base_command = "telepresence"
@@ -202,8 +219,8 @@ class Telepresence(KubeCtl):
             arguments = arguments + ["sh", "-c"] + [f"{' '.join(command)}"]
 
         process = self._execute(arguments)
-        if process.returncode != 0:
-            console.error("There was an error with switching the deployment, please find details above")
+        if process.returncode and process.returncode != 0:
+            console.error("There was an error with switching the deployment, please find details above", _exit=False)
 
     def _get_environment(self):
         env = super(Telepresence, self)._get_environment()
