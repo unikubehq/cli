@@ -127,7 +127,6 @@ def shell(ctx, project_title, deck_title, pod_title, **kwargs):
     ## shell
     # check if cluster is ready
     cluster_data = ctx.cluster_manager.get(id=project_id)
-    print(project_id)
     cluster = ctx.cluster_manager.select(cluster_data=cluster_data)
     if not cluster:
         console.error("The project cluster does not exist.")
@@ -175,6 +174,15 @@ def shell(ctx, project_title, deck_title, pod_title, **kwargs):
     else:
         # 2.b connect using kubernetes
         KubeCtl(provider_data).exec_pod(pod_title, deck["namespace"], "/bin/sh", interactive=True)
+
+
+@click.command()
+@click.argument("project_title", required=False)
+@click.argument("deck_title", required=False)
+@click.argument("pod_title", required=False)
+@click.pass_context
+def exec(ctx, **kwargs):
+    ctx.forward(shell)
 
 
 @click.command()
@@ -361,9 +369,4 @@ def env(**kwargs):
 
 @click.command()
 def request_env(**kwargs):
-    raise NotImplementedError
-
-
-@click.command()
-def exec(**kwargs):
     raise NotImplementedError
