@@ -316,10 +316,11 @@ def up(ctx, project_title, organization, ingress, provider, workers, **kwargs):
 
     if not cluster.exists():
         console.info(f"Kubernetes cluster for '{cluster.display_name}' does not exist, creating it now.")
-        success = cluster.create(
-            ingress_port=ingress,
-            workers=workers,
-        )
+        with click_spinner.spinner():
+            success = cluster.create(
+                ingress_port=ingress,
+                workers=workers,
+            )
 
     # start
     else:
