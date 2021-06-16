@@ -31,3 +31,6 @@ jobs:
       run: |
         pip install black
         black --check --line-length=120 src/
+    - name: Test with pytest
+      run: |
+        pytest
