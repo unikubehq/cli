@@ -1,4 +1,5 @@
 import os
+import sys
 
 import click
 import click_spinner
@@ -280,7 +281,7 @@ def switch(ctx, project_title, deck_title, deployment, image, unikubefile, **kwa
 
     # 3.3 Build image
     docker = Docker()
-    with click_spinner.spinner():
+    with click_spinner.spinner(beep=False, disable=False, force=False, stream=sys.stdout):
         status, msg = docker.build(image_name, context, dockerfile, target)
     if not status:
         console.debug(msg)
