@@ -1,9 +1,10 @@
+from unittest.mock import patch
+
 import pytest
 from click.testing import CliRunner
 
 from src.cli import auth
 from unikube import ClickContext
-from unittest.mock import patch
 
 
 def test_login():
@@ -13,12 +14,11 @@ def test_login():
         ["--email", "test@test.de", "--password", "secure"],
         obj=ClickContext(),
     )
-    assert result.output == "[ERROR] Login failed. Please check your e-mail or re-enter your password.\n"
+    assert result.output == "[ERROR] Login failed. Please check email and password.\n"
     assert result.exit_code == 0
 
 
 def test_login_wrong_token():
-
     def login(email, password):
         return {"success": True, "response": {"access_token": "WRONG_TOKEN"}}
 
@@ -55,7 +55,6 @@ def test_status_not_logged():
 
 
 def test_status_success():
-
     def verify():
         return {"success": True}
 
