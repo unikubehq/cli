@@ -302,10 +302,12 @@ def install(ctx, deck_title, **kwargs):
 
     # check if cluster is ready
     cluster_data = ctx.cluster_manager.get(id=project_id)
-    cluster = ctx.cluster_manager.select(cluster_data=cluster_data)
-    if not cluster:
-        console.error("The project cluster does not exist.")
+
+    if not cluster_data.name:
+        console.error("The project cluster does not exist. Please be sure to run 'unikube project up' first.")
         return None
+
+    cluster = ctx.cluster_manager.select(cluster_data=cluster_data)
 
     # check if kubernetes cluster is running/ready
     if not cluster.ready():
