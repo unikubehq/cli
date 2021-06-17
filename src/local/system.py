@@ -147,7 +147,6 @@ class Docker(CMDWrapper):
             arguments = arguments + ["-f", dockerfile]
 
         process = self._execute(arguments)
-        process = process
 
         if process.returncode == 0:
             return True, ""

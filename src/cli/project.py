@@ -1,4 +1,5 @@
 import re
+import sys
 
 import click
 import click_spinner
@@ -316,7 +317,7 @@ def up(ctx, project_title, organization, ingress, provider, workers, **kwargs):
 
     if not cluster.exists():
         console.info(f"Kubernetes cluster for '{cluster.display_name}' does not exist, creating it now.")
-        with click_spinner.spinner():
+        with click_spinner.spinner(beep=False, disable=False, force=False, stream=sys.stdout):
             success = cluster.create(
                 ingress_port=ingress,
                 workers=workers,
@@ -330,7 +331,7 @@ def up(ctx, project_title, organization, ingress, provider, workers, **kwargs):
 
         else:
             console.info(f"Kubernetes cluster for '{cluster.display_name}' already exists, starting it now.")
-            with click_spinner.spinner():
+            with click_spinner.spinner(beep=False, disable=False, force=False, stream=sys.stdout):
                 success = cluster.start()
 
     # console
