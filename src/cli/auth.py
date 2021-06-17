@@ -1,7 +1,12 @@
+import webbrowser
 from getpass import getpass
 
 import click
 import jwt
+
+from oic import rndstr
+from oic.oic import Client
+from oic.utils.authn.client import CLIENT_AUTHN_METHOD
 
 import src.cli.console as console
 from src import settings
@@ -15,27 +20,22 @@ def login(ctx, email, password, **kwargs):
     """
     Authenticate with a Unikube host.
     """
+    if email or password:
+        if not email:
+            email = click.prompt("email", type=str)
+        if not password:
+            password = getpass("password:")
+        return password_flow(ctx, email, password)
+    return web_flow(ctx)
 
-    # email
-    if not email:
-        email = click.prompt("email", type=str)
-
-    # password
-    if not password:
-        password = getpass("password:")
-
+def password_flow(ctx, email, password):
     response = ctx.auth.login(
         email,
         password,
     )
     if response["success"]:
         try:
-            token = jwt.decode(
-                response["response"]["access_token"],
-                algorithms=["RS256"],
-                audience=settings.TOKEN_AUDIENCE,
-                options={"verify_signature": False},
-            )
+            token = ctx.auth.token_from_response(response)
         except Exception as e:
             console.debug(e)
             console.debug(response)
@@ -43,13 +43,41 @@ def login(ctx, email, password, **kwargs):
             return False
 
         if token["given_name"]:
-            console.success(f'Login success. Hello {token["given_name"]}!')
+            console.success(f'Login successful. Hello {token["given_name"]}!')
         else:
-            console.success("Login success.")
-
+            console.success("Login successful.")
     else:
-        console.error("Login failed. Please check your e-mail or re-enter your password.")
+        console.error("Login failed. Please check email and password.")
+    return True
 
+
+def web_flow(ctx):
+    client = Client(client_authn_method=CLIENT_AUTHN_METHOD)
+    issuer = f"{settings.AUTH_DEFAULT_HOST}/auth/realms/unikube"
+    provider_info = client.provider_config(issuer)
+
+    state = rndstr()
+    nonce = rndstr()
+
+    # 1. run callback server
+    from src.authentication.web import run_callback_server
+    port = run_callback_server(state, nonce, client, ctx)
+
+    # 2. send to login with redirect url.
+    args = {
+        "client_id": "cli",
+        "response_type": ["token"],
+        "response_mode": "form_post",
+        "scope": ["openid"],
+        "nonce": nonce,
+        "state": state,
+        "redirect_uri": f"http://localhost:{port}",
+    }
+
+    auth_req = client.construct_AuthorizationRequest(request_args=args)
+    login_url = auth_req.request(client.authorization_endpoint)
+    click.echo(f"If your Browser does not open automatically, go to the following URL and login:\n{login_url}")
+    webbrowser.open_new_tab(login_url)
     return True
 
 

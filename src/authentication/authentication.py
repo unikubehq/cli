@@ -1,5 +1,6 @@
 from urllib.parse import urljoin
 
+import jwt
 import requests
 
 import src.cli.console as console
@@ -64,7 +65,7 @@ class TokenAuthentication(IAuthentication):
         except Exception:
             return settings.AUTH_DEFAULT_HOST
 
-    def _get_requesting_party_token(self, response_token):
+    def _get_requesting_party_token(self, access_token):
         # requesting party token (RPT)
         response = self.__request(
             url=self.url_login,
@@ -72,7 +73,8 @@ class TokenAuthentication(IAuthentication):
                 "audience": self.requesting_party_token_audience,
                 "grant_type": "urn:ietf:params:oauth:grant-type:uma-ticket",
             },
-            headers={"Authorization": f'Bearer {response_token["response"]["access_token"]}'},
+
+            headers={"Authorization": f'Bearer {access_token}'},
             message_exception="Could not establish a server connection.",
             message_200="",
             message_400="Wrong user credentials or account does not exist.",
@@ -120,7 +122,7 @@ class TokenAuthentication(IAuthentication):
             return response_token
 
         # requesting party token (RPT)
-        response_RPT = self._get_requesting_party_token(response_token)
+        response_RPT = self._get_requesting_party_token(response_token["response"]["access_token"])
 
         # select response
         if response_RPT["success"]:
@@ -180,7 +182,7 @@ class TokenAuthentication(IAuthentication):
             return response_token
 
         # requesting party token (RPT)
-        response_RPT = self._get_requesting_party_token(response_token)
+        response_RPT = self._get_requesting_party_token(response_token["response"]["access_token"])
 
         # select response
         if response_RPT["success"]:
@@ -270,6 +272,15 @@ class TokenAuthentication(IAuthentication):
             "message": message,
             "response": response,
         }
+
+    def token_from_response(self, response):
+        token = jwt.decode(
+            response["response"]["access_token"],
+            algorithms=["RS256"],
+            audience=settings.TOKEN_AUDIENCE,
+            options={"verify_signature": False},
+        )
+        return token
 
 
 def get_authentication():
