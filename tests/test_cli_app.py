@@ -6,10 +6,12 @@ from unikube import ClickContext
 from unittest.mock import patch
 
 
-def test_shell_cluster_not_found():
+def check():
+    """Function used to mock check function"""
+    pass
 
-    def check():
-        pass
+
+def test_shell_cluster_not_found():
 
     runner = CliRunner()
     obj = ClickContext()
@@ -23,9 +25,6 @@ def test_shell_cluster_not_found():
 
 
 def test_shell_no_cluster_running():
-
-    def check():
-        pass
 
     runner = CliRunner()
     obj = ClickContext()
