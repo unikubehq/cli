@@ -27,7 +27,7 @@ setup(
         "inquirer~=2.7.0",
         "tabulate~=0.8.7",
         "pydantic~=1.7.3",
-        "pyyaml~=5.3.1",
+        "pyyaml>=5.4",
         "tinydb~=3.15.2",
         "requests~=2.25.1",
         "pyjwt[crypto]~=2.0.1",
