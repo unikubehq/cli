@@ -73,8 +73,7 @@ class TokenAuthentication(IAuthentication):
                 "audience": self.requesting_party_token_audience,
                 "grant_type": "urn:ietf:params:oauth:grant-type:uma-ticket",
             },
-
-            headers={"Authorization": f'Bearer {access_token}'},
+            headers={"Authorization": f"Bearer {access_token}"},
             message_exception="Could not establish a server connection.",
             message_200="",
             message_400="Wrong user credentials or account does not exist.",

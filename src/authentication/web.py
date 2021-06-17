@@ -2,11 +2,12 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from socket import AF_INET, SOCK_STREAM, gethostbyname, socket
 from threading import Thread
 from urllib.parse import parse_qs
-from oic.oic import Client, AccessTokenResponse, AuthorizationResponse
+
+from oic.oic import AccessTokenResponse, AuthorizationResponse, Client
 
 from src.authentication.types import AuthenticationData
-from src.context import ClickContext
 from src.cli import console
+from src.context import ClickContext
 
 CALLBACK_PORT_RANGE = range(44444, 44448)
 
@@ -23,7 +24,6 @@ def get_callback_port() -> int:
     return port
 
 
-
 def run_callback_server(state: str, nonce: str, client: Client, ctx: ClickContext) -> int:
     class CallbackHandler(BaseHTTPRequestHandler):
         """
@@ -33,7 +33,7 @@ def run_callback_server(state: str, nonce: str, client: Client, ctx: ClickContex
         """
 
         def get_post_data(self) -> dict:
-            post_body = self.rfile.read(int(self.headers.get('content-length', 0)))
+            post_body = self.rfile.read(int(self.headers.get("content-length", 0)))
             return {k.decode(): v[0].decode() for k, v in parse_qs(post_body).items()}
 
         def send_text_response(self, response_body):
@@ -54,8 +54,10 @@ def run_callback_server(state: str, nonce: str, client: Client, ctx: ClickContex
             # select response
             if not response["success"]:
                 console.error("Login failed!")
-                text = "Login failed! Could not retrieve requesting party token. " \
-                       "Please try again or contact your System administrator"
+                text = (
+                    "Login failed! Could not retrieve requesting party token. "
+                    "Please try again or contact your System administrator"
+                )
             else:
                 try:
                     token = ctx.auth.token_from_response(response)
@@ -75,7 +77,7 @@ def run_callback_server(state: str, nonce: str, client: Client, ctx: ClickContex
                     if given_name := token.get("given_name", ""):
                         text = f"Hello {given_name}! "
                     else:
-                        text = f"Hello! "
+                        text = "Hello! "
                     console.success(f"{text} You are now logged in!")
                     text += "You have successfully logged in. You can close this browser tab and return to the shell."
             response_body = text.encode("utf-8")
@@ -86,4 +88,3 @@ def run_callback_server(state: str, nonce: str, client: Client, ctx: ClickContex
     server = HTTPServer(("", port), CallbackHandler)
     Thread(target=server.serve_forever).start()
     return port
-

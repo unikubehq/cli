@@ -3,7 +3,6 @@ from getpass import getpass
 
 import click
 import jwt
-
 from oic import rndstr
 from oic.oic import Client
 from oic.utils.authn.client import CLIENT_AUTHN_METHOD
@@ -27,6 +26,7 @@ def login(ctx, email, password, **kwargs):
             password = getpass("password:")
         return password_flow(ctx, email, password)
     return web_flow(ctx)
+
 
 def password_flow(ctx, email, password):
     response = ctx.auth.login(
@@ -54,13 +54,14 @@ def password_flow(ctx, email, password):
 def web_flow(ctx):
     client = Client(client_authn_method=CLIENT_AUTHN_METHOD)
     issuer = f"{settings.AUTH_DEFAULT_HOST}/auth/realms/unikube"
-    provider_info = client.provider_config(issuer)
+    client.provider_config(issuer)
 
     state = rndstr()
     nonce = rndstr()
 
     # 1. run callback server
     from src.authentication.web import run_callback_server
+
     port = run_callback_server(state, nonce, client, ctx)
 
     # 2. send to login with redirect url.
