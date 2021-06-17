@@ -35,6 +35,7 @@ setup(
         "semantic-version~=2.8.4",
         "kubernetes>=11.0.0",
         "retrying~=1.3.3",
+        "oic==1.2.1",
     ],
     python_requires="~=3.7",
     packages=find_packages(),
