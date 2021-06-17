@@ -8,6 +8,7 @@ This is the command line interface for [unikube][link_unikube].
 --------------------------------------------------------------------------------
 ![Build Status](https://github.com/unikubehq/cli/actions/workflows/python-app.yaml/badge.svg)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=unikubehq_cli&metric=alert_status)](https://sonarcloud.io/dashboard?id=unikubehq_cli)
+[![Coverage Status](https://coveralls.io/repos/github/unikubehq/cli/badge.svg?branch=main)](https://coveralls.io/github/unikubehq/cli?branch=main)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 ## Documentation
