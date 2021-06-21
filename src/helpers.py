@@ -1,3 +1,4 @@
+import sys
 from urllib.parse import urljoin
 
 import click_spinner
@@ -17,7 +18,7 @@ def download_specs(access_token: str, environment_id: str):
     session = get_requests_session(access_token=access_token)
 
     manifest_url = urljoin(settings.MANIFEST_DEFAULT_HOST, environment_id)
-    with click_spinner.spinner():
+    with click_spinner.spinner(beep=False, disable=False, force=False, stream=sys.stdout):
         r = session.get(manifest_url)
     r.raise_for_status()
 
