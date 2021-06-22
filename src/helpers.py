@@ -7,6 +7,7 @@ from requests import HTTPError, Session
 
 from src import settings
 from src.cli import console
+from src.graphql import EnvironmentType
 
 
 def get_requests_session(access_token) -> Session:
@@ -49,3 +50,20 @@ def download_manifest(deck, access_token):
             exit(1)
 
     return manifest
+
+
+# environment
+def environment_type_from_string(environment_type: str):
+    try:
+        environment_type = EnvironmentType(environment_type)
+    except Exception as e:
+        console.debug(e)
+        environment_type = None
+
+
+def check_environment_type_local_or_exit(deck: dict, environment_index: int = 0):
+    if (
+        environment_type_from_string(environment_type=deck["environment"][environment_index]["type"])
+        != EnvironmentType.LOCAL
+    ):
+        console.error_and_exit("This deck cannot be installed locally.")

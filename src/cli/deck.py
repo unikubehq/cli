@@ -4,7 +4,7 @@ import src.cli.console as console
 from src.cli.app import get_deck_from_arguments
 from src.cli.console.logger import LogLevel, color_mapping
 from src.graphql import EnvironmentType, GraphQL
-from src.helpers import download_manifest
+from src.helpers import check_environment_type_local_or_exit, download_manifest, environment_type_from_string
 from src.local.system import KubeAPI, KubeCtl
 from src.storage.user import get_local_storage_user
 
@@ -320,16 +320,8 @@ def install(ctx, deck_title, **kwargs):
         console.error(f"Kubernetes cluster for '{cluster.display_name}' is not running.")
         exit(1)
 
-    # check cluster level
-    try:
-        environment = EnvironmentType(deck["environment"][0]["type"])
-    except Exception as e:
-        console.debug(e)
-        environment = None
-
-    if environment != EnvironmentType.LOCAL:
-        console.error("This deck cannot be installed locally.")
-        exit(1)
+    # check environment type
+    check_environment_type_local_or_exit(deck=deck)
 
     # download manifest
     general_data = ctx.storage_general.get()
@@ -399,16 +391,8 @@ def uninstall(ctx, deck_title, **kwargs):
         console.error(f"Kubernetes cluster for '{cluster.display_name}' is not running.")
         exit(1)
 
-    # check cluster level
-    try:
-        environment = EnvironmentType(deck["environment"][0]["type"])
-    except Exception as e:
-        console.debug(e)
-        environment = None
-
-    if environment != EnvironmentType.LOCAL:
-        console.error("This deck cannot be installed locally.")
-        exit(1)
+    # check environment type
+    check_environment_type_local_or_exit(deck=deck)
 
     # download manifest
     general_data = ctx.storage_general.get()
