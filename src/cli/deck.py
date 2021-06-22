@@ -82,6 +82,20 @@ def get_install_uninstall_arguments(ctx, deck_title: str):
     return deck_selected
 
 
+def get_cluster(ctx, deck: dict):
+    cluster_data = ctx.cluster_manager.get(id=deck["project"]["id"])
+    if not cluster_data.name:
+        console.error_and_exit("The project cluster does not exist. Please be sure to run 'unikube project up' first.")
+
+    cluster = ctx.cluster_manager.select(cluster_data=cluster_data)
+
+    # check if kubernetes cluster is running/ready
+    if not cluster.ready():
+        console.error_and_exit(f"Kubernetes cluster for '{cluster.display_name}' is not running.")
+
+    return cluster
+
+
 @click.command()
 @click.option("--organization", "-o", help="Select an organization")
 @click.option("--project", "-p", help="Select a project")
@@ -306,19 +320,8 @@ def install(ctx, deck_title, **kwargs):
 
     deck = get_install_uninstall_arguments(ctx=ctx, deck_title=deck_title)
 
-    # check if cluster is ready
-    cluster_data = ctx.cluster_manager.get(id=deck["project"]["id"])
-
-    if not cluster_data.name:
-        console.error("The project cluster does not exist. Please be sure to run 'unikube project up' first.")
-        exit(1)
-
-    cluster = ctx.cluster_manager.select(cluster_data=cluster_data)
-
-    # check if kubernetes cluster is running/ready
-    if not cluster.ready():
-        console.error(f"Kubernetes cluster for '{cluster.display_name}' is not running.")
-        exit(1)
+    # cluster
+    cluster = get_cluster(ctx=ctx, deck=deck)
 
     # check environment type
     check_environment_type_local_or_exit(deck=deck)
@@ -334,7 +337,7 @@ def install(ctx, deck_title, **kwargs):
     kubectl.create_namespace(namespace)
     with click.progressbar(
         manifest,
-        label="[Info] Installing Kubernetes resources to the cluster.",
+        label="[INFO] Installing Kubernetes resources to the cluster.",
     ) as files:
         for file in files:
             kubectl.apply_str(namespace, file["content"])
@@ -377,19 +380,8 @@ def uninstall(ctx, deck_title, **kwargs):
 
     deck = get_install_uninstall_arguments(ctx=ctx, deck_title=deck_title)
 
-    # check if cluster is ready
-    cluster_data = ctx.cluster_manager.get(id=deck["project"]["id"])
-
-    if not cluster_data.name:
-        console.error("The project cluster does not exist. Please be sure to run 'unikube project up' first.")
-        exit(1)
-
-    cluster = ctx.cluster_manager.select(cluster_data=cluster_data)
-
-    # check if kubernetes cluster is running/ready
-    if not cluster.ready():
-        console.error(f"Kubernetes cluster for '{cluster.display_name}' is not running.")
-        exit(1)
+    # cluster
+    cluster = get_cluster(ctx=ctx, deck=deck)
 
     # check environment type
     check_environment_type_local_or_exit(deck=deck)
@@ -402,10 +394,9 @@ def uninstall(ctx, deck_title, **kwargs):
     provider_data = cluster.storage.get()
     kubectl = KubeCtl(provider_data=provider_data)
     namespace = deck["namespace"]
-    kubectl.create_namespace(namespace)
     with click.progressbar(
         manifest,
-        label="[Info] Deleting Kubernetes resources.",
+        label="[INFO] Deleting Kubernetes resources.",
     ) as files:
         for file in files:
             kubectl.delete_str(namespace, file["content"])
