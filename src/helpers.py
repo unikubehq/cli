@@ -21,16 +21,16 @@ def download_specs(access_token: str, environment_id: str):
 
     manifest_url = urljoin(settings.MANIFEST_DEFAULT_HOST, environment_id)
     with click_spinner.spinner(beep=False, disable=False, force=False, stream=sys.stdout):
-        r = session.get(manifest_url)
-    r.raise_for_status()
+        response = session.get(manifest_url)
+    response.raise_for_status()
 
-    manifest = r.json()
+    manifest = response.json()
     return manifest
 
 
-def download_manifest(deck, access_token):
+def download_manifest(deck: dict, access_token: str, environment_index: int = 0):
     try:
-        environment_id = deck["environment"][0]["id"]
+        environment_id = deck["environment"][environment_index]["id"]
         console.info("Requesting manifests. This process may takes a few seconds.")
         manifest = download_specs(
             access_token=access_token,
@@ -46,8 +46,7 @@ def download_manifest(deck, access_token):
             )
             exit(1)
         else:
-            console.error("Could not load manifest: " + str(e))
-            exit(1)
+            console.error_and_exit("Could not load manifest: " + str(e))
 
     return manifest
 
