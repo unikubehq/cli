@@ -33,7 +33,7 @@ color_mapping = {
 
 
 # helper
-def _click_secho(msg, silent, log_level=None, **kwargs):
+def _click_secho(msg: str, silent: bool, log_level: str = None, _exit: bool = False, _exit_code: int = 1, **kwargs):
     # get log level settings and console mapping
     setting_log_level = LogLevel(settings.CLI_LOG_LEVEL.lower())
     console_log_level = log_level_mapping.get(log_level, None)
@@ -56,30 +56,31 @@ def _click_secho(msg, silent, log_level=None, **kwargs):
     # console echo
     click.secho(f"[{log_level.value.upper()}] {msg}", fg=fg, **kwargs)
 
-
-# console output
-def debug(msg, silent=False, **kwargs):
-    _click_secho(msg, silent, log_level=LogLevel.DEBUG, **kwargs)
-
-
-def info(msg, silent=False, **kwargs):
-    _click_secho(msg, silent, log_level=LogLevel.INFO, **kwargs)
-
-
-def warning(msg, silent=False, **kwargs):
-    _click_secho(msg, silent, log_level=LogLevel.WARNING, **kwargs)
-
-
-def error(msg, _exit: bool = False, _exit_code: int = 1, **kwargs):
-    _click_secho(msg, silent=False, log_level=LogLevel.ERROR, **kwargs)
-
+    # exit
     if _exit:
         exit(_exit_code)
 
 
-def error_and_exit(msg, _exit_code: int = 1, **kwargs):
+# console output
+def debug(msg: str, silent: bool = False, **kwargs):
+    _click_secho(msg, silent, log_level=LogLevel.DEBUG, **kwargs)
+
+
+def info(msg: str, silent: bool = False, _exit: bool = False, _exit_code: int = 1, **kwargs):
+    _click_secho(msg=msg, silent=silent, log_level=LogLevel.INFO, _exit=_exit, _exit_code=_exit_code, **kwargs)
+
+
+def warning(msg: str, silent: bool = False, _exit: bool = False, _exit_code: int = 1, **kwargs):
+    _click_secho(msg=msg, silent=silent, log_level=LogLevel.WARNING, _exit=_exit, _exit_code=_exit_code, **kwargs)
+
+
+def error(msg: str, _exit: bool = False, _exit_code: int = 1, **kwargs):
+    _click_secho(msg=msg, silent=False, log_level=LogLevel.ERROR, _exit=_exit, _exit_code=_exit_code, **kwargs)
+
+
+def error_and_exit(msg: str, _exit_code: int = 1, **kwargs):
     error(msg, _exit=True, _exit_code=_exit_code, **kwargs)
 
 
-def success(msg, silent=False, **kwargs):
-    _click_secho(msg, silent, log_level=LogLevel.SUCCESS, **kwargs)
+def success(msg: str, silent: bool = False, **kwargs):
+    _click_secho(msg=msg, silent=silent, log_level=LogLevel.SUCCESS, **kwargs)
