@@ -5,6 +5,7 @@ from src.cli.app import get_deck_from_arguments
 from src.cli.console.logger import LogLevel, color_mapping
 from src.graphql import EnvironmentType, GraphQL
 from src.helpers import check_environment_type_local_or_exit, download_manifest, environment_type_from_string
+from src.local.providers.helper import get_cluster_or_exit
 from src.local.system import KubeAPI, KubeCtl
 from src.storage.user import get_local_storage_user
 
@@ -416,14 +417,8 @@ def logs(ctx, project_title, deck_title, **kwargs):
 
     project_id, project_title, deck = get_deck_from_arguments(ctx, project_title, deck_title)
 
-    ## logs
-    # check if cluster is ready
-    cluster_data = ctx.cluster_manager.get(id=project_id)
-    cluster = ctx.cluster_manager.select(cluster_data=cluster_data)
-    if not cluster:
-        console.error("The project cluster does not exist.")
-        return None
-
+    # get cluster
+    cluster = get_cluster_or_exit(ctx, project_id)
     provider_data = cluster.storage.get()
 
     # log

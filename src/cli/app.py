@@ -7,6 +7,7 @@ import click_spinner
 from src import settings
 from src.cli import console
 from src.graphql import GraphQL
+from src.local.providers.helper import get_cluster_or_exit
 from src.local.system import Docker, KubeAPI, KubeCtl, Telepresence
 from src.settings import UNIKUBE_FILE
 from src.unikubefile.selector import unikube_file_selector
@@ -109,13 +110,8 @@ def list(ctx, project_title, deck_title, **kwargs):
 
     project_id, project_title, deck = get_deck_from_arguments(ctx, project_title, deck_title)
 
-    # check if cluster is ready
-    cluster_data = ctx.cluster_manager.get(id=project_id)
-    cluster = ctx.cluster_manager.select(cluster_data=cluster_data)
-    if not cluster:
-        console.error("The project cluster does not exist.")
-        return None
-
+    # get cluster
+    cluster = get_cluster_or_exit(ctx, project_id)
     provider_data = cluster.storage.get()
 
     # list
@@ -146,14 +142,8 @@ def shell(ctx, project_title, deck_title, pod_title, **kwargs):
 
     project_id, project_title, deck = get_deck_from_arguments(ctx, project_title, deck_title)
 
-    ## shell
-    # check if cluster is ready
-    cluster_data = ctx.cluster_manager.get(id=project_id)
-    cluster = ctx.cluster_manager.select(cluster_data=cluster_data)
-    if not cluster:
-        console.error("The project cluster does not exist.")
-        return None
-
+    # get cluster
+    cluster = get_cluster_or_exit(ctx, project_id)
     provider_data = cluster.storage.get()
 
     # shell
@@ -221,13 +211,8 @@ def switch(ctx, project_title, deck_title, deployment, image, unikubefile, **kwa
 
     project_id, project_title, deck = get_deck_from_arguments(ctx, project_title, deck_title)
 
-    ## switch
-    # check if cluster is ready
-    cluster_data = ctx.cluster_manager.get(id=project_id)
-    cluster = ctx.cluster_manager.select(cluster_data=cluster_data)
-    if not cluster:
-        console.error("The project cluster does not exist.")
-        return None
+    # get cluster
+    cluster = get_cluster_or_exit(ctx, project_id)
 
     # unikube file input
     if unikubefile:
@@ -349,14 +334,8 @@ def logs(ctx, project_title, deck_title, pod_title, follow=False, **kwargs):
 
     project_id, project_title, deck = get_deck_from_arguments(ctx, project_title, deck_title)
 
-    ## logs
-    # check if cluster is ready
-    cluster_data = ctx.cluster_manager.get(id=project_id)
-    cluster = ctx.cluster_manager.select(cluster_data=cluster_data)
-    if not cluster:
-        console.error("The project cluster does not exist.")
-        return None
-
+    # get cluster
+    cluster = get_cluster_or_exit(ctx, project_id)
     provider_data = cluster.storage.get()
 
     # log
