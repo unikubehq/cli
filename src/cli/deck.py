@@ -70,8 +70,7 @@ def get_install_uninstall_arguments(ctx, deck_title: str):
     # check access to the deck
     deck_title_list = [deck["title"] for deck in deck_list]
     if deck_title not in deck_title_list:
-        console.error(f"The deck '{deck_title}' could not be found.")
-        exit(1)
+        console.error(f"The deck '{deck_title}' could not be found.", _exit=True)
 
     # get deck
     deck_selected = None
@@ -86,13 +85,15 @@ def get_install_uninstall_arguments(ctx, deck_title: str):
 def get_cluster(ctx, deck: dict):
     cluster_data = ctx.cluster_manager.get(id=deck["project"]["id"])
     if not cluster_data.name:
-        console.error_and_exit("The project cluster does not exist. Please be sure to run 'unikube project up' first.")
+        console.error(
+            "The project cluster does not exist. Please be sure to run 'unikube project up' first.", _exit=True
+        )
 
     cluster = ctx.cluster_manager.select(cluster_data=cluster_data)
 
     # check if kubernetes cluster is running/ready
     if not cluster.ready():
-        console.error_and_exit(f"Kubernetes cluster for '{cluster.display_name}' is not running.")
+        console.error(f"Kubernetes cluster for '{cluster.display_name}' is not running.", _exit=True)
 
     return cluster
 

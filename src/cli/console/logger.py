@@ -78,9 +78,5 @@ def error(msg: str, _exit: bool = False, _exit_code: int = 1, **kwargs):
     _click_secho(msg=msg, silent=False, log_level=LogLevel.ERROR, _exit=_exit, _exit_code=_exit_code, **kwargs)
 
 
-def error_and_exit(msg: str, _exit_code: int = 1, **kwargs):
-    error(msg, _exit=True, _exit_code=_exit_code, **kwargs)
-
-
 def success(msg: str, silent: bool = False, **kwargs):
     _click_secho(msg=msg, silent=silent, log_level=LogLevel.SUCCESS, **kwargs)

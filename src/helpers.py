@@ -46,7 +46,7 @@ def download_manifest(deck: dict, access_token: str, environment_index: int = 0)
             )
             exit(1)
         else:
-            console.error_and_exit("Could not load manifest: " + str(e))
+            console.error("Could not load manifest: " + str(e), _exit=True)
 
     return manifest
 
@@ -65,4 +65,4 @@ def check_environment_type_local_or_exit(deck: dict, environment_index: int = 0)
         environment_type_from_string(environment_type=deck["environment"][environment_index]["type"])
         != EnvironmentType.LOCAL
     ):
-        console.error_and_exit("This deck cannot be installed locally.")
+        console.error("This deck cannot be installed locally.", _exit=True)
