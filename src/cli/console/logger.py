@@ -70,12 +70,15 @@ def warning(msg, silent=False, **kwargs):
     _click_secho(msg, silent, log_level=LogLevel.WARNING, **kwargs)
 
 
-def error(msg, _exit: bool = False, **kwargs):
+def error(msg, _exit: bool = False, _exit_code: int = 1, **kwargs):
     _click_secho(msg, silent=False, log_level=LogLevel.ERROR, **kwargs)
 
-    # exit
     if _exit:
-        exit(1)
+        exit(_exit_code)
+
+
+def error_and_exit(msg, _exit_code: int = 1, **kwargs):
+    error(msg, _exit=True, _exit_code=_exit_code, **kwargs)
 
 
 def success(msg, silent=False, **kwargs):
