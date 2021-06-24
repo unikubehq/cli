@@ -88,6 +88,10 @@ class KubeCtl(CMDWrapper):
         arguments = ["apply", "--namespace", namespace, "-f", "-"]
         self._execute(arguments, text)
 
+    def delete_str(self, namespace, text: str):
+        arguments = ["delete", "--namespace", namespace, "-f", "-"]
+        self._execute(arguments, text)
+
     def get_ingress_data(self, namespace):
         arguments = ["get", "ingress", "--namespace", namespace]
         process = self._execute(arguments)
