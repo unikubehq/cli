@@ -99,8 +99,29 @@ def get_deck_from_arguments(ctx, project_title: str, deck_title: str):
 
 
 @click.command()
-def list(**kwargs):
-    raise NotImplementedError
+@click.argument("project_title", required=False)
+@click.argument("deck_title", required=False)
+@click.pass_obj
+def list(ctx, project_title, deck_title, **kwargs):
+    """List all apps/pods."""
+
+    ctx.auth.check()
+
+    project_id, project_title, deck = get_deck_from_arguments(ctx, project_title, deck_title)
+
+    # check if cluster is ready
+    cluster_data = ctx.cluster_manager.get(id=project_id)
+    cluster = ctx.cluster_manager.select(cluster_data=cluster_data)
+    if not cluster:
+        console.error("The project cluster does not exist.")
+        return None
+
+    provider_data = cluster.storage.get()
+
+    # list
+    k8s = KubeAPI(provider_data, deck)
+    pod_table = [{"id": pod.metadata.uid, "name": pod.metadata.name} for pod in k8s.get_pods().items]
+    console.table(data=pod_table)
 
 
 @click.command()
