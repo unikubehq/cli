@@ -409,18 +409,18 @@ def uninstall(ctx, deck_title, **kwargs):
 
 
 @click.command()
-@click.argument("project_title", required=False)
-@click.argument("deck_title", required=False)
+@click.option("--organization", "-o", help="Select an organization")
+@click.option("--project", "-p", help="Select a project")
+@click.option("--deck", "-d", help="Select a deck")
 @click.pass_obj
-def logs(ctx, project_title, deck_title, **kwargs):
+def logs(ctx, organization=None, project=None, deck=None, **kwargs):
     """Display the container's logs"""
 
     ctx.auth.check()
-
-    project_id, project_title, deck = get_deck_from_arguments(ctx, project_title, deck_title)
+    cluster_data, deck = get_deck_from_arguments(ctx, organization, project, deck)
 
     # get cluster
-    cluster = get_cluster_or_exit(ctx, project_id)
+    cluster = get_cluster_or_exit(ctx, cluster_data.id)
     provider_data = cluster.storage.get()
 
     # log
