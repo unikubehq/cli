@@ -59,6 +59,8 @@ def environment_type_from_string(environment_type: str):
         console.debug(e)
         environment_type = None
 
+    return environment_type
+
 
 def check_environment_type_local_or_exit(deck: dict, environment_index: int = 0):
     if (
