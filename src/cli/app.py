@@ -31,9 +31,10 @@ def get_deck_from_arguments(ctx, organization_id: str, project_id: str, deck_id:
             message_no_choices="No cluster is running.",
             choices=cluster_choices,
         )
-        project_id = re.search(r"\((.*?)\)", project_selected).group(1)
         if project_id is None:
             console.exit_generic_error()
+
+        project_id = re.search(r"\((.*?)\)", project_selected).group(1)
 
     # check if project is in local storage
     if project_id not in cluster_choices_ids:
@@ -80,9 +81,10 @@ def get_deck_from_arguments(ctx, organization_id: str, project_id: str, deck_id:
             message_no_choices="No deck found.",
             choices=deck_choices,
         )
-        deck_id = re.search(r"\((.*?)\)", deck_selected).group(1)
         if deck_id is None:
             console.exit_generic_error()
+
+        deck_id = re.search(r"\((.*?)\)", deck_selected).group(1)
 
     # check if deck exists
     if deck_id not in deck_choices_ids:
@@ -158,8 +160,12 @@ def shell(ctx, app, organization=None, project=None, deck=None, **kwargs):
             message="Please select a pod",
             choices=app_choices,
         )
+
     if not app:
         console.error("No pods available.", _exit=True)
+
+    if app not in [pod.metadata.name for pod in k8s.get_pods().items]:
+        console.error("App does not exist.", _exit=True)
 
     # get the data of the selected pod
     data = k8s.get_pod(app)
