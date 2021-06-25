@@ -99,6 +99,23 @@ def get_deck_from_arguments(ctx, organization_id: str, project_id: str, deck_id:
     return cluster_data, deck
 
 
+def argument_app(k8s, app: str):
+    if not app:
+        app_choices = [pod.metadata.name for pod in k8s.get_pods().items]
+        app = console.list(
+            message="Please select an app",
+            choices=app_choices,
+        )
+
+    if not app:
+        console.error("No apps available.", _exit=True)
+
+    if app not in [pod.metadata.name for pod in k8s.get_pods().items]:
+        console.error("App does not exist.", _exit=True)
+
+    return app
+
+
 @click.command()
 @click.option("--organization", "-o", help="Select an organization")
 @click.option("--project", "-p", help="Select a project")
@@ -153,19 +170,7 @@ def shell(ctx, app, organization=None, project=None, deck=None, **kwargs):
 
     # shell
     k8s = KubeAPI(provider_data, deck)
-
-    if not app:
-        app_choices = [pod.metadata.name for pod in k8s.get_pods().items]
-        app = console.list(
-            message="Please select a pod",
-            choices=app_choices,
-        )
-
-    if not app:
-        console.error("No pods available.", _exit=True)
-
-    if app not in [pod.metadata.name for pod in k8s.get_pods().items]:
-        console.error("App does not exist.", _exit=True)
+    app = argument_app(k8s, app)
 
     # get the data of the selected pod
     data = k8s.get_pod(app)
@@ -349,15 +354,7 @@ def logs(ctx, app, organization=None, project=None, deck=None, follow=False, **k
 
     # log
     k8s = KubeAPI(provider_data, deck)
-
-    if not app:
-        app_choices = [pod.metadata.name for pod in k8s.get_pods().items]
-        app = console.list(
-            message="Please select a pod",
-            choices=app_choices,
-        )
-    if not app:
-        console.error("No pods available.", _exit=True)
+    app = argument_app(k8s, app)
 
     logs = k8s.get_logs(app, follow)
 
