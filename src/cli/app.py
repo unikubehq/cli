@@ -55,7 +55,9 @@ def get_deck_from_arguments(ctx, organization_id: str, project_id: str, deck_id:
                     results {
                         id
                         title
-                        namespace
+                        environment {
+                            namespace
+                        }
                     }
                 }
             }

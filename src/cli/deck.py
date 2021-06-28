@@ -321,7 +321,6 @@ def install(ctx, deck_title, **kwargs):
     """
 
     deck = get_install_uninstall_arguments(ctx=ctx, deck_title=deck_title)
-    print(deck)
 
     # cluster
     cluster = get_cluster(ctx=ctx, deck=deck)
