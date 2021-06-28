@@ -22,11 +22,11 @@ def get_install_uninstall_arguments(ctx, deck_title: str):
                     results {
                         id
                         title
-                        namespace
                         environment {
                             id
                             type
                             valuesPath
+                            namespace
                         }
                         project {
                             id
@@ -336,7 +336,7 @@ def install(ctx, deck_title, **kwargs):
     # KubeCtl
     provider_data = cluster.storage.get()
     kubectl = KubeCtl(provider_data=provider_data)
-    namespace = deck["namespace"]
+    namespace = deck["environment"][0]["namespace"]
     kubectl.create_namespace(namespace)
     with click.progressbar(
         manifest,
