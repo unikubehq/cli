@@ -267,10 +267,10 @@ def up(ctx, project, organization, ingress, provider, workers, **kwargs):
         # argument from console
         else:
             cluster_list = ctx.cluster_manager.get_cluster_list(ready=True)
-            cluster_title_list = [item.name for item in cluster_list]
+            cluster_id_list = [item.id for item in cluster_list]
 
             project_list_choices = [
-                item["title"] + f"({item['id']})" for item in project_list if item["title"] not in cluster_title_list
+                item["title"] + f"({item['id']})" for item in project_list if item["id"] not in cluster_id_list
             ]
 
             project = console.list(
@@ -345,6 +345,7 @@ def down(ctx, project, **kwargs):
 
     cluster_list = ctx.cluster_manager.get_cluster_list(ready=True)
     cluster_title_list = [item.name + f"({item.id})" for item in cluster_list]
+    # import pdb;pdb.set_trace()
 
     # argument
     if not project:
@@ -352,7 +353,7 @@ def down(ctx, project, **kwargs):
         context = ctx.context.get()
         if context.project_id:
             project_instance = ctx.context.get_project()
-            project = project_instance["title"]
+            project = project_instance["title"] + f"({project_instance['id']})"
 
         # argument from console
         else:
@@ -408,7 +409,7 @@ def delete(ctx, project, **kwargs):
     """Delete the current project and all related data"""
 
     cluster_list = ctx.cluster_manager.get_cluster_list()
-    cluster_title_list = [item.name for item in cluster_list]
+    cluster_title_list = [item.name + f"({item.id})" for item in cluster_list]
 
     # argument
     if not project:
@@ -416,7 +417,7 @@ def delete(ctx, project, **kwargs):
         context = ctx.context.get()
         if context.project_id:
             project_instance = ctx.context.get_project()
-            project = project_instance["title"]
+            project = project_instance["title"] + f"({project_instance['id']})"
 
         # argument from console
         else:
@@ -429,6 +430,10 @@ def delete(ctx, project, **kwargs):
                 return None
 
     project_instance = select_entity_from_cluster_list(cluster_list, project)
+
+    if not project_instance:
+        console.info(f"The project '{project}' could not be found.")
+        return None
 
     # initial warning
     console.warning("Deleting a project will remove the custer including all of its data.")
