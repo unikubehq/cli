@@ -433,7 +433,7 @@ def delete(ctx, project_title, **kwargs):
                 return None
 
     # initial warning
-    console.warning("Deleting a project will remove the custer including all of its data.")
+    console.warning("Deleting a project will remove the cluster including all of its data.")
 
     # confirm question
     confirm = input("Do want to continue [N/y]: ")
