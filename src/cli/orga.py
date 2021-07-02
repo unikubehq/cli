@@ -2,6 +2,7 @@ import click
 
 import src.cli.console as console
 from src.graphql import GraphQL
+from src.helpers import select_entity
 from src.keycloak.permissions import KeycloakPermissions
 from src.storage.user import get_local_storage_user
 
@@ -48,9 +49,9 @@ def list(ctx, **kwargs):
 
 
 @click.command()
-@click.argument("organization_title", required=False)
+@click.argument("organization", required=False)
 @click.pass_obj
-def info(ctx, organization_title, **kwargs):
+def info(ctx, organization, **kwargs):
     """
     Display further information of the selected organization.
     """
@@ -79,28 +80,24 @@ def info(ctx, organization_title, **kwargs):
     organization_list = data["allOrganizations"]["results"]
 
     # argument
-    if not organization_title:
+    if not organization:
         # argument from context
         context = ctx.context.get()
         if context.organization_id:
-            organization = ctx.context.get_organization()
-            organization_title = organization["title"]
+            organization_instance = ctx.context.get_organization()
+            organization = organization_instance["title"] + f"({organization_instance['id']})"
 
         # argument from console
         else:
-            organization_title = console.list(
+            organization = console.list(
                 message="Please select an organization",
-                choices=[organization["title"] for organization in organization_list],
+                choices=[organization["title"] + f"({organization['id']})" for organization in organization_list],
             )
-            if organization_title is None:
+            if organization is None:
                 return None
 
     # select
-    organization_selected = None
-    for organization in organization_list:
-        if organization["title"] == organization_title:
-            organization_selected = organization
-            break
+    organization_selected = select_entity(organization_list, organization)
 
     # console
     if organization_selected:
