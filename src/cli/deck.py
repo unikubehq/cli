@@ -5,7 +5,7 @@ import src.cli.console as console
 from src.cli.app import get_deck_from_arguments
 from src.cli.console.logger import LogLevel, color_mapping
 from src.graphql import EnvironmentType, GraphQL
-from src.helpers import download_specs
+from src.helpers import download_specs, select_entity
 from src.local.system import KubeAPI, KubeCtl
 from src.storage.user import get_local_storage_user
 
@@ -74,9 +74,9 @@ def list(ctx, organization=None, project=None, **kwargs):
 
 
 @click.command()
-@click.argument("deck_name", required=False)
+@click.argument("deck", required=False)
 @click.pass_obj
-def info(ctx, deck_name, **kwargs):
+def info(ctx, deck, **kwargs):
     """
     Display further information of the selected deck.
     """
@@ -106,28 +106,24 @@ def info(ctx, deck_name, **kwargs):
     deck_list = data["allDecks"]["results"]
 
     # argument
-    if not deck_name:
+    if not deck:
         # argument from context
         context = ctx.context.get()
         if context.deck_id:
-            deck = ctx.context.get_deck()
-            deck_name = deck["title"]
+            deck_instance = ctx.context.get_deck()
+            deck = deck_instance["title"] + f"({deck_instance['id']})"
 
         # argument from console
         else:
-            deck_name = console.list(
+            deck = console.list(
                 message="Please select a deck",
-                choices=[deck["title"] for deck in deck_list],
+                choices=[deck["title"] + f"({deck['id']})" for deck in deck_list],
             )
-            if deck_name is None:
+            if deck is None:
                 return None
 
     # select
-    deck_selected = None
-    for deck in deck_list:
-        if deck["title"] == deck_name:
-            deck_selected = deck
-            break
+    deck_selected = select_entity(deck_list, deck)
 
     # console
     if deck_selected:
@@ -223,9 +219,9 @@ def use(ctx, deck_id, remove, **kwargs):
 
 
 @click.command()
-@click.argument("deck_title", required=False)
+@click.argument("deck", required=False)
 @click.pass_obj
-def install(ctx, deck_title, **kwargs):
+def install(ctx, deck, **kwargs):
     """
     Install deck.
     """
@@ -269,41 +265,33 @@ def install(ctx, deck_title, **kwargs):
     deck_list = data["allDecks"]["results"]
 
     # argument
-    if not deck_title:
+    if not deck:
         # argument from context
         context = ctx.context.get()
         if context.deck_id:
-            deck = ctx.context.get_deck()
-            deck_title = deck["title"]
+            deck_instance = ctx.context.get_deck()
+            deck = deck_instance["title"] + f"({deck_instance['id']})"
 
         # argument from console
         else:
-            deck_list_choices = [item["title"] for item in deck_list]
-            deck_title = console.list(
+            deck_list_choices = [item["title"] + f"({item['id']})" for item in deck_list]
+            deck = console.list(
                 message="Please select a deck",
                 choices=deck_list_choices,
             )
-            if deck_title is None:
+            if deck is None:
                 return False
 
-    # check access to the deck
-    deck_title_list = [deck["title"] for deck in deck_list]
-    if deck_title not in deck_title_list:
-        console.info(f"The deck '{deck_title}' could not be found.")
-        return None
-
     # get project_id
-    project_id = None
-    deck = None
-    for deck in deck_list:
-        if deck["title"] == deck_title:
-            project_id = deck["project"]["id"]
-            break
+    deck_instance = select_entity(deck_list, deck)
+    if not deck_instance:
+        console.info(f"The deck '{deck}' could not be found.")
+        return None
+    project_id = deck_instance["project"]["id"]
 
     # check if cluster is ready
     cluster_data = ctx.cluster_manager.get(id=project_id)
-
-    if not cluster_data.name:
+    if not cluster_data.id:
         console.error("The project cluster does not exist. Please be sure to run 'unikube project up' first.")
         return None
 
@@ -316,7 +304,7 @@ def install(ctx, deck_title, **kwargs):
 
     # check cluster level
     try:
-        environment = EnvironmentType(deck["environment"][0]["type"])
+        environment = EnvironmentType(deck_instance["environment"][0]["type"])
     except Exception as e:
         console.debug(e)
         environment = None
@@ -327,7 +315,7 @@ def install(ctx, deck_title, **kwargs):
 
     # download manifest
     try:
-        environment_id = deck["environment"][0]["id"]
+        environment_id = deck_instance["environment"][0]["id"]
         general_data = ctx.storage_general.get()
         console.info("Now requesting manifests. This process may takes a few seconds.")
         all_specs = download_specs(
@@ -351,7 +339,7 @@ def install(ctx, deck_title, **kwargs):
     # KubeCtl
     kubectl = KubeCtl(provider_data=provider_data)
 
-    namespace = deck["namespace"]
+    namespace = deck_instance["namespace"]
     kubectl.create_namespace(namespace)
     with click.progressbar(
         all_specs,
@@ -361,7 +349,7 @@ def install(ctx, deck_title, **kwargs):
             kubectl.apply_str(namespace, file["content"])
     console.info("The cluster is currently applying all changes, this may takes several minutes")
 
-    ingresss = KubeAPI(provider_data, deck).get_ingress()
+    ingresss = KubeAPI(provider_data, deck_instance).get_ingress()
     ingress_data = []
     for ingress in ingresss.items:
         hosts = []
