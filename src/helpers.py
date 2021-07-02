@@ -8,7 +8,6 @@ from requests import HTTPError, Session
 
 import src.cli.console as console
 from src import settings
-from src.cli import console
 from src.graphql import EnvironmentType
 
 
