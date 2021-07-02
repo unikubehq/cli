@@ -7,6 +7,7 @@ import click_spinner
 import src.cli.console as console
 from src import settings
 from src.graphql import GraphQL
+from src.helpers import select_entity, select_entity_from_cluster_list
 from src.keycloak.permissions import KeycloakPermissions
 from src.local.providers.types import K8sProviderType
 from src.storage.user import get_local_storage_user
@@ -68,9 +69,9 @@ def list(ctx, organization, **kwargs):
 
 
 @click.command()
-@click.argument("project_title", required=False)
+@click.argument("project", required=False)
 @click.pass_obj
-def info(ctx, project_title, **kwargs):
+def info(ctx, project, **kwargs):
     """
     Display further information of the selected project.
     """
@@ -100,28 +101,24 @@ def info(ctx, project_title, **kwargs):
     project_list = data["allProjects"]["results"]
 
     # argument
-    if not project_title:
+    if not project:
         # argument from context
         context = ctx.context.get()
         if context.project_id:
-            project = ctx.context.get_project()
-            project_title = project["title"]
+            project_instance = ctx.context.get_project()
+            project = project_instance["title"] + f"({project_instance['id']})"
 
         # argument from console
         else:
-            project_title = console.list(
+            project = console.list(
                 message="Please select a project",
-                choices=[project["title"] for project in project_list],
+                choices=[project["title"] + f"({project['id']})" for project in project_list],
             )
-            if project_title is None:
+            if project is None:
                 return None
 
     # select
-    project_selected = None
-    for project in project_list:
-        if project["title"] == project_title:
-            project_selected = project
-            break
+    project_selected = select_entity(project_list, project)
 
     # console
     if project_selected:
@@ -217,7 +214,7 @@ def use(ctx, project_id, remove, **kwargs):
 
 
 @click.command()
-@click.argument("project_title", required=False)
+@click.argument("project", required=False)
 @click.option("--organization", "-o", help="Select an organization")
 @click.option("--ingress", help="Specify the ingress port for the project", default=None)
 @click.option(
@@ -228,7 +225,7 @@ def use(ctx, project_id, remove, **kwargs):
 )
 @click.option("--workers", help="Specify count of k3d worker nodes", default=1)
 @click.pass_obj
-def up(ctx, project_title, organization, ingress, provider, workers, **kwargs):
+def up(ctx, project, organization, ingress, provider, workers, **kwargs):
     """
     Start/Resume a project cluster.
     """
@@ -260,46 +257,43 @@ def up(ctx, project_title, organization, ingress, provider, workers, **kwargs):
     project_list = data["allProjects"]["results"]
 
     # argument
-    if not project_title:
+    if not project:
         # argument from context
         context = ctx.context.get(organization=organization)
         if context.project_id:
-            project = ctx.context.get_project()
-            project_title = project["title"]
+            project_instance = ctx.context.get_project()
+            project = project_instance["title"] + f"({project_instance['id']})"
 
         # argument from console
         else:
             cluster_list = ctx.cluster_manager.get_cluster_list(ready=True)
             cluster_title_list = [item.name for item in cluster_list]
 
-            project_list_choices = [item["title"] for item in project_list if item["title"] not in cluster_title_list]
+            project_list_choices = [
+                item["title"] + f"({item['id']})" for item in project_list if item["title"] not in cluster_title_list
+            ]
 
-            project_title = console.list(
+            project = console.list(
                 message="Please select a project",
                 choices=project_list_choices,
             )
-            if project_title is None:
+            if project is None:
                 return False
 
-    # check access to the project
-    project_title_list = [project["title"] for project in project_list]
-    if project_title not in project_title_list:
-        console.info(f"The project '{project_title}' could not be found.")
+    project_instance = select_entity(project_list, project)
+
+    if not project_instance:
+        console.info(f"The project '{project}' could not be found.")
         return None
 
     # get project id
-    project_id = None
-    for project in project_list:
-        if project["title"] == project_title:
-            project_id = project["id"]
-            if ingress is None:
-                ingress = project["clusterSettings"]["port"]
-            break
+    if ingress is None:
+        ingress = project_instance["clusterSettings"]["port"]
 
     # cluster up
-    cluster_data = ctx.cluster_manager.get(id=project_id)
-    cluster_data.name = project_title
-    ctx.cluster_manager.set(id=project_id, data=cluster_data)
+    cluster_data = ctx.cluster_manager.get(id=project_instance["id"])
+    cluster_data.name = project_instance["title"]
+    ctx.cluster_manager.set(id=project_instance["id"], data=cluster_data)
 
     try:
         cluster_provider_type = K8sProviderType[provider]
@@ -342,43 +336,45 @@ def up(ctx, project_title, organization, ingress, provider, workers, **kwargs):
 
 
 @click.command()
-@click.argument("project_title", required=False)
+@click.argument("project", required=False)
 @click.pass_obj
-def down(ctx, project_title, **kwargs):
+def down(ctx, project, **kwargs):
     """
     Stop/Pause cluster.py
     """
 
     cluster_list = ctx.cluster_manager.get_cluster_list(ready=True)
-    cluster_title_list = [item.name for item in cluster_list]
+    cluster_title_list = [item.name + f"({item.id})" for item in cluster_list]
 
     # argument
-    if not project_title:
+    if not project:
         # argument from context
         context = ctx.context.get()
         if context.project_id:
-            project = ctx.context.get_project()
-            project_title = project["title"]
+            project_instance = ctx.context.get_project()
+            project = project_instance["title"]
 
         # argument from console
         else:
-            project_title = console.list(
+            project = console.list(
                 message="Please select a project",
                 message_no_choices="No cluster is running.",
                 choices=cluster_title_list,
             )
-            if project_title is None:
+            if project is None:
                 return None
 
+    project_instance = select_entity_from_cluster_list(cluster_list, project)
+
     # check if project is in local storage
-    if project_title not in cluster_title_list:
+    if not project_instance:
         console.info("The project cluster could not be found.")
         return None
 
     # get cluster
     cluster = None
     for cluster_data in cluster_list:
-        if cluster_data.name == project_title:
+        if cluster_data.id == project_instance.id:
             cluster = ctx.cluster_manager.select(
                 cluster_data=cluster_data,
             )
@@ -406,31 +402,33 @@ def down(ctx, project_title, **kwargs):
 
 
 @click.command()
-@click.argument("project_title", required=False)
+@click.argument("project", required=False)
 @click.pass_obj
-def delete(ctx, project_title, **kwargs):
+def delete(ctx, project, **kwargs):
     """Delete the current project and all related data"""
 
     cluster_list = ctx.cluster_manager.get_cluster_list()
     cluster_title_list = [item.name for item in cluster_list]
 
     # argument
-    if not project_title:
+    if not project:
         # argument from context
         context = ctx.context.get()
         if context.project_id:
-            project = ctx.context.get_project()
-            project_title = project["title"]
+            project_instance = ctx.context.get_project()
+            project = project_instance["title"]
 
         # argument from console
         else:
-            project_title = console.list(
+            project = console.list(
                 message="Please select a project",
                 message_no_choices="No cluster available.",
                 choices=cluster_title_list,
             )
-            if project_title is None:
+            if project is None:
                 return None
+
+    project_instance = select_entity_from_cluster_list(cluster_list, project)
 
     # initial warning
     console.warning("Deleting a project will remove the custer including all of its data.")
@@ -444,7 +442,7 @@ def delete(ctx, project_title, **kwargs):
     # get cluster
     cluster = None
     for cluster_data in cluster_list:
-        if cluster_data.name == project_title:
+        if cluster_data.id == project_instance.id:
             cluster = ctx.cluster_manager.select(
                 cluster_data=cluster_data,
             )
