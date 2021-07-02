@@ -4,14 +4,19 @@ import src.cli.console as console
 from src.cli.app import get_deck_from_arguments
 from src.cli.console.logger import LogLevel, color_mapping
 from src.graphql import EnvironmentType, GraphQL
-from src.helpers import download_specs, select_entity
-from src.helpers import check_environment_type_local_or_exit, download_manifest, environment_type_from_string
+from src.helpers import (
+    check_environment_type_local_or_exit,
+    download_manifest,
+    download_specs,
+    environment_type_from_string,
+    select_entity,
+)
 from src.local.providers.helper import get_cluster_or_exit
 from src.local.system import KubeAPI, KubeCtl
 from src.storage.user import get_local_storage_user
 
 
-def get_install_uninstall_arguments(ctx, deck_title: str):
+def get_install_uninstall_arguments(ctx, deck: str):
     # GraphQL
     try:
         graph_ql = GraphQL(authentication=ctx.auth)
@@ -51,35 +56,29 @@ def get_install_uninstall_arguments(ctx, deck_title: str):
     deck_list = data["allDecks"]["results"]
 
     # argument
-    if not deck_title:
+    if not deck:
         # argument from context
         context = ctx.context.get()
         if context.deck_id:
-            deck = ctx.context.get_deck()
-            deck_title = deck["title"]
+            deck_instance = ctx.context.get_deck()
+            deck = deck_instance["title"] + f"({deck_instance['id']})"
 
         # argument from console
         else:
-            deck_list_choices = [item["title"] for item in deck_list]
-            deck_title = console.list(
+            deck_list_choices = [item["title"] + f"({item['id']})" for item in deck_list]
+            deck = console.list(
                 message="Please select a deck",
                 choices=deck_list_choices,
             )
-            if deck_title is None:
+            if deck is None:
                 exit(1)
 
     # check access to the deck
-    deck_title_list = [deck["title"] for deck in deck_list]
-    if deck_title not in deck_title_list:
-        console.error(f"The deck '{deck_title}' could not be found.", _exit=True)
+    if not deck:
+        console.error(f"The deck '{deck}' could not be found.", _exit=True)
 
     # get deck
-    deck_selected = None
-    for deck in deck_list:
-        if deck["title"] == deck_title:
-            deck_selected = deck
-            break
-
+    deck_selected = select_entity(deck_list, deck)
     return deck_selected
 
 
@@ -317,93 +316,8 @@ def install(ctx, deck, **kwargs):
     Install deck.
     """
 
-    # GraphQL
-    try:
-        graph_ql = GraphQL(authentication=ctx.auth)
-        data = graph_ql.query(
-            """
-            {
-                allDecks(limit:100) {
-                    totalCount
-                    results {
-                        id
-                        title
-                        namespace
-                        environment {
-                            id
-                            type
-                            valuesPath
-                        }
-                        project {
-                            id
-                            title
-                            organization {
-                                title
-                            }
-                        }
-                    }
-                }
-            }
-            """,
-            query_variables={},
-        )
+    deck = get_install_uninstall_arguments(ctx=ctx, deck=deck)
 
-    except Exception as e:
-        data = None
-        console.debug(e)
-        console.exit_generic_error()
-
-    deck_list = data["allDecks"]["results"]
-
-    # argument
-    if not deck:
-        # argument from context
-        context = ctx.context.get()
-        if context.deck_id:
-            deck_instance = ctx.context.get_deck()
-            deck = deck_instance["title"] + f"({deck_instance['id']})"
-
-        # argument from console
-        else:
-            deck_list_choices = [item["title"] + f"({item['id']})" for item in deck_list]
-            deck = console.list(
-                message="Please select a deck",
-                choices=deck_list_choices,
-            )
-            if deck is None:
-                return False
-
-    # get project_id
-    deck_instance = select_entity(deck_list, deck)
-    if not deck_instance:
-        console.info(f"The deck '{deck}' could not be found.")
-        return None
-    project_id = deck_instance["project"]["id"]
-    deck = get_install_uninstall_arguments(ctx=ctx, deck_title=deck_title)
-
-    # check if cluster is ready
-    cluster_data = ctx.cluster_manager.get(id=project_id)
-    if not cluster_data.id:
-        console.error("The project cluster does not exist. Please be sure to run 'unikube project up' first.")
-        return None
-
-    cluster = ctx.cluster_manager.select(cluster_data=cluster_data)
-
-    # check if kubernetes cluster is running/ready
-    if not cluster.ready():
-        console.info(f"Kubernetes cluster for '{cluster.display_name}' is not running")
-        return None
-
-    # check cluster level
-    try:
-        environment = EnvironmentType(deck_instance["environment"][0]["type"])
-    except Exception as e:
-        console.debug(e)
-        environment = None
-
-    if environment != EnvironmentType.LOCAL:
-        console.error("This deck cannot be installed locally.")
-        return None
     # cluster
     cluster = get_cluster(ctx=ctx, deck=deck)
 
@@ -411,35 +325,12 @@ def install(ctx, deck, **kwargs):
     check_environment_type_local_or_exit(deck=deck)
 
     # download manifest
-    try:
-        environment_id = deck_instance["environment"][0]["id"]
-        general_data = ctx.storage_general.get()
-        console.info("Now requesting manifests. This process may takes a few seconds.")
-        all_specs = download_specs(
-            access_token=general_data.authentication.access_token,
-            environment_id=environment_id,
-        )
-    except HTTPError as e:
-        if e.response.status_code == 404:
-            console.warning(
-                "This deck does potentially not specify a valid Environment of type 'local'. "
-                f"Please go to https://app.unikube.io/project/{project_id}/decks "
-                f"and save a valid values path."
-            )
-            exit(1)
-        else:
-            console.error("Could not load manifest: " + str(e))
-            exit(1)
-
-    provider_data = cluster.storage.get()
     general_data = ctx.storage_general.get()
     manifest = download_manifest(deck=deck, access_token=general_data.authentication.access_token)
 
     # KubeCtl
     provider_data = cluster.storage.get()
     kubectl = KubeCtl(provider_data=provider_data)
-
-    namespace = deck_instance["namespace"]
     namespace = deck["environment"][0]["namespace"]
     kubectl.create_namespace(namespace)
     with click.progressbar(
@@ -449,7 +340,7 @@ def install(ctx, deck, **kwargs):
         for file in files:
             kubectl.apply_str(namespace, file["content"])
 
-    ingresss = KubeAPI(provider_data, deck_instance).get_ingress()
+    ingresss = KubeAPI(provider_data, deck).get_ingress()
     ingress_data = []
     for ingress in ingresss.items:
         hosts = []
@@ -478,14 +369,14 @@ def install(ctx, deck, **kwargs):
 
 
 @click.command()
-@click.argument("deck_title", required=False)
+@click.argument("deck", required=False)
 @click.pass_obj
-def uninstall(ctx, deck_title, **kwargs):
+def uninstall(ctx, deck, **kwargs):
     """
     Uninstall deck.
     """
 
-    deck = get_install_uninstall_arguments(ctx=ctx, deck_title=deck_title)
+    deck = get_install_uninstall_arguments(ctx=ctx, deck=deck)
 
     # cluster
     cluster = get_cluster(ctx=ctx, deck=deck)
