@@ -35,6 +35,8 @@ def get_deck_from_arguments(ctx, organization_id: str, project_id: str, deck_id:
             console.exit_generic_error()
 
         project_id = re.search(r"\((.*?)\)", project_selected).group(1)
+    else:
+        project_id = context.project_id
 
     # check if project is in local storage
     if project_id not in cluster_choices_ids:
@@ -83,10 +85,11 @@ def get_deck_from_arguments(ctx, organization_id: str, project_id: str, deck_id:
             message_no_choices="No deck found.",
             choices=deck_choices,
         )
-        if deck_id is None:
-            console.exit_generic_error()
 
         deck_id = re.search(r"\((.*?)\)", deck_selected).group(1)
+
+    if deck_id is None:
+        console.exit_generic_error()
 
     # check if deck exists
     if deck_id not in deck_choices_ids:
@@ -260,6 +263,12 @@ def switch(ctx, app, organization, project, deck, deployment, unikubefile, **kwa
                         ports
                         isSwitchable
                     }
+                    environment {
+                        id
+                        type
+                        valuesPath
+                        namespace
+                    }
                 }
             }
             """,
@@ -287,7 +296,7 @@ def switch(ctx, app, organization, project, deck, deployment, unikubefile, **kwa
 
     ports = target_deployment["ports"].split(",")
     deployment = target_deployment["title"]
-    namespace = deck["namespace"]
+    namespace = deck["environment"][0]["namespace"]
 
     # 3: Build an new Docker image
     # 3.1 Grab the docker file
