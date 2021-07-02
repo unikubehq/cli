@@ -332,7 +332,7 @@ def switch(ctx, app, organization, project, deck, deployment, unikubefile, **kwa
     command = unikube_file.get_command(port=ports[0])
     console.debug(f"Run command: {command}")
 
-    console.info("Starting your container, this may takes a while to become effective")
+    console.info("Starting your container, this may take a while to become effective")
     provider_data = cluster.storage.get()
     Telepresence(provider_data, debug_output=True).swap(deployment, image_name, command, namespace, envs, mounts)
 
