@@ -1,6 +1,8 @@
 import os
 import re
+import signal
 import sys
+from time import sleep
 
 import click
 import click_spinner
@@ -202,7 +204,7 @@ def shell(ctx, app, organization=None, project=None, deck=None, **kwargs):
 
     else:
         # 2.b connect using kubernetes
-        KubeCtl(provider_data).exec_pod(app, deck["namespace"], "/bin/sh", interactive=True)
+        KubeCtl(provider_data).exec_pod(app, deck["environment"][0]["namespace"], "/bin/sh", interactive=True)
 
 
 @click.command()
@@ -298,6 +300,16 @@ def switch(ctx, app, organization, project, deck, deployment, unikubefile, **kwa
     deployment = target_deployment["title"]
     namespace = deck["environment"][0]["namespace"]
 
+    # check telepresence
+    provider_data = cluster.storage.get()
+    telepresence = Telepresence(provider_data)
+
+    available_deployments = telepresence.list(namespace, flat=True)
+    if deployment not in available_deployments:
+        console.error("The given deployment cannot be switched.", _exit=True)
+
+    is_swapped = telepresence.is_swapped(deployment, namespace)
+
     # 3: Build an new Docker image
     # 3.1 Grab the docker file
     context, dockerfile, target = unikube_file.get_docker_build()
@@ -309,8 +321,19 @@ def switch(ctx, app, organization, project, deck, deployment, unikubefile, **kwa
         project=cluster_data.name.replace(" ", "").lower(), deck=deck["title"], name=deployment
     )
 
-    # 3.3 Build image
     docker = Docker()
+
+    if is_swapped:
+        console.warning("It seems this app is already switched in another process. ")
+        if click.confirm("Do you want to kill it and switch here?"):
+            telepresence.leave(deployment, namespace, silent=True)
+            if docker.check_running(image_name):
+                docker.kill(name=image_name)
+        else:
+            sys.exit(0)
+
+    # 3.3 Build image
+
     with click_spinner.spinner(beep=False, disable=False, force=False, stream=sys.stdout):
         status, msg = docker.build(image_name, context, dockerfile, target)
     if not status:
@@ -333,10 +356,8 @@ def switch(ctx, app, organization, project, deck, deployment, unikubefile, **kwa
     console.debug(f"Run command: {command}")
 
     console.info("Starting your container, this may take a while to become effective")
-    provider_data = cluster.storage.get()
-    Telepresence(provider_data, debug_output=True).swap(deployment, image_name, command, namespace, envs, mounts)
 
-    # if something went wrong with Telepresence
+    telepresence.swap(deployment, image_name, command, namespace, envs, mounts, ports[0])
     if docker.check_running(image_name):
         docker.kill(name=image_name)
 

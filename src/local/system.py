@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import os
 import subprocess
-from typing import Tuple
+from typing import List, Tuple
 
 import click
 from kubernetes import client, config, watch
@@ -21,13 +21,16 @@ class CMDWrapper(object):
     def __init__(self, debug_output=False):
         self._debug_output = debug_output
 
-    def _execute(self, arguments, stdin: str = None) -> subprocess.Popen:
+    def _execute(self, arguments, stdin: str = None, print_output: bool = False) -> subprocess.Popen:
         cmd = [self.base_command] + arguments
         kwargs = self._get_kwargs()
         process = subprocess.Popen(cmd, **kwargs)
         if stdin:
             process.communicate(stdin)
         try:
+            if print_output:
+                for stdout_line in iter(process.stdout.readline, ""):
+                    print(stdout_line, end="", flush=True)
             process.wait()
         except KeyboardInterrupt:
             try:
@@ -195,19 +198,19 @@ class Docker(CMDWrapper):
 class Telepresence(KubeCtl):
     base_command = "telepresence"
 
-    def swap(
-        self,
-        deployment,
-        image_name,
-        command=None,
-        namespace=None,
-        envs=None,
-        mounts=None,
-    ):
-        arguments = ["--swap-deployment", deployment]
+    def _execute_intercept(self, arguments) -> subprocess.Popen:
+        cmd = [self.base_command] + arguments
+        kwargs = self._get_kwargs()
+        process = subprocess.Popen(cmd, **kwargs)
+        for stdout_line in iter(process.stdout.readline, ""):
+            print(stdout_line, end="", flush=True)
+        return process
+
+    def swap(self, deployment, image_name, command=None, namespace=None, envs=None, mounts=None, port=None):
+        arguments = ["intercept", "--no-report", deployment]
         if namespace:
             arguments = arguments + ["--namespace", namespace]
-        arguments = arguments + ["--docker-run", "--rm"]
+        arguments = arguments + ["--port", str(port), "--docker-run", "--", "--rm", "--dns-search", "tel2-search"]
         if mounts:
             for mount in mounts:
                 arguments = arguments + ["-v", f"{mount[0]}:{mount[1]}"]
@@ -221,14 +224,71 @@ class Telepresence(KubeCtl):
         if command:
             arguments = arguments + ["sh", "-c"] + [f"{' '.join(command)}"]
 
+        console.debug(arguments)
+        try:
+            process = self._execute_intercept(arguments)
+            if process.returncode and (process.returncode != 0 and not process.returncode != 137):
+                console.error(
+                    "There was an error with switching the deployment, please find details above", _exit=False
+                )
+        except KeyboardInterrupt:
+            pass
+        self.leave(deployment, namespace, silent=True)
+
+    def leave(self, deployment, namespace=None, silent=False):
+        arguments = ["leave", "--no-report"]
+        if namespace:
+            arguments.append(f"{deployment}-{namespace}")
+        else:
+            arguments.append(deployment)
+        console.debug(arguments)
         process = self._execute(arguments)
-        if process.returncode and process.returncode != 0:
-            console.error("There was an error with switching the deployment, please find details above", _exit=False)
+        if not silent and process.returncode and process.returncode != 0:
+            console.error("There was an error with leaving the deployment, please find details above", _exit=False)
 
     def _get_environment(self):
         env = super(Telepresence, self)._get_environment()
-        env["TELEPRESENCE_USE_DEPLOYMENT"] = "1"
         return env
+
+    def start(self) -> None:
+        arguments = ["connect", "--no-report"]
+        process = self._execute(arguments)
+        if process.returncode and process.returncode != 0:
+            console.error(f"Could not start Telepresence daemon: {process.stdout.readlines()}", _exit=False)
+
+    def stop(self) -> None:
+        arguments = ["quit", "--no-report"]
+        process = self._execute(arguments)
+        if process.returncode and process.returncode != 0:
+            console.error("Could not stop Telepresence daemon", _exit=False)
+
+    def list(self, namespace=None, flat=False) -> List[str]:
+        arguments = ["list", "--no-report"]
+        if namespace:
+            arguments += ["--namespace", namespace]
+        process = self._execute(arguments)
+        deployment_list = process.stdout.readlines()
+        result = []
+        if deployment_list:
+            for deployment in deployment_list:
+                try:
+                    name, status = map(str.strip, deployment.split(":"))
+                except ValueError:
+                    continue
+                if name in ["Intercept name", "State", "Workload kind", "Destination", "Intercepting"]:
+                    continue
+                if "intercepted" in status:
+                    result.append((name, "intercepted"))
+                else:
+                    result.append((name, "ready"))
+        if flat:
+            result = [deployment[0] for deployment in result]
+        return result
+
+    def is_swapped(self, deployment, namespace=None) -> bool:
+        deployments = self.list(namespace)
+        swapped = any(filter(lambda x: x[0] == deployment and x[1] == "intercepted", deployments))
+        return swapped
 
 
 class KubeAPI(object):

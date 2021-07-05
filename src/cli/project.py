@@ -1,5 +1,6 @@
 import re
 import sys
+from time import sleep
 
 import click
 import click_spinner
@@ -10,6 +11,7 @@ from src.graphql import GraphQL
 from src.helpers import select_entity, select_entity_from_cluster_list
 from src.keycloak.permissions import KeycloakPermissions
 from src.local.providers.types import K8sProviderType
+from src.local.system import Telepresence
 from src.storage.user import get_local_storage_user
 
 
@@ -321,6 +323,7 @@ def up(ctx, project, organization, ingress, provider, workers, **kwargs):
     else:
         if cluster.ready():
             console.info(f"Kubernetes cluster for '{cluster.display_name}' is already running.")
+            Telepresence(cluster.storage.get())._start()
             return None
 
         else:
@@ -330,6 +333,10 @@ def up(ctx, project, organization, ingress, provider, workers, **kwargs):
 
     # console
     if success:
+        console.info("Now connecting Telepresence daemon.")
+        with click_spinner.spinner(beep=False, disable=False, force=False, stream=sys.stdout):
+            sleep(5)  # todo busywait for the cluster to become actually available
+            Telepresence(cluster.storage.get()).start()
         console.success("The project cluster is up.")
     else:
         console.error("The project cluster could not be started.")
@@ -390,6 +397,9 @@ def down(ctx, project, **kwargs):
     if not cluster.ready():
         console.info(f"Kubernetes cluster for '{cluster.display_name}' is not running")
         return None
+
+    console.info("Stopping Telepresence daemon.")
+    Telepresence(cluster.storage.get()).stop()
 
     # stop cluster
     console.info(f"Stopping Kubernetes cluster for '{cluster.display_name}'")
