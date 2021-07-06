@@ -190,7 +190,6 @@ class Telepresence(LocalDependency):
     def installation_steps(self):
         if platform.system() == "Darwin":
             return [
-                "brew cask install osxfuse",
                 "brew install datawire/blackbird/telepresence",
             ]
         return [
@@ -210,7 +209,7 @@ class Telepresence(LocalDependency):
 class Homebrew(LocalDependency):
     cmd = ("brew", "--version")
     verbose_name = "Homebrew"
-    required_version = settings.HOMEBREW_CLI_VERSION
+    required_version = settings.HOMEBREW_CLI_MIN_VERSION
     installation_steps = [
         "/bin/bash -c $(curl -fsSL " "https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
     ]
