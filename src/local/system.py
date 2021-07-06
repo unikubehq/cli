@@ -210,7 +210,15 @@ class Telepresence(KubeCtl):
         arguments = ["intercept", "--no-report", deployment]
         if namespace:
             arguments = arguments + ["--namespace", namespace]
-        arguments = arguments + ["--port", str(port), "--docker-run", "--", "--rm", "--dns-search", "tel2-search"]
+        arguments = arguments + [
+            "--port",
+            f"{port}:{port}",
+            "--docker-run",
+            "--",
+            "--network=host",
+            f"--dns-search={namespace}",
+            "--rm",
+        ]
         if mounts:
             for mount in mounts:
                 arguments = arguments + ["-v", f"{mount[0]}:{mount[1]}"]

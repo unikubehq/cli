@@ -333,10 +333,9 @@ def up(ctx, project, organization, ingress, provider, workers, **kwargs):
 
     # console
     if success:
-        console.info("Now connecting Telepresence daemon.")
-        with click_spinner.spinner(beep=False, disable=False, force=False, stream=sys.stdout):
-            sleep(5)  # todo busywait for the cluster to become actually available
-            Telepresence(cluster.storage.get()).start()
+        console.info("Now connecting Telepresence daemon. You probably have to enter your 'sudo' password.")
+        sleep(5)  # todo busywait for the cluster to become actually available
+        Telepresence(cluster.storage.get()).start()
         console.success("The project cluster is up.")
     else:
         console.error("The project cluster could not be started.")

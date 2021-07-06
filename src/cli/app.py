@@ -300,15 +300,20 @@ def switch(ctx, app, organization, project, deck, deployment, unikubefile, **kwa
     deployment = target_deployment["title"]
     namespace = deck["environment"][0]["namespace"]
 
-    # check telepresence
-    provider_data = cluster.storage.get()
-    telepresence = Telepresence(provider_data)
+    console.info("Please wait while unikube prepares the switch.")
+    with click_spinner.spinner(beep=False, disable=False, force=False, stream=sys.stdout):
+        # check telepresence
+        provider_data = cluster.storage.get()
+        telepresence = Telepresence(provider_data)
 
-    available_deployments = telepresence.list(namespace, flat=True)
-    if deployment not in available_deployments:
-        console.error("The given deployment cannot be switched.", _exit=True)
+        available_deployments = telepresence.list(namespace, flat=True)
+        if deployment not in available_deployments:
+            console.error(
+                "The given deployment cannot be switched. " f"You may have to run 'unikube deck install {deck}' first.",
+                _exit=True,
+            )
 
-    is_swapped = telepresence.is_swapped(deployment, namespace)
+        is_swapped = telepresence.is_swapped(deployment, namespace)
 
     # 3: Build an new Docker image
     # 3.1 Grab the docker file

@@ -70,7 +70,7 @@ def download_specs(access_token: str, environment_id: str):
 def download_manifest(deck: dict, access_token: str, environment_index: int = 0):
     try:
         environment_id = deck["environment"][environment_index]["id"]
-        console.info("Requesting manifests. This process may takes a few seconds.")
+        console.info("Requesting manifests. This process may take a few seconds.")
         manifest = download_specs(
             access_token=access_token,
             environment_id=environment_id,
