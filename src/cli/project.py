@@ -323,7 +323,7 @@ def up(ctx, project, organization, ingress, provider, workers, **kwargs):
     else:
         if cluster.ready():
             console.info(f"Kubernetes cluster for '{cluster.display_name}' is already running.")
-            Telepresence(cluster.storage.get())._start()
+            Telepresence(cluster.storage.get()).start()
             return None
 
         else:

@@ -215,7 +215,7 @@ class Telepresence(KubeCtl):
             f"{port}:{port}",
             "--docker-run",
             "--",
-            "--network=host",
+            # "--network=host",
             f"--dns-search={namespace}",
             "--rm",
         ]
