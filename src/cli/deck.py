@@ -326,7 +326,9 @@ def install(ctx, deck, **kwargs):
 
     # download manifest
     general_data = ctx.storage_general.get()
-    manifest = download_manifest(deck=deck, access_token=general_data.authentication.access_token)
+    manifest = download_manifest(
+        deck=deck, authentication=ctx.auth, access_token=general_data.authentication.access_token
+    )
 
     # KubeCtl
     provider_data = cluster.storage.get()
