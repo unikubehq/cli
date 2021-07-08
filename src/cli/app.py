@@ -19,7 +19,6 @@ from src.unikubefile.selector import unikube_file_selector
 def get_deck_from_arguments(ctx, organization_id: str, project_id: str, deck_id: str):
 
     context = ctx.context.get(organization=organization_id, project=project_id, deck=deck_id)
-
     ## project_id
     cluster_list = ctx.cluster_manager.get_cluster_list(ready=True)
     cluster_choices = [f"{item.name} ({item.id})" for item in cluster_list]
@@ -29,20 +28,20 @@ def get_deck_from_arguments(ctx, organization_id: str, project_id: str, deck_id:
     if not context.project_id:
         # argument from console
         project_selected = console.list(
-            message="Please select a cluster",
-            message_no_choices="No cluster is running.",
+            message="Please select a project",
+            message_no_choices="No project is running.",
             choices=cluster_choices,
         )
+        project_id = re.search(r"\((.*?)\)", project_selected).group(1)
+
         if project_id is None:
             console.exit_generic_error()
-
-        project_id = re.search(r"\((.*?)\)", project_selected).group(1)
     else:
         project_id = context.project_id
 
     # check if project is in local storage
     if project_id not in cluster_choices_ids:
-        console.error("The project cluster could not be found.", _exit=True)
+        console.error("The project cluster could not be found or you have another project activated.", _exit=True)
 
     cluster_data = ctx.cluster_manager.get(id=project_id)
     if not cluster_data:
@@ -230,7 +229,6 @@ def switch(ctx, app, organization, project, deck, deployment, unikubefile, **kwa
 
     ctx.auth.check()
     cluster_data, deck = get_deck_from_arguments(ctx, organization, project, deck)
-
     # get cluster
     cluster = get_cluster_or_exit(ctx, cluster_data.id)
 

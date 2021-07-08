@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
+import platform
 import subprocess
 from typing import List, Tuple
 
@@ -210,12 +211,11 @@ class Telepresence(KubeCtl):
         arguments = ["intercept", "--no-report", deployment]
         if namespace:
             arguments = arguments + ["--namespace", namespace]
-        arguments = arguments + [
-            "--port",
-            f"{port}:{port}",
-            "--docker-run",
-            "--",
-            # "--network=host",
+
+        arguments = arguments + ["--port", f"{port}:{port}", "--docker-run", "--"]
+        if platform.system() != "Darwin":
+            arguments.append("--network=host")
+        arguments += [
             f"--dns-search={namespace}",
             "--rm",
         ]
