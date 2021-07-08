@@ -167,6 +167,19 @@ class Context:
             key = next(iter(result))
             data = result[key]
         except Exception as e:
+            if len(e.args) == 1:
+                import ast
+
+                exception_object = ast.literal_eval(e.args[0])
+                if (
+                    exception_object.get("message")
+                    and exception_object.get("message") == "This project cannot be retrieved."
+                ):
+                    console.debug(e)
+                    console.exit_error_with_message(
+                        "This project cannot be retrieved. Either the project was deleted or "
+                        "the membership was changed for the project."
+                    )
             data = None
             console.debug(e)
             console.exit_generic_error()
