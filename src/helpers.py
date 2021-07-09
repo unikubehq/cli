@@ -86,16 +86,21 @@ def download_manifest(deck: dict, authentication: TokenAuthentication, access_to
             )
             exit(1)
         elif e.response.status_code == 403:
+            console.warning("Refreshing access token")
             environment_id = deck["environment"][environment_index]["id"]
             response = authentication.refresh()
             if not response["success"]:
                 console.exit_login_required()
 
             access_token = response["response"]["access_token"]
-            manifest = download_specs(
-                access_token=access_token,
-                environment_id=environment_id,
-            )
+            try:
+                manifest = download_specs(
+                    access_token=access_token,
+                    environment_id=environment_id,
+                )
+            except HTTPError as e:
+                console.warning(f"Even after refreshing access token download specs fails with {e}")
+                exit(1)
         else:
             console.error("Could not load manifest: " + str(e), _exit=True)
 
