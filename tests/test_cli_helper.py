@@ -63,11 +63,20 @@ def test_select_entity():
     assert response == entity_list[0]
 
 
-def test_select_entity_similar_titles():
-    entity_list = [{"id": "random-id-3-2-1", "title": "test-select-entity", "clusterSettings": {"id": "1", "port": 0}}]
-    identifier = "test-select-entity(random-id-1-2-3)"
+def test_select_entity_one_similar_entity():
+    entity_list = [{"id": "random-id-1-2-3", "title": "test-select-entity", "clusterSettings": {"id": "1", "port": 0}}]
+    identifier = "test-select-entity"
     response = select_entity(entity_list, identifier)
+    assert response is entity_list[0]
 
+
+def test_select_entity_duplicate_entities():
+    entity_list = [
+        {"id": "random-id-1-2-3", "title": "test-select-entity", "clusterSettings": {"id": "1", "port": 0}},
+        {"id": "random-id-3-2-1", "title": "test-select-entity", "clusterSettings": {"id": "1", "port": 0}},
+    ]
+    identifier = "test-select-entity"
+    response = select_entity(entity_list, identifier)
     assert response is None
 
 
@@ -79,9 +88,18 @@ def test_select_entity_from_cluster_list():
     assert response == entity_list[0]
 
 
-def test_select_entity_from_cluster_list_similar_titles():
-    entity_list = [K8sProviderData(id="random-id-3-2-1", name="test-select-entity")]
-    identifier = "test-select-entity(random-id-1-2-3)"
+def test_select_entity_from_cluster_list_one_similar_entity():
+    entity_list = [K8sProviderData(id="random-id-1-2-3", name="test-select-entity")]
+    identifier = "test-select-entity"
     response = select_entity_from_cluster_list(entity_list, identifier)
+    assert response is entity_list[0]
 
+
+def test_select_entity_from_cluster_list_duplicate_entities():
+    entity_list = [
+        K8sProviderData(id="random-id-1-2-3", name="test-select-entity"),
+        K8sProviderData(id="random-id-3-2-1", name="test-select-entity"),
+    ]
+    identifier = "test-select-entity"
+    response = select_entity_from_cluster_list(entity_list, identifier)
     assert response is None
