@@ -1,7 +1,14 @@
 import pytest
 from requests import HTTPError, Session
 
-from src.helpers import download_manifest, download_specs, get_requests_session
+from src.helpers import (
+    download_manifest,
+    download_specs,
+    get_requests_session,
+    select_entity,
+    select_entity_from_cluster_list,
+)
+from src.local.providers.types import K8sProviderData
 
 
 def test_get_requests_session():
@@ -46,3 +53,53 @@ def test_download_manifest():
 
     assert pytest_wrapped_e.type == SystemExit
     assert pytest_wrapped_e.value.code == 1
+
+
+def test_select_entity():
+    entity_list = [{"id": "random-id-1-2-3", "title": "test-select-entity", "clusterSettings": {"id": "1", "port": 0}}]
+    identifier = "test-select-entity(random-id-1-2-3)"
+    response = select_entity(entity_list, identifier)
+
+    assert response == entity_list[0]
+
+
+def test_select_entity_one_similar_entity():
+    entity_list = [{"id": "random-id-1-2-3", "title": "test-select-entity", "clusterSettings": {"id": "1", "port": 0}}]
+    identifier = "test-select-entity"
+    response = select_entity(entity_list, identifier)
+    assert response is entity_list[0]
+
+
+def test_select_entity_duplicate_entities():
+    entity_list = [
+        {"id": "random-id-1-2-3", "title": "test-select-entity", "clusterSettings": {"id": "1", "port": 0}},
+        {"id": "random-id-3-2-1", "title": "test-select-entity", "clusterSettings": {"id": "1", "port": 0}},
+    ]
+    identifier = "test-select-entity"
+    response = select_entity(entity_list, identifier)
+    assert response is None
+
+
+def test_select_entity_from_cluster_list():
+    entity_list = [K8sProviderData(id="random-id-1-2-3", name="test-select-entity")]
+    identifier = "test-select-entity(random-id-1-2-3)"
+    response = select_entity_from_cluster_list(entity_list, identifier)
+
+    assert response == entity_list[0]
+
+
+def test_select_entity_from_cluster_list_one_similar_entity():
+    entity_list = [K8sProviderData(id="random-id-1-2-3", name="test-select-entity")]
+    identifier = "test-select-entity"
+    response = select_entity_from_cluster_list(entity_list, identifier)
+    assert response is entity_list[0]
+
+
+def test_select_entity_from_cluster_list_duplicate_entities():
+    entity_list = [
+        K8sProviderData(id="random-id-1-2-3", name="test-select-entity"),
+        K8sProviderData(id="random-id-3-2-1", name="test-select-entity"),
+    ]
+    identifier = "test-select-entity"
+    response = select_entity_from_cluster_list(entity_list, identifier)
+    assert response is None

@@ -8,7 +8,7 @@ import click_spinner
 import src.cli.console as console
 from src import settings
 from src.graphql import GraphQL
-from src.helpers import select_entity, select_entity_from_cluster_list
+from src.helpers import check_running_cluster, select_entity, select_entity_from_cluster_list
 from src.keycloak.permissions import KeycloakPermissions
 from src.local.providers.types import K8sProviderType
 from src.local.system import Telepresence
@@ -283,19 +283,9 @@ def up(ctx, project, organization, ingress, provider, workers, **kwargs):
                 return False
 
     project_instance = select_entity(project_list, project)
-
     if not project_instance:
         console.info(f"The project '{project}' could not be found.")
         return None
-
-    # get project id
-    if ingress is None:
-        ingress = project_instance["clusterSettings"]["port"]
-
-    # cluster up
-    cluster_data = ctx.cluster_manager.get(id=project_instance["id"])
-    cluster_data.name = project_instance["title"]
-    ctx.cluster_manager.set(id=project_instance["id"], data=cluster_data)
 
     try:
         cluster_provider_type = K8sProviderType[provider]
@@ -305,6 +295,17 @@ def up(ctx, project, organization, ingress, provider, workers, **kwargs):
             f"one of: {','.join(opt.name for opt in K8sProviderType)}",
             _exit=True,
         )
+
+    check_running_cluster(ctx, cluster_provider_type, project_instance)
+
+    # get project id
+    if ingress is None:
+        ingress = project_instance["clusterSettings"]["port"]
+
+    # cluster up
+    cluster_data = ctx.cluster_manager.get(id=project_instance["id"])
+    cluster_data.name = project_instance["title"]
+    ctx.cluster_manager.set(id=project_instance["id"], data=cluster_data)
 
     cluster = ctx.cluster_manager.select(cluster_data=cluster_data, cluster_provider_type=cluster_provider_type)
     console.info(
@@ -321,15 +322,9 @@ def up(ctx, project, organization, ingress, provider, workers, **kwargs):
 
     # start
     else:
-        if cluster.ready():
-            console.info(f"Kubernetes cluster for '{cluster.display_name}' is already running.")
-            Telepresence(cluster.storage.get()).start()
-            return None
-
-        else:
-            console.info(f"Kubernetes cluster for '{cluster.display_name}' already exists, starting it now.")
-            with click_spinner.spinner(beep=False, disable=False, force=False, stream=sys.stdout):
-                success = cluster.start()
+        console.info(f"Kubernetes cluster for '{cluster.display_name}' already exists, starting it now.")
+        with click_spinner.spinner(beep=False, disable=False, force=False, stream=sys.stdout):
+            success = cluster.start()
 
     # console
     if success:
