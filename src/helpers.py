@@ -26,12 +26,17 @@ def select_entity(entity_list, identifier):
             return entity
         elif identifier in (entity.get("title"), entity.get("slug")):
             similar_entities.append(entity)
-    if similar_entities:
+    if len(similar_entities) > 1:
         console.warning(
             f"Entity {similar_entities[0].get('title')} has a duplicate title or slug. Specify ID directly "
             f"after title or slug in parentheses."
         )
-    return None
+        return None
+    elif len(similar_entities) == 1:
+        return similar_entities[0]
+    else:
+        console.warning(f"Entity {identifier} was not found.")
+        return None
 
 
 def select_entity_from_cluster_list(cluster_list, identifier):
@@ -43,14 +48,19 @@ def select_entity_from_cluster_list(cluster_list, identifier):
     for entity in cluster_list:
         if identifier == entity.id:
             return entity
-        if (hasattr(entity, "slug") and identifier == entity.slug) or (identifier == entity.name):
+        elif (hasattr(entity, "slug") and identifier == entity.slug) or (identifier == entity.name):
             similar_entities.append(entity)
-    if similar_entities:
+    if len(similar_entities) > 1:
         console.warning(
             f"Entity {similar_entities[0].name} has a duplicate title or slug. Specify ID directly "
             f"after title or slug in parentheses."
         )
-    return None
+        return None
+    elif len(similar_entities) == 1:
+        return similar_entities[0]
+    else:
+        console.warning(f"Entity {identifier} was not found.")
+        return None
 
 
 def get_requests_session(access_token) -> Session:
