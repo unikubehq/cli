@@ -244,9 +244,14 @@ def switch(ctx, app, organization, project, deck, deployment, unikubefile, **kwa
     # 2.1.a Check the deployment identifier
     if not deployment:
         # 1.1.b check the unikubefile
-        deployment = unikube_file.get_deployment()
-        if not deployment:
-            console.error("Please specify the deployment either using the '--deployment' option or in the Unikubefile")
+        if unikube_file:
+            deployment = unikube_file.get_deployment()
+
+    if not deployment:
+        console.error(
+            "Please specify the deployment either using the '--deployment' option or in the unikube.yaml. "
+            "Run 'unikube app switch' in a directory containing the unikube.yaml file."
+        )
 
     # 2.2 Fetch available "deployment:", deployments
     # GraphQL

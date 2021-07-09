@@ -84,7 +84,7 @@ def run_callback_server(state: str, nonce: str, client: Client, ctx: ClickContex
             self.send_text_response(response_body)
             Thread(target=server.shutdown).start()
 
-        def log_message(self, format, *args):
+        def log_request(self, *args, **kwargs):
             return
 
     port = get_callback_port()
