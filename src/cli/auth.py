@@ -1,8 +1,6 @@
-import webbrowser
 from getpass import getpass
 
 import click
-import jwt
 from oic import rndstr
 from oic.oic import Client
 from oic.utils.authn.client import CLIENT_AUTHN_METHOD
@@ -78,7 +76,7 @@ def web_flow(ctx):
     auth_req = client.construct_AuthorizationRequest(request_args=args)
     login_url = auth_req.request(client.authorization_endpoint)
     click.echo(f"If your Browser does not open automatically, go to the following URL and login:\n{login_url}")
-    webbrowser.open_new_tab(login_url)
+    click.launch(login_url)
     return True
 
 

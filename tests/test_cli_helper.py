@@ -33,10 +33,16 @@ def test_download_manifest():
             "id": None,
         },
     }
+
+    class Authentication:
+        def refresh(self):
+            return {"success": True, "response": {"access_token": ""}}
+
     access_token = ""
+    authentication = Authentication()
 
     with pytest.raises(SystemExit) as pytest_wrapped_e:
-        _ = download_manifest(deck=deck, access_token=access_token)
+        _ = download_manifest(deck=deck, authentication=authentication, access_token=access_token)
 
     assert pytest_wrapped_e.type == SystemExit
     assert pytest_wrapped_e.value.code == 1

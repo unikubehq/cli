@@ -1,4 +1,5 @@
 import os
+import re
 import sys
 
 import click
@@ -7,44 +8,43 @@ import click_spinner
 from src import settings
 from src.cli import console
 from src.graphql import GraphQL
+from src.local.providers.helper import get_cluster_or_exit
 from src.local.system import Docker, KubeAPI, KubeCtl, Telepresence
 from src.settings import UNIKUBE_FILE
 from src.unikubefile.selector import unikube_file_selector
 
 
-def get_deck_from_arguments(ctx, project_title: str, deck_title: str):
+def get_deck_from_arguments(ctx, organization_id: str, project_id: str, deck_id: str):
+
+    context = ctx.context.get(organization=organization_id, project=project_id, deck=deck_id)
+
     ## project_id
     cluster_list = ctx.cluster_manager.get_cluster_list(ready=True)
-    cluster_title_list = [item.name for item in cluster_list]
+    cluster_choices = [f"{item.name} ({item.id})" for item in cluster_list]
+    cluster_choices_ids = [item.id for item in cluster_list]
 
     # argument
-    if not project_title:
+    if not context.project_id:
         # argument from console
-        project_title = console.list(
-            message="Please select a project",
+        project_selected = console.list(
+            message="Please select a cluster",
             message_no_choices="No cluster is running.",
-            choices=cluster_title_list,
+            choices=cluster_choices,
         )
-        if project_title is None:
+        if project_id is None:
             console.exit_generic_error()
 
+        project_id = re.search(r"\((.*?)\)", project_selected).group(1)
+    else:
+        project_id = context.project_id
+
     # check if project is in local storage
-    if project_title not in cluster_title_list:
+    if project_id not in cluster_choices_ids:
         console.error("The project cluster could not be found.", _exit=True)
 
-    # get project_id
-    project_id = None
-    cluster = None
-    for cluster_data in cluster_list:
-        if cluster_data.name == project_title:
-            cluster = ctx.cluster_manager.select(
-                cluster_data=cluster_data,
-            )
-            project_id = cluster.id
-            break
-
-    if not project_id:
-        console.error("The project id could not be determined.", _exit=True)
+    cluster_data = ctx.cluster_manager.get(id=project_id)
+    if not cluster_data:
+        console.error("The cluster could not be found.", _exit=True)
 
     ## deck_id
     # GraphQL
@@ -57,7 +57,9 @@ def get_deck_from_arguments(ctx, project_title: str, deck_title: str):
                     results {
                         id
                         title
-                        namespace
+                        environment {
+                            namespace
+                        }
                     }
                 }
             }
@@ -72,39 +74,81 @@ def get_deck_from_arguments(ctx, project_title: str, deck_title: str):
         console.exit_generic_error()
 
     deck_list = data["allDecks"]["results"]
-    deck_title_list = [item["title"] for item in deck_list]
+    deck_choices = [f'{item["title"]} ({item["id"]})' for item in deck_list]
+    deck_choices_ids = [item["id"] for item in deck_list]
 
     # argument
-    if not deck_title:
+    if not context.deck_id:
         # argument from console
-        deck_title = console.list(
+        deck_selected = console.list(
             message="Please select a deck",
             message_no_choices="No deck found.",
-            choices=deck_title_list,
+            choices=deck_choices,
         )
-        if deck_title is None:
-            console.exit_generic_error()
+
+        deck_id = re.search(r"\((.*?)\)", deck_selected).group(1)
+
+    if deck_id is None:
+        console.exit_generic_error()
 
     # check if deck exists
-    if deck_title not in deck_title_list:
+    if deck_id not in deck_choices_ids:
         console.error("The deck could not be found.", _exit=True)
 
     # get deck
     deck = None
     for deck in deck_list:
-        if deck["title"] == deck_title:
+        if deck["id"] == deck_id:
             break
 
-    return project_id, project_title, deck
+    return cluster_data, deck
+
+
+def argument_app(k8s, app: str):
+    if not app:
+        app_choices = [pod.metadata.name for pod in k8s.get_pods().items]
+        app = console.list(
+            message="Please select an app",
+            choices=app_choices,
+        )
+
+    if not app:
+        console.error("No apps available.", _exit=True)
+
+    if app not in [pod.metadata.name for pod in k8s.get_pods().items]:
+        console.error("App does not exist.", _exit=True)
+
+    return app
 
 
 @click.command()
-def list(**kwargs):
-    raise NotImplementedError
+@click.option("--organization", "-o", help="Select an organization")
+@click.option("--project", "-p", help="Select a project")
+@click.option("--deck", "-d", help="Select a deck")
+@click.pass_obj
+def list(ctx, organization, project, deck, **kwargs):
+    """List all apps/pods."""
+
+    ctx.auth.check()
+    cluster_data, deck = get_deck_from_arguments(ctx, organization, project, deck)
+
+    # get cluster
+    cluster = get_cluster_or_exit(ctx, cluster_data.id)
+    provider_data = cluster.storage.get()
+
+    # list
+    k8s = KubeAPI(provider_data, deck)
+    pod_table = [{"id": pod.metadata.uid, "name": pod.metadata.name} for pod in k8s.get_pods().items]
+
+    console.table(data=pod_table)
 
 
 @click.command()
-def info(**kwargs):
+@click.option("--organization", "-o", help="Select an organization")
+@click.option("--project", "-p", help="Select a project")
+@click.option("--deck", "-d", help="Select a deck")
+@click.pass_obj
+def info(ctx, organization, project, deck, **kwargs):
     raise NotImplementedError
 
 
@@ -114,43 +158,27 @@ def use(**kwargs):
 
 
 @click.command()
-@click.argument("project_title", required=False)
-@click.argument("deck_title", required=False)
-@click.argument("pod_title", required=False)
+@click.argument("app", required=False)
+@click.option("--organization", "-o", help="Select an organization")
+@click.option("--project", "-p", help="Select a project")
+@click.option("--deck", "-d", help="Select a deck")
 @click.pass_obj
-def shell(ctx, project_title, deck_title, pod_title, **kwargs):
+def shell(ctx, app, organization=None, project=None, deck=None, **kwargs):
     """Drop into an interactive shell."""
 
     ctx.auth.check()
+    cluster_data, deck = get_deck_from_arguments(ctx, organization, project, deck)
 
-    project_id, project_title, deck = get_deck_from_arguments(ctx, project_title, deck_title)
-
-    ## shell
-    # check if cluster is ready
-    cluster_data = ctx.cluster_manager.get(id=project_id)
-    cluster = ctx.cluster_manager.select(cluster_data=cluster_data)
-    if not cluster:
-        console.error("The project cluster does not exist.")
-        return None
-
+    # get cluster
+    cluster = get_cluster_or_exit(ctx, cluster_data.id)
     provider_data = cluster.storage.get()
 
     # shell
     k8s = KubeAPI(provider_data, deck)
-
-    if not pod_title:
-        pod_list_choices = [pod.metadata.name for pod in k8s.get_pods().items]
-        pod_title = console.list(
-            message="Please select a pod",
-            choices=pod_list_choices,
-        )
-
-    if not pod_title:
-        console.error("No pods available.")
-        return None
+    app = argument_app(k8s, app)
 
     # get the data of the selected pod
-    data = k8s.get_pod(pod_title)
+    data = k8s.get_pod(app)
 
     # 1. check if this pod is of a switched deployment (in case of an active Telepresence)
     if data.metadata.labels.get("telepresence"):
@@ -159,7 +187,7 @@ def shell(ctx, project_title, deck_title, pod_title, **kwargs):
 
         # the container name generated in "app switch" for that pod
         container_name = settings.TELEPRESENCE_DOCKER_IMAGE_FORMAT.format(
-            project=project_title, deck=deck["title"], name=deployment
+            project=cluster_data.name, deck=deck["title"], name=deployment
         ).replace(":", "")
 
         if Docker().check_running(container_name):
@@ -174,39 +202,35 @@ def shell(ctx, project_title, deck_title, pod_title, **kwargs):
 
     else:
         # 2.b connect using kubernetes
-        KubeCtl(provider_data).exec_pod(pod_title, deck["namespace"], "/bin/sh", interactive=True)
+        KubeCtl(provider_data).exec_pod(app, deck["namespace"], "/bin/sh", interactive=True)
 
 
 @click.command()
-@click.argument("project_title", required=False)
-@click.argument("deck_title", required=False)
-@click.argument("pod_title", required=False)
+@click.argument("app", required=False)
+@click.option("--organization", "-o", help="Select an organization")
+@click.option("--project", "-p", help="Select a project")
+@click.option("--deck", "-d", help="Select a deck")
 @click.pass_context
 def exec(ctx, **kwargs):
     ctx.forward(shell)
 
 
 @click.command()
-@click.argument("project_title", required=False)
-@click.argument("deck_title", required=False)
+@click.argument("app", required=False)
+@click.option("--organization", "-o", help="Select an organization")
+@click.option("--project", "-p", help="Select a project")
+@click.option("--deck", "-d", help="Select a deck")
 @click.option("--deployment", help="Specify the deployment if not set in the Unikubefile")
-@click.option("--image", help="Specify the Docker image from your local registry")
 @click.option("--unikubefile", help="Specify the path to the Unikubefile", type=str)
 @click.pass_obj
-def switch(ctx, project_title, deck_title, deployment, image, unikubefile, **kwargs):
+def switch(ctx, app, organization, project, deck, deployment, unikubefile, **kwargs):
     """Switch a running deployment with a local Docker image"""
 
     ctx.auth.check()
+    cluster_data, deck = get_deck_from_arguments(ctx, organization, project, deck)
 
-    project_id, project_title, deck = get_deck_from_arguments(ctx, project_title, deck_title)
-
-    ## switch
-    # check if cluster is ready
-    cluster_data = ctx.cluster_manager.get(id=project_id)
-    cluster = ctx.cluster_manager.select(cluster_data=cluster_data)
-    if not cluster:
-        console.error("The project cluster does not exist.")
-        return None
+    # get cluster
+    cluster = get_cluster_or_exit(ctx, cluster_data.id)
 
     # unikube file input
     if unikubefile:
@@ -239,6 +263,12 @@ def switch(ctx, project_title, deck_title, deployment, image, unikubefile, **kwa
                         ports
                         isSwitchable
                     }
+                    environment {
+                        id
+                        type
+                        valuesPath
+                        namespace
+                    }
                 }
             }
             """,
@@ -266,7 +296,7 @@ def switch(ctx, project_title, deck_title, deployment, image, unikubefile, **kwa
 
     ports = target_deployment["ports"].split(",")
     deployment = target_deployment["title"]
-    namespace = deck["namespace"]
+    namespace = deck["environment"][0]["namespace"]
 
     # 3: Build an new Docker image
     # 3.1 Grab the docker file
@@ -276,7 +306,7 @@ def switch(ctx, project_title, deck_title, deployment, image, unikubefile, **kwa
 
     # 3.2 Set an image name
     image_name = settings.TELEPRESENCE_DOCKER_IMAGE_FORMAT.format(
-        project=project_title.replace(" ", "").lower(), deck=deck["title"], name=deployment
+        project=cluster_data.name.replace(" ", "").lower(), deck=deck["title"], name=deployment
     )
 
     # 3.3 Build image
@@ -302,9 +332,10 @@ def switch(ctx, project_title, deck_title, deployment, image, unikubefile, **kwa
     command = unikube_file.get_command(port=ports[0])
     console.debug(f"Run command: {command}")
 
-    console.info("Starting your container, this may takes a while to become effective")
+    console.info("Starting your container, this may take a while to become effective")
     provider_data = cluster.storage.get()
     Telepresence(provider_data, debug_output=True).swap(deployment, image_name, command, namespace, envs, mounts)
+
     # if something went wrong with Telepresence
     if docker.check_running(image_name):
         docker.kill(name=image_name)
@@ -316,43 +347,27 @@ def pulldb(**kwargs):
 
 
 @click.command()
-@click.argument("project_title", required=False)
-@click.argument("deck_title", required=False)
-@click.argument("pod_title", required=False)
+@click.argument("app", required=False)
+@click.option("--organization", "-o", help="Select an organization")
+@click.option("--project", "-p", help="Select a project")
+@click.option("--deck", "-d", help="Select a deck")
 @click.option("--follow", "-f", is_flag=True, default=False, help="Follow logs.")
 @click.pass_obj
-def logs(ctx, project_title, deck_title, pod_title, follow=False, **kwargs):
+def logs(ctx, app, organization=None, project=None, deck=None, follow=False, **kwargs):
     """Display the container's logs"""
 
     ctx.auth.check()
+    cluster_data, deck = get_deck_from_arguments(ctx, organization, project, deck)
 
-    project_id, project_title, deck = get_deck_from_arguments(ctx, project_title, deck_title)
-
-    ## logs
-    # check if cluster is ready
-    cluster_data = ctx.cluster_manager.get(id=project_id)
-    cluster = ctx.cluster_manager.select(cluster_data=cluster_data)
-    if not cluster:
-        console.error("The project cluster does not exist.")
-        return None
-
+    # get cluster
+    cluster = get_cluster_or_exit(ctx, cluster_data.id)
     provider_data = cluster.storage.get()
 
     # log
     k8s = KubeAPI(provider_data, deck)
+    app = argument_app(k8s, app)
 
-    if not pod_title:
-        pod_list_choices = [pod.metadata.name for pod in k8s.get_pods().items]
-        pod_title = console.list(
-            message="Please select a pod",
-            choices=pod_list_choices,
-        )
-
-    if not pod_title:
-        console.error("No pods available.")
-        return None
-
-    logs = k8s.get_logs(pod_title, follow)
+    logs = k8s.get_logs(app, follow)
 
     # output
     click.echo(logs)

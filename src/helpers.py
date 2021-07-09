@@ -1,3 +1,4 @@
+import re
 import sys
 from urllib.parse import urljoin
 
@@ -5,9 +6,48 @@ import click_spinner
 import requests
 from requests import HTTPError, Session
 
+import src.cli.console as console
 from src import settings
-from src.cli import console
+from src.authentication.authentication import TokenAuthentication
 from src.graphql import EnvironmentType
+
+
+def select_entity(entity_list, identifier):
+    # parsing id, which should be in parentheses after the project title
+    id = re.search("(?<=\\()[^)]*(?=\\))", identifier)
+    similar_entities = []
+    if id:
+        identifier = id.group(0)
+    for entity in entity_list:
+        if identifier == entity.get("id"):
+            return entity
+        elif identifier in (entity.get("title"), entity.get("slug")):
+            similar_entities.append(entity)
+    if similar_entities:
+        console.warning(
+            f"Entity {similar_entities[0].get('title')} has a duplicate title or slug. Specify ID directly "
+            f"after title or slug in parentheses."
+        )
+    return None
+
+
+def select_entity_from_cluster_list(cluster_list, identifier):
+    # parsing id, which should be in parentheses after the project title
+    id = re.search("(?<=\\()[^)]*(?=\\))", identifier)
+    similar_entities = []
+    if id:
+        identifier = id.group(0)
+    for entity in cluster_list:
+        if identifier == entity.id:
+            return entity
+        if (hasattr(entity, "slug") and identifier == entity.slug) or (identifier == entity.name):
+            similar_entities.append(entity)
+    if similar_entities:
+        console.warning(
+            f"Entity {similar_entities[0].name} has a duplicate title or slug. Specify ID directly "
+            f"after title or slug in parentheses."
+        )
+    return None
 
 
 def get_requests_session(access_token) -> Session:
@@ -28,7 +68,7 @@ def download_specs(access_token: str, environment_id: str):
     return manifest
 
 
-def download_manifest(deck: dict, access_token: str, environment_index: int = 0):
+def download_manifest(deck: dict, authentication: TokenAuthentication, access_token: str, environment_index: int = 0):
     try:
         environment_id = deck["environment"][environment_index]["id"]
         console.info("Requesting manifests. This process may takes a few seconds.")
@@ -45,8 +85,24 @@ def download_manifest(deck: dict, access_token: str, environment_index: int = 0)
                 f"and save a valid values path."
             )
             exit(1)
+        elif e.response.status_code == 403:
+            console.warning("Refreshing access token")
+            environment_id = deck["environment"][environment_index]["id"]
+            response = authentication.refresh()
+            if not response["success"]:
+                console.exit_login_required()
+
+            access_token = response["response"]["access_token"]
+            try:
+                manifest = download_specs(
+                    access_token=access_token,
+                    environment_id=environment_id,
+                )
+            except HTTPError as e:
+                console.warning(f"Even after refreshing access token download specs fails with {e}")
+                exit(1)
         else:
-            console.error_and_exit("Could not load manifest: " + str(e))
+            console.error("Could not load manifest: " + str(e), _exit=True)
 
     return manifest
 
@@ -59,10 +115,12 @@ def environment_type_from_string(environment_type: str):
         console.debug(e)
         environment_type = None
 
+    return environment_type
+
 
 def check_environment_type_local_or_exit(deck: dict, environment_index: int = 0):
     if (
         environment_type_from_string(environment_type=deck["environment"][environment_index]["type"])
         != EnvironmentType.LOCAL
     ):
-        console.error_and_exit("This deck cannot be installed locally.")
+        console.error("This deck cannot be installed locally.", _exit=True)

@@ -235,7 +235,7 @@ class KubeAPI(object):
     def __init__(self, provider_data, deck):
         self._provider_data = provider_data
         self._deck = deck
-        self._namespace = self._deck["namespace"] or "default"
+        self._namespace = self._deck["environment"][0]["namespace"] or "default"
         self._api_client = config.new_client_from_config(provider_data.kubeconfig_path)
         self._core_api = client.CoreV1Api(self._api_client)
         self._networking_api = client.NetworkingV1beta1Api(self._api_client)

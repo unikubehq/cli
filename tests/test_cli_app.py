@@ -1,9 +1,10 @@
+from unittest.mock import patch
+
 import pytest
 from click.testing import CliRunner
 
 from src.cli import app
 from unikube import ClickContext
-from unittest.mock import patch
 
 
 def check():
@@ -11,29 +12,32 @@ def check():
     pass
 
 
-def test_shell_cluster_not_found():
+def test_list():
+    runner = CliRunner()
+    obj = ClickContext()
+    obj.auth.check = check
+    result = runner.invoke(
+        app.list,
+        obj=obj,
+    )
+    assert "[INFO] No cluster is running.\n" in result.output
 
+
+def test_shell_cluster_not_found():
     runner = CliRunner()
     obj = ClickContext()
     obj.auth.check = check
     result = runner.invoke(
         app.shell,
-        ["test", "test", "test"],
+        [
+            "test",
+            "--organization",
+            "13fc0b1b-3bc1-4a69-8e80-835fb1515bc4",
+            "--project",
+            "13fc0b1b-3bc1-4a69-8e80-835fb1515bc4",
+            "--deck",
+            "13fc0b1b-3bc1-4a69-8e80-835fb1515bc4",
+        ],
         obj=obj,
     )
     assert "[ERROR] The project cluster could not be found.\n" in result.output
-
-
-def test_shell_no_cluster_running():
-
-    runner = CliRunner()
-    obj = ClickContext()
-    obj.auth.check = check
-    result = runner.invoke(
-        app.shell,
-        obj=obj,
-    )
-    assert "No cluster is running." in result.output
-
-
-
