@@ -1,14 +1,16 @@
 import pytest
 from requests import HTTPError, Session
 
+from src.local.providers.types import K8sProviderData
 from src.helpers import (
     download_manifest,
     download_specs,
     get_requests_session,
     select_entity,
     select_entity_from_cluster_list,
+    check_environment_type_local_or_exit,
+    environment_type_from_string,
 )
-from src.local.providers.types import K8sProviderData
 
 
 def test_get_requests_session():
@@ -103,3 +105,16 @@ def test_select_entity_from_cluster_list_duplicate_entities():
     identifier = "test-select-entity"
     response = select_entity_from_cluster_list(entity_list, identifier)
     assert response is None
+
+
+def test_environment_type_from_string():
+    result = environment_type_from_string("")
+    assert result is None
+
+
+def test_check_environment_type_local_or_exit():
+    with pytest.raises(SystemExit) as pytest_wrapped_e:
+        deck = {"environment": {0: {"type": "REMOTE"}}}
+        check_environment_type_local_or_exit(deck)
+    assert pytest_wrapped_e.type == SystemExit
+    assert pytest_wrapped_e.value.code == 1
