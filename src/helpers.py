@@ -12,6 +12,7 @@ from src.authentication.authentication import TokenAuthentication
 from src.context import ClickContext
 from src.graphql import EnvironmentType
 from src.local.providers.types import K8sProviderType
+from src.local.system import Telepresence
 
 
 def select_entity(entity_list, identifier):
@@ -133,6 +134,7 @@ def check_running_cluster(ctx: ClickContext, cluster_provider_type: K8sProviderT
         cluster = ctx.cluster_manager.select(cluster_data=cluster_data, cluster_provider_type=cluster_provider_type)
         if cluster.exists() and cluster.ready():
             if cluster.name == project_instance["title"] and cluster.id == project_instance["id"]:
+                Telepresence(cluster.storage.get()).start()
                 console.info(f"Kubernetes cluster for '{cluster.display_name}' is already running.", _exit=True)
             else:
                 console.error(
