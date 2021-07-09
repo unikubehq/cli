@@ -1,6 +1,8 @@
 import os
 import re
+import signal
 import sys
+from time import sleep
 
 import click
 import click_spinner
@@ -17,7 +19,6 @@ from src.unikubefile.selector import unikube_file_selector
 def get_deck_from_arguments(ctx, organization_id: str, project_id: str, deck_id: str):
 
     context = ctx.context.get(organization=organization_id, project=project_id, deck=deck_id)
-
     ## project_id
     cluster_list = ctx.cluster_manager.get_cluster_list(ready=True)
     cluster_choices = [f"{item.name} ({item.id})" for item in cluster_list]
@@ -27,20 +28,20 @@ def get_deck_from_arguments(ctx, organization_id: str, project_id: str, deck_id:
     if not context.project_id:
         # argument from console
         project_selected = console.list(
-            message="Please select a cluster",
-            message_no_choices="No cluster is running.",
+            message="Please select a project",
+            message_no_choices="No project is running.",
             choices=cluster_choices,
         )
+        project_id = re.search(r"\((.*?)\)", project_selected).group(1)
+
         if project_id is None:
             console.exit_generic_error()
-
-        project_id = re.search(r"\((.*?)\)", project_selected).group(1)
     else:
         project_id = context.project_id
 
     # check if project is in local storage
     if project_id not in cluster_choices_ids:
-        console.error("The project cluster could not be found.", _exit=True)
+        console.error("The project cluster could not be found or you have another project activated.", _exit=True)
 
     cluster_data = ctx.cluster_manager.get(id=project_id)
     if not cluster_data:
@@ -202,7 +203,7 @@ def shell(ctx, app, organization=None, project=None, deck=None, **kwargs):
 
     else:
         # 2.b connect using kubernetes
-        KubeCtl(provider_data).exec_pod(app, deck["namespace"], "/bin/sh", interactive=True)
+        KubeCtl(provider_data).exec_pod(app, deck["environment"][0]["namespace"], "/bin/sh", interactive=True)
 
 
 @click.command()
@@ -228,7 +229,6 @@ def switch(ctx, app, organization, project, deck, deployment, unikubefile, **kwa
 
     ctx.auth.check()
     cluster_data, deck = get_deck_from_arguments(ctx, organization, project, deck)
-
     # get cluster
     cluster = get_cluster_or_exit(ctx, cluster_data.id)
 
@@ -242,11 +242,17 @@ def switch(ctx, app, organization, project, deck, deployment, unikubefile, **kwa
 
     # 2: Get a deployment
     # 2.1.a Check the deployment identifier
-    if not deployment:
+    if not deployment and unikube_file:
         # 1.1.b check the unikubefile
         deployment = unikube_file.get_deployment()
         if not deployment:
-            console.error("Please specify the deployment either using the '--deployment' option or in the Unikubefile")
+            console.error("Please specify the 'deployment' ke of your app in your unikube.yaml.", _exit=True)
+    else:
+        console.error(
+            "Please specify the deployment either using the '--deployment' option or in the unikube.yaml. "
+            "Run 'unikube app switch' in a directory containing the unikube.yaml file.",
+            _exit=True,
+        )
 
     # 2.2 Fetch available "deployment:", deployments
     # GraphQL
@@ -298,6 +304,21 @@ def switch(ctx, app, organization, project, deck, deployment, unikubefile, **kwa
     deployment = target_deployment["title"]
     namespace = deck["environment"][0]["namespace"]
 
+    console.info("Please wait while unikube prepares the switch.")
+    with click_spinner.spinner(beep=False, disable=False, force=False, stream=sys.stdout):
+        # check telepresence
+        provider_data = cluster.storage.get()
+        telepresence = Telepresence(provider_data)
+
+        available_deployments = telepresence.list(namespace, flat=True)
+        if deployment not in available_deployments:
+            console.error(
+                "The given deployment cannot be switched. " f"You may have to run 'unikube deck install {deck}' first.",
+                _exit=True,
+            )
+
+        is_swapped = telepresence.is_swapped(deployment, namespace)
+
     # 3: Build an new Docker image
     # 3.1 Grab the docker file
     context, dockerfile, target = unikube_file.get_docker_build()
@@ -309,8 +330,19 @@ def switch(ctx, app, organization, project, deck, deployment, unikubefile, **kwa
         project=cluster_data.name.replace(" ", "").lower(), deck=deck["title"], name=deployment
     )
 
-    # 3.3 Build image
     docker = Docker()
+
+    if is_swapped:
+        console.warning("It seems this app is already switched in another process. ")
+        if click.confirm("Do you want to kill it and switch here?"):
+            telepresence.leave(deployment, namespace, silent=True)
+            if docker.check_running(image_name):
+                docker.kill(name=image_name)
+        else:
+            sys.exit(0)
+
+    # 3.3 Build image
+
     with click_spinner.spinner(beep=False, disable=False, force=False, stream=sys.stdout):
         status, msg = docker.build(image_name, context, dockerfile, target)
     if not status:
@@ -333,10 +365,8 @@ def switch(ctx, app, organization, project, deck, deployment, unikubefile, **kwa
     console.debug(f"Run command: {command}")
 
     console.info("Starting your container, this may take a while to become effective")
-    provider_data = cluster.storage.get()
-    Telepresence(provider_data, debug_output=True).swap(deployment, image_name, command, namespace, envs, mounts)
 
-    # if something went wrong with Telepresence
+    telepresence.swap(deployment, image_name, command, namespace, envs, mounts, ports[0])
     if docker.check_running(image_name):
         docker.kill(name=image_name)
 

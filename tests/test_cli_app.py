@@ -20,7 +20,7 @@ def test_list():
         app.list,
         obj=obj,
     )
-    assert "[INFO] No cluster is running.\n" in result.output
+    assert "[INFO] No project is running.\n" in result.output
 
 
 def test_shell_cluster_not_found():
@@ -40,4 +40,4 @@ def test_shell_cluster_not_found():
         ],
         obj=obj,
     )
-    assert "[ERROR] The project cluster could not be found.\n" in result.output
+    assert "[ERROR] The project cluster could not be found or you have another project activated.\n" in result.output

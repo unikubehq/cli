@@ -42,7 +42,6 @@ class K8sClusterManager(LocalStorage):
 
                     # append cluster to list
                     ls.append(cluster_data)
-
         return ls
 
     def exists(
