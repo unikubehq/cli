@@ -1,7 +1,13 @@
 import pytest
 from requests import HTTPError, Session
 
-from src.helpers import download_manifest, download_specs, get_requests_session
+from src.helpers import (
+    check_environment_type_local_or_exit,
+    download_manifest,
+    download_specs,
+    environment_type_from_string,
+    get_requests_session,
+)
 
 
 def test_get_requests_session():
@@ -38,5 +44,18 @@ def test_download_manifest():
     with pytest.raises(SystemExit) as pytest_wrapped_e:
         _ = download_manifest(deck=deck, access_token=access_token)
 
+    assert pytest_wrapped_e.type == SystemExit
+    assert pytest_wrapped_e.value.code == 1
+
+
+def test_environment_type_from_string():
+    result = environment_type_from_string("")
+    assert result is None
+
+
+def test_check_environment_type_local_or_exit():
+    with pytest.raises(SystemExit) as pytest_wrapped_e:
+        deck = {"environment": {0: {"type": "REMOTE"}}}
+        check_environment_type_local_or_exit(deck)
     assert pytest_wrapped_e.type == SystemExit
     assert pytest_wrapped_e.value.code == 1
