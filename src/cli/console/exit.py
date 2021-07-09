@@ -2,7 +2,7 @@ from src.cli.console.logger import error, info
 
 
 def exit_login_required():
-    info("Login required.")
+    info("You need to login (again). Please run 'unikube login' and try again.")
     exit(1)
 
 

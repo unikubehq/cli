@@ -8,6 +8,7 @@ from requests import HTTPError, Session
 
 import src.cli.console as console
 from src import settings
+from src.authentication.authentication import TokenAuthentication
 from src.graphql import EnvironmentType
 
 
@@ -67,7 +68,7 @@ def download_specs(access_token: str, environment_id: str):
     return manifest
 
 
-def download_manifest(deck: dict, access_token: str, environment_index: int = 0):
+def download_manifest(deck: dict, authentication: TokenAuthentication, access_token: str, environment_index: int = 0):
     try:
         environment_id = deck["environment"][environment_index]["id"]
         console.info("Requesting manifests. This process may takes a few seconds.")
@@ -84,6 +85,22 @@ def download_manifest(deck: dict, access_token: str, environment_index: int = 0)
                 f"and save a valid values path."
             )
             exit(1)
+        elif e.response.status_code == 403:
+            console.warning("Refreshing access token")
+            environment_id = deck["environment"][environment_index]["id"]
+            response = authentication.refresh()
+            if not response["success"]:
+                console.exit_login_required()
+
+            access_token = response["response"]["access_token"]
+            try:
+                manifest = download_specs(
+                    access_token=access_token,
+                    environment_id=environment_id,
+                )
+            except HTTPError as e:
+                console.warning(f"Even after refreshing access token download specs fails with {e}")
+                exit(1)
         else:
             console.error("Could not load manifest: " + str(e), _exit=True)
 

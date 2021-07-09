@@ -11,4 +11,4 @@ def test_login():
         obj=ClickContext(),
     )
     assert "[DEBUG] Refresh token expired or account does not exist." in result.output
-    assert "[INFO] Login required." in result.output
+    assert "[INFO] You need to login (again). Please run 'unikube login' and try again." in result.output
