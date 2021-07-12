@@ -37,4 +37,4 @@ def test_info():
         ],
         obj=obj,
     )
-    assert "[ERROR] Deck does not exist.\n" in result.output
+    assert result.exit_code == 1
