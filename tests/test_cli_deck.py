@@ -23,7 +23,7 @@ def test_list():
         ],
         obj=obj,
     )
-    assert result.exit_code == 0
+    assert result.exit_code == 1
 
 
 def test_info():
