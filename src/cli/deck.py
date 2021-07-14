@@ -472,5 +472,5 @@ def ingress(ctx, deck, **kwargs):
 
     if not ingress_data:
         console.warning(
-            f"Are you sure the deck is installed? " f"You may have to run 'unikube deck install {deck['title']}' first."
+            f"Are you sure the deck is installed? You may have to run 'unikube deck install {deck['title']}' first."
         )
