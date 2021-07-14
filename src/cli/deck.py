@@ -3,27 +3,26 @@ import click
 import src.cli.console as console
 from src.cli.app import get_deck_from_arguments
 from src.cli.console.logger import LogLevel, color_mapping
-from src.graphql import EnvironmentType, GraphQL
-from src.helpers import (
-    check_environment_type_local_or_exit,
-    download_manifest,
-    download_specs,
-    environment_type_from_string,
-    select_entity,
-)
+from src.graphql import GraphQL
+from src.helpers import check_environment_type_local_or_exit, download_manifest, select_entity
 from src.local.providers.helper import get_cluster_or_exit
 from src.local.system import KubeAPI, KubeCtl
 from src.storage.user import get_local_storage_user
 
 
 def get_install_uninstall_arguments(ctx, deck: str):
+    # user_data / context
+    local_storage_user = get_local_storage_user()
+    user_data = local_storage_user.get()
+    context = user_data.context
+
     # GraphQL
     try:
         graph_ql = GraphQL(authentication=ctx.auth)
         data = graph_ql.query(
             """
-            {
-                allDecks(limit:100) {
+            query($organization_id: UUID, $project_id: UUID) {
+                allDecks(organizationId: $organization_id, projectId: $project_id, limit: 100) {
                     totalCount
                     results {
                         id
@@ -45,7 +44,10 @@ def get_install_uninstall_arguments(ctx, deck: str):
                 }
             }
             """,
-            query_variables={},
+            query_variables={
+                "organization_id": context.organization_id,
+                "project_id": context.project_id,
+            },
         )
 
     except Exception as e:
@@ -130,8 +132,8 @@ def list(ctx, organization=None, project=None, **kwargs):
             }
             """,
             query_variables={
-                "organization_id": organization,
-                "project_id": project,
+                "organization_id": context.organization_id,
+                "project_id": context.project_id,
             },
         )
     except Exception as e:
@@ -171,13 +173,15 @@ def info(ctx, deck, **kwargs):
     Display further information of the selected deck.
     """
 
+    context = ctx.context.get()
+
     # GraphQL
     try:
         graph_ql = GraphQL(authentication=ctx.auth)
         data = graph_ql.query(
             """
-            {
-                allDecks {
+            query($organization_id: UUID, $project_id: UUID) {
+                allDecks(organizationId: $organization_id, projectId: $project_id) {
                     results {
                         id
                         title
@@ -187,7 +191,11 @@ def info(ctx, deck, **kwargs):
                     }
                 }
             }
-            """
+            """,
+            query_variables={
+                "organization_id": context.organization_id,
+                "project_id": context.project_id,
+            },
         )
     except Exception:
         data = None
