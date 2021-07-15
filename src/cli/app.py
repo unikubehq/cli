@@ -19,6 +19,7 @@ from src.unikubefile.selector import unikube_file_selector
 def get_deck_from_arguments(ctx, organization_id: str, project_id: str, deck_id: str):
 
     context = ctx.context.get(organization=organization_id, project=project_id, deck=deck_id)
+
     ## project_id
     cluster_list = ctx.cluster_manager.get_cluster_list(ready=True)
     cluster_choices = [f"{item.name} ({item.id})" for item in cluster_list]
@@ -86,8 +87,12 @@ def get_deck_from_arguments(ctx, organization_id: str, project_id: str, deck_id:
             message_no_choices="No deck found.",
             choices=deck_choices,
         )
+        if deck_selected is None:
+            exit(1)
 
         deck_id = re.search(r"\((.*?)\)", deck_selected).group(1)
+    else:
+        deck_id = context.deck_id
 
     if deck_id is None:
         console.exit_generic_error()
@@ -229,6 +234,7 @@ def switch(ctx, app, organization, project, deck, deployment, unikubefile, **kwa
 
     ctx.auth.check()
     cluster_data, deck = get_deck_from_arguments(ctx, organization, project, deck)
+
     # get cluster
     cluster = get_cluster_or_exit(ctx, cluster_data.id)
 
