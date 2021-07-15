@@ -32,10 +32,10 @@ def get_deck_from_arguments(ctx, organization_id: str, project_id: str, deck_id:
             message_no_choices="No project is running.",
             choices=cluster_choices,
         )
-        project_id = re.search(r"\((.*?)\)", project_selected).group(1)
+        if project_selected is None:
+            exit(1)
 
-        if project_id is None:
-            console.exit_generic_error()
+        project_id = re.search(r"\((.*?)\)", project_selected).group(1)
     else:
         project_id = context.project_id
 
