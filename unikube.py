@@ -83,8 +83,6 @@ deck.add_command(deck_cmd.info)
 deck.add_command(deck_cmd.use)
 deck.add_command(deck_cmd.install)
 deck.add_command(deck_cmd.uninstall)
-deck.add_command(deck_cmd.logs)
-deck.add_command(deck_cmd.request_env)
 deck.add_command(deck_cmd.ingress)
 
 

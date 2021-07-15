@@ -1,11 +1,8 @@
 import click
 
 import src.cli.console as console
-from src.cli.app import get_deck_from_arguments
-from src.cli.console.logger import LogLevel, color_mapping
 from src.graphql import GraphQL
 from src.helpers import check_environment_type_local_or_exit, download_manifest, select_entity
-from src.local.providers.helper import get_cluster_or_exit
 from src.local.system import KubeAPI, KubeCtl
 from src.storage.user import get_local_storage_user
 
@@ -418,40 +415,6 @@ def uninstall(ctx, deck, **kwargs):
 
     # console
     console.success("Deck deleted.")
-
-
-@click.command()
-@click.option("--organization", "-o", help="Select an organization")
-@click.option("--project", "-p", help="Select a project")
-@click.option("--deck", "-d", help="Select a deck")
-@click.pass_obj
-def logs(ctx, organization=None, project=None, deck=None, **kwargs):
-    """Display the container's logs"""
-
-    ctx.auth.check()
-    cluster_data, deck = get_deck_from_arguments(ctx, organization, project, deck)
-
-    # get cluster
-    cluster = get_cluster_or_exit(ctx, cluster_data.id)
-    provider_data = cluster.storage.get()
-
-    # log
-    k8s = KubeAPI(provider_data, deck)
-    for pod_name in [pod.metadata.name for pod in k8s.get_pods().items]:
-        # get logs
-        logs = k8s.get_logs(pod_name, follow=False)
-
-        # output
-        fg = color_mapping.get(LogLevel.SUCCESS, "")
-        click.secho(f"[APP] {pod_name}", fg=fg)
-        click.echo(logs)
-
-
-@click.command()
-@click.argument("deck_name", required=False)
-@click.option("--app", "-a", help="Request a new environment variable")
-def request_env(deck_name, **kwargs):
-    raise NotImplementedError
 
 
 @click.command()

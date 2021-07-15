@@ -1,3 +1,4 @@
+import os
 from unittest.mock import patch
 
 import pytest
@@ -7,11 +8,11 @@ from src.cli import auth
 from unikube import ClickContext
 
 
-def test_login():
+def test_login_failed():
     runner = CliRunner()
     result = runner.invoke(
         auth.login,
-        ["--email", "test@test.de", "--password", "secure"],
+        ["--email", "test@test.de", "--password", "unsecure"],
         obj=ClickContext(),
     )
     assert result.output == "[ERROR] Login failed. Please check email and password.\n"
@@ -66,4 +67,17 @@ def test_status_success():
         obj=obj,
     )
     assert result.output == "[SUCCESS] Authentication verified.\n"
+    assert result.exit_code == 0
+
+
+def test_login_success():
+    runner = CliRunner()
+    email = os.getenv("TESTRUNNER_EMAIL")
+    secret = os.getenv("TESTRUNNER_SECRET")
+    result = runner.invoke(
+        auth.login,
+        ["--email", email, "--password", secret],
+        obj=ClickContext(),
+    )
+    assert result.output == "[SUCCESS] Hello Testrunner!  You are now logged in!\n"
     assert result.exit_code == 0

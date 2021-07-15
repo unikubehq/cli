@@ -36,6 +36,9 @@ jobs:
       run: |
         pip install coverage
         coverage run -m pytest
+      env:
+        TESTRUNNER_EMAIL: ${{ secrets.TESTRUNNER_EMAIL }}
+        TESTRUNNER_SECRET: ${{ secrets.TESTRUNNER_SECRET }}
 
     - name: Combine coverage
       run: |
