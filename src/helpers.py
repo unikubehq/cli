@@ -9,7 +9,10 @@ from requests import HTTPError, Session
 import src.cli.console as console
 from src import settings
 from src.authentication.authentication import TokenAuthentication
+from src.context import ClickContext
 from src.graphql import EnvironmentType
+from src.local.providers.types import K8sProviderType
+from src.local.system import Telepresence
 
 
 def select_entity(entity_list, identifier):
@@ -23,12 +26,17 @@ def select_entity(entity_list, identifier):
             return entity
         elif identifier in (entity.get("title"), entity.get("slug")):
             similar_entities.append(entity)
-    if similar_entities:
+    if len(similar_entities) > 1:
         console.warning(
             f"Entity {similar_entities[0].get('title')} has a duplicate title or slug. Specify ID directly "
             f"after title or slug in parentheses."
         )
-    return None
+        return None
+    elif len(similar_entities) == 1:
+        return similar_entities[0]
+    else:
+        console.warning(f"Entity {identifier} was not found.")
+        return None
 
 
 def select_entity_from_cluster_list(cluster_list, identifier):
@@ -40,14 +48,19 @@ def select_entity_from_cluster_list(cluster_list, identifier):
     for entity in cluster_list:
         if identifier == entity.id:
             return entity
-        if (hasattr(entity, "slug") and identifier == entity.slug) or (identifier == entity.name):
+        elif (hasattr(entity, "slug") and identifier == entity.slug) or (identifier == entity.name):
             similar_entities.append(entity)
-    if similar_entities:
+    if len(similar_entities) > 1:
         console.warning(
             f"Entity {similar_entities[0].name} has a duplicate title or slug. Specify ID directly "
             f"after title or slug in parentheses."
         )
-    return None
+        return None
+    elif len(similar_entities) == 1:
+        return similar_entities[0]
+    else:
+        console.warning(f"Entity {identifier} was not found.")
+        return None
 
 
 def get_requests_session(access_token) -> Session:
@@ -71,7 +84,7 @@ def download_specs(access_token: str, environment_id: str):
 def download_manifest(deck: dict, authentication: TokenAuthentication, access_token: str, environment_index: int = 0):
     try:
         environment_id = deck["environment"][environment_index]["id"]
-        console.info("Requesting manifests. This process may takes a few seconds.")
+        console.info("Requesting manifests. This process may take a few seconds.")
         manifest = download_specs(
             access_token=access_token,
             environment_id=environment_id,
@@ -124,3 +137,19 @@ def check_environment_type_local_or_exit(deck: dict, environment_index: int = 0)
         != EnvironmentType.LOCAL
     ):
         console.error("This deck cannot be installed locally.", _exit=True)
+
+
+def check_running_cluster(ctx: ClickContext, cluster_provider_type: K8sProviderType.k3d, project_instance: dict):
+    for cluster_data in ctx.cluster_manager.get_all():
+        cluster = ctx.cluster_manager.select(cluster_data=cluster_data, cluster_provider_type=cluster_provider_type)
+        if cluster.exists() and cluster.ready():
+            if cluster.name == project_instance["title"] and cluster.id == project_instance["id"]:
+                Telepresence(cluster.storage.get()).start()
+                console.info(f"Kubernetes cluster for '{cluster.display_name}' is already running.", _exit=True)
+            else:
+                console.error(
+                    f"You cannot start multiple projects at the same time. Project {cluster.name}({cluster.id}) is "
+                    f"currently running. Please run 'unikube project down \"{cluster.name}({cluster.id})\"' first and "
+                    f"try again.",
+                    _exit=True,
+                )

@@ -11,6 +11,7 @@ import semantic_version
 
 import src.cli.console as console
 from src import settings
+from src.cli.console import error
 
 
 class LocalDependency(object):
@@ -181,7 +182,7 @@ class Docker(LocalDependency):
 
 
 class Telepresence(LocalDependency):
-    cmd = ("telepresence", "--version")
+    cmd = ("telepresence", "version")
     verbose_name = "Telepresence"
     required_version = settings.TELEPRESENCE_CLI_MIN_VERSION
 
@@ -189,33 +190,26 @@ class Telepresence(LocalDependency):
     def installation_steps(self):
         if platform.system() == "Darwin":
             return [
-                "brew cask install osxfuse",
                 "brew install datawire/blackbird/telepresence",
             ]
         return [
-            "curl -s https://packagecloud.io/install/repositories/datawireio/telepresence/script.deb.sh | sudo bash",
-            "sudo apt install -y --no-install-recommends telepresence",
+            "sudo curl -fL https://app.getambassador.io/download/tel2/linux/amd64/latest/telepresence -o /usr/local/bin/telepresence",
+            "sudo chmod a+x /usr/local/bin/telepresence",
         ]
 
     def check_version(self, cmd_version) -> Tuple[str, bool]:
-        # Telepresence does not support SemVer
-        self.installed_version = re.sub(r"[^0-9\.]", "", cmd_version)
-        self.required_version = re.sub(r"[^0-9\.]", "", self.required_version)
-        required_major, required_minor = map(int, self.required_version.split(".")[0:2])
-        installed_major, installed_minor = map(int, self.installed_version.split(".")[0:2])
-        # simple check for major and minor version
-        if installed_major > required_major:
-            return str(self.installed_version), True
-        elif installed_major >= required_major and installed_minor >= required_minor:
-            return str(self.installed_version), True
-        else:
-            return str(self.installed_version), False
+        # Telepresence 1 does not support SemVer
+        try:
+            version = re.search(r"v\s*([\d.]+)", cmd_version).group(1)
+            return super(Telepresence, self).check_version(version)
+        except AttributeError:
+            return "", False
 
 
 class Homebrew(LocalDependency):
     cmd = ("brew", "--version")
     verbose_name = "Homebrew"
-    required_version = settings.HOMEBREW_CLI_VERSION
+    required_version = settings.HOMEBREW_CLI_MIN_VERSION
     installation_steps = [
         "/bin/bash -c $(curl -fsSL " "https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
     ]
