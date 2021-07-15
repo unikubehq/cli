@@ -3,27 +3,26 @@ import click
 import src.cli.console as console
 from src.cli.app import get_deck_from_arguments
 from src.cli.console.logger import LogLevel, color_mapping
-from src.graphql import EnvironmentType, GraphQL
-from src.helpers import (
-    check_environment_type_local_or_exit,
-    download_manifest,
-    download_specs,
-    environment_type_from_string,
-    select_entity,
-)
+from src.graphql import GraphQL
+from src.helpers import check_environment_type_local_or_exit, download_manifest, select_entity
 from src.local.providers.helper import get_cluster_or_exit
 from src.local.system import KubeAPI, KubeCtl
 from src.storage.user import get_local_storage_user
 
 
 def get_install_uninstall_arguments(ctx, deck: str):
+    # user_data / context
+    local_storage_user = get_local_storage_user()
+    user_data = local_storage_user.get()
+    context = user_data.context
+
     # GraphQL
     try:
         graph_ql = GraphQL(authentication=ctx.auth)
         data = graph_ql.query(
             """
-            {
-                allDecks(limit:100) {
+            query($organization_id: UUID, $project_id: UUID) {
+                allDecks(organizationId: $organization_id, projectId: $project_id, limit: 100) {
                     totalCount
                     results {
                         id
@@ -45,7 +44,10 @@ def get_install_uninstall_arguments(ctx, deck: str):
                 }
             }
             """,
-            query_variables={},
+            query_variables={
+                "organization_id": context.organization_id,
+                "project_id": context.project_id,
+            },
         )
 
     except Exception as e:
@@ -98,6 +100,30 @@ def get_cluster(ctx, deck: dict):
     return cluster
 
 
+def get_ingress_data(deck, provider_data):
+    ingresss = KubeAPI(provider_data, deck).get_ingress()
+    ingress_data = []
+    for ingress in ingresss.items:
+        hosts = []
+        paths = []
+        for rule in ingress.spec.rules:
+            hosts.append(f"http://{rule.host}:{provider_data.publisher_port}")  # NOSONAR
+            for path in rule.http.paths:
+                paths.append(f"{path.path} -> {path.backend.service_name}")
+                # this is an empty line in output
+            hosts.append("")
+            paths.append("")
+
+        ingress_data.append(
+            {
+                "name": ingress.metadata.name,
+                "url": "\n".join(hosts),
+                "paths": "\n".join(paths),
+            }
+        )
+    return ingress_data
+
+
 @click.command()
 @click.option("--organization", "-o", help="Select an organization")
 @click.option("--project", "-p", help="Select a project")
@@ -130,8 +156,8 @@ def list(ctx, organization=None, project=None, **kwargs):
             }
             """,
             query_variables={
-                "organization_id": organization,
-                "project_id": project,
+                "organization_id": context.organization_id,
+                "project_id": context.project_id,
             },
         )
     except Exception as e:
@@ -171,13 +197,15 @@ def info(ctx, deck, **kwargs):
     Display further information of the selected deck.
     """
 
+    context = ctx.context.get()
+
     # GraphQL
     try:
         graph_ql = GraphQL(authentication=ctx.auth)
         data = graph_ql.query(
             """
-            {
-                allDecks {
+            query($organization_id: UUID, $project_id: UUID) {
+                allDecks(organizationId: $organization_id, projectId: $project_id) {
                     results {
                         id
                         title
@@ -187,7 +215,11 @@ def info(ctx, deck, **kwargs):
                     }
                 }
             }
-            """
+            """,
+            query_variables={
+                "organization_id": context.organization_id,
+                "project_id": context.project_id,
+            },
         )
     except Exception:
         data = None
@@ -342,26 +374,7 @@ def install(ctx, deck, **kwargs):
         for file in files:
             kubectl.apply_str(namespace, file["content"])
 
-    ingresss = KubeAPI(provider_data, deck).get_ingress()
-    ingress_data = []
-    for ingress in ingresss.items:
-        hosts = []
-        paths = []
-        for rule in ingress.spec.rules:
-            hosts.append(f"http://{rule.host}:{provider_data.publisher_port}")  # NOSONAR
-            for path in rule.http.paths:
-                paths.append(f"{path.path} -> {path.backend.service_name}")
-                # this is an empty line in output
-            hosts.append("")
-            paths.append("")
-
-        ingress_data.append(
-            {
-                "name": ingress.metadata.name,
-                "url": "\n".join(hosts),
-                "paths": "\n".join(paths),
-            }
-        )
+    ingress_data = get_ingress_data(deck, provider_data)
 
     # console
     console.table(
@@ -439,3 +452,25 @@ def logs(ctx, organization=None, project=None, deck=None, **kwargs):
 @click.option("--app", "-a", help="Request a new environment variable")
 def request_env(deck_name, **kwargs):
     raise NotImplementedError
+
+
+@click.command()
+@click.argument("deck", required=False)
+@click.pass_obj
+def ingress(ctx, deck, **kwargs):
+    deck = get_install_uninstall_arguments(ctx=ctx, deck=deck)
+
+    # get cluster
+    cluster = get_cluster(ctx=ctx, deck=deck)
+    provider_data = cluster.storage.get()
+
+    ingress_data = get_ingress_data(deck, provider_data)
+    console.table(
+        ingress_data,
+        headers={"name": "Name", "url": "URLs"},
+    )
+
+    if not ingress_data:
+        console.warning(
+            f"Are you sure the deck is installed? You may have to run 'unikube deck install {deck['title']}' first."
+        )
