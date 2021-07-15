@@ -38,3 +38,17 @@ def test_info():
         obj=obj,
     )
     assert result.exit_code == 1
+
+
+def test_ingress():
+    runner = CliRunner()
+    obj = ClickContext()
+    obj.auth.check = check
+    result = runner.invoke(
+        deck.ingress,
+        [
+            "13fc0b1b-3bc1-4a69-8e80-835fb1515bc4",
+        ],
+        obj=obj,
+    )
+    assert result.exit_code == 1

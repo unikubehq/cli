@@ -100,6 +100,30 @@ def get_cluster(ctx, deck: dict):
     return cluster
 
 
+def get_ingress_data(deck, provider_data):
+    ingresss = KubeAPI(provider_data, deck).get_ingress()
+    ingress_data = []
+    for ingress in ingresss.items:
+        hosts = []
+        paths = []
+        for rule in ingress.spec.rules:
+            hosts.append(f"http://{rule.host}:{provider_data.publisher_port}")  # NOSONAR
+            for path in rule.http.paths:
+                paths.append(f"{path.path} -> {path.backend.service_name}")
+                # this is an empty line in output
+            hosts.append("")
+            paths.append("")
+
+        ingress_data.append(
+            {
+                "name": ingress.metadata.name,
+                "url": "\n".join(hosts),
+                "paths": "\n".join(paths),
+            }
+        )
+    return ingress_data
+
+
 @click.command()
 @click.option("--organization", "-o", help="Select an organization")
 @click.option("--project", "-p", help="Select a project")
@@ -350,26 +374,7 @@ def install(ctx, deck, **kwargs):
         for file in files:
             kubectl.apply_str(namespace, file["content"])
 
-    ingresss = KubeAPI(provider_data, deck).get_ingress()
-    ingress_data = []
-    for ingress in ingresss.items:
-        hosts = []
-        paths = []
-        for rule in ingress.spec.rules:
-            hosts.append(f"http://{rule.host}:{provider_data.publisher_port}")  # NOSONAR
-            for path in rule.http.paths:
-                paths.append(f"{path.path} -> {path.backend.service_name}")
-                # this is an empty line in output
-            hosts.append("")
-            paths.append("")
-
-        ingress_data.append(
-            {
-                "name": ingress.metadata.name,
-                "url": "\n".join(hosts),
-                "paths": "\n".join(paths),
-            }
-        )
+    ingress_data = get_ingress_data(deck, provider_data)
 
     # console
     console.table(
@@ -447,3 +452,25 @@ def logs(ctx, organization=None, project=None, deck=None, **kwargs):
 @click.option("--app", "-a", help="Request a new environment variable")
 def request_env(deck_name, **kwargs):
     raise NotImplementedError
+
+
+@click.command()
+@click.argument("deck", required=False)
+@click.pass_obj
+def ingress(ctx, deck, **kwargs):
+    deck = get_install_uninstall_arguments(ctx=ctx, deck=deck)
+
+    # get cluster
+    cluster = get_cluster(ctx=ctx, deck=deck)
+    provider_data = cluster.storage.get()
+
+    ingress_data = get_ingress_data(deck, provider_data)
+    console.table(
+        ingress_data,
+        headers={"name": "Name", "url": "URLs"},
+    )
+
+    if not ingress_data:
+        console.warning(
+            f"Are you sure the deck is installed? You may have to run 'unikube deck install {deck['title']}' first."
+        )
