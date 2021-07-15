@@ -79,5 +79,5 @@ def test_login_success():
         ["--email", email, "--password", secret],
         obj=ClickContext(),
     )
-    assert result.output == "[SUCCESS] Hello Testrunner!  You are now logged in!\n"
+    assert result.output == "[SUCCESS] Login successful. Hello Testrunner!\n"
     assert result.exit_code == 0
