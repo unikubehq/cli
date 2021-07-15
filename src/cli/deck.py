@@ -95,7 +95,7 @@ def get_cluster(ctx, deck: dict):
 
     # check if kubernetes cluster is running/ready
     if not cluster.ready():
-        console.error(f"Kubernetes cluster for '{cluster.display_name}' is not running.", _exit=True)
+        console.error(f"The project cluster for '{cluster.display_name}' is not running.", _exit=True)
 
     return cluster
 
