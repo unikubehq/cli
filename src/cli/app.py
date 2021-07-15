@@ -86,6 +86,8 @@ def get_deck_from_arguments(ctx, organization_id: str, project_id: str, deck_id:
             message_no_choices="No deck found.",
             choices=deck_choices,
         )
+        if deck_selected is None:
+            exit(1)
 
         deck_id = re.search(r"\((.*?)\)", deck_selected).group(1)
 
