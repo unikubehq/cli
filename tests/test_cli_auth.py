@@ -70,7 +70,7 @@ def test_status_success():
     assert result.exit_code == 0
 
 
-def test_login_success():
+def test_login_logout_success():
     runner = CliRunner()
     email = os.getenv("TESTRUNNER_EMAIL")
     secret = os.getenv("TESTRUNNER_SECRET")
@@ -80,4 +80,11 @@ def test_login_success():
         obj=ClickContext(),
     )
     assert result.output == "[SUCCESS] Login successful. Hello Testrunner!\n"
+    assert result.exit_code == 0
+
+    result = runner.invoke(
+        auth.logout,
+        obj=ClickContext(),
+    )
+    assert result.output == "[INFO] Logout completed.\n"
     assert result.exit_code == 0
