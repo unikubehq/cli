@@ -4,11 +4,10 @@ from src.cli import orga
 from unikube import ClickContext
 
 
-def test_login():
+def test_orga_list():
     runner = CliRunner()
     result = runner.invoke(
         orga.list,
         obj=ClickContext(),
     )
-    assert "[DEBUG] Refresh token expired or account does not exist." in result.output
-    assert "[INFO] You need to login (again). Please run 'unikube login' and try again." in result.output
+    assert result.exit_code == 1

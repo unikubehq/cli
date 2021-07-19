@@ -20,7 +20,7 @@ def test_list():
         app.list,
         obj=obj,
     )
-    assert "[INFO] No project is running.\n" in result.output
+    assert result.exit_code == 1
 
 
 def test_shell_cluster_not_found():
