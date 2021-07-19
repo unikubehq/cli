@@ -176,9 +176,10 @@ class Context:
                     and exception_object.get("message") == "This project cannot be retrieved."
                 ):
                     console.debug(e)
-                    console.exit_error_with_message(
+                    console.error(
                         "This project cannot be retrieved. Either the project was deleted or "
-                        "the membership was changed for the project."
+                        "the membership was changed for the project.",
+                        _exit=True,
                     )
             data = None
             console.debug(e)
