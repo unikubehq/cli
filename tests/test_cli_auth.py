@@ -72,8 +72,12 @@ def test_status_success():
 
 def test_login_logout_success():
     runner = CliRunner()
+
     email = os.getenv("TESTRUNNER_EMAIL")
     secret = os.getenv("TESTRUNNER_SECRET")
+    assert email is not None
+    assert secret is not None
+
     result = runner.invoke(
         auth.login,
         ["--email", email, "--password", secret],
