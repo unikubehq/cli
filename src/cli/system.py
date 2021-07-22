@@ -6,6 +6,7 @@ from tabulate import tabulate
 
 import src.cli.console as console
 from src import settings
+from src.helpers import compare_current_and_latest_versions
 from src.local.dependency import install_dependency, probe_dependencies
 
 
@@ -69,6 +70,8 @@ def verify(verbose):
     """
     Verifies the installation of dependencies on your local machine.
     """
+
+    compare_current_and_latest_versions()
 
     report_data = probe_dependencies(silent=verbose)
     unsuccessful = list(filter(lambda x: not x["success"], report_data))
