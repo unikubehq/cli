@@ -13,8 +13,8 @@ class ProjectTestCase(unittest.TestCase):
 
         email = os.getenv("TESTRUNNER_EMAIL")
         secret = os.getenv("TESTRUNNER_SECRET")
-        assert email is not None
-        assert secret is not None
+        self.assertIsNotNone(email)
+        self.assertIsNotNone(secret)
 
         self.runner.invoke(
             auth.login,
@@ -27,8 +27,8 @@ class ProjectTestCase(unittest.TestCase):
             auth.logout,
             obj=ClickContext(),
         )
-        assert result.output == "[INFO] Logout completed.\n"
-        assert result.exit_code == 0
+        self.assertEqual(result.output, "[INFO] Logout completed.\n")
+        self.assertEqual(result.exit_code, 0)
 
     def test_project_info(self):
         result = self.runner.invoke(
@@ -40,7 +40,7 @@ class ProjectTestCase(unittest.TestCase):
         self.assertIn("Key", result.output)
         self.assertIn("Value", result.output)
         self.assertIn("buzzword-counter", result.output)
-        assert result.exit_code == 0
+        self.assertEqual(result.exit_code, 0)
 
     def test_project_list(self):
 
@@ -52,4 +52,33 @@ class ProjectTestCase(unittest.TestCase):
         self.assertIn("Id", result.output)
         self.assertIn("name", result.output)
         self.assertIn("buzzword-counter", result.output)
-        assert result.exit_code == 0
+        self.assertEqual(result.exit_code, 0)
+
+    def test_project_use_failing(self):
+        result = self.runner.invoke(
+            project.use,
+            obj=ClickContext(),
+        )
+
+        self.assertIn("Please select a project: buzzword-counter", result.output)
+        self.assertEqual(result.exit_code, 1)
+
+    def test_project_use(self):
+        result = self.runner.invoke(
+            project.use,
+            ["ed5390e7-16f6-4f6c-9b7b-5f3bd2db1718"],
+            obj=ClickContext(),
+        )
+
+        self.assertIn("[SUCCESS] Project context: organization_id=", result.output)
+        self.assertEqual(result.exit_code, 0)
+
+    def test_project_use_remove(self):
+        result = self.runner.invoke(
+            project.use,
+            ["-r"],
+            obj=ClickContext(),
+        )
+
+        self.assertIn("[SUCCESS] Project context removed.\n", result.output)
+        self.assertEqual(result.exit_code, 0)
