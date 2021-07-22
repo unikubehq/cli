@@ -7,6 +7,7 @@ from oic.utils.authn.client import CLIENT_AUTHN_METHOD
 
 import src.cli.console as console
 from src import settings
+from src.helpers import compare_current_and_latest_versions
 
 
 @click.command()
@@ -17,6 +18,7 @@ def login(ctx, email, password, **kwargs):
     """
     Authenticate with a Unikube host.
     """
+    compare_current_and_latest_versions()
     if email or password:
         if not email:
             email = click.prompt("email", type=str)
