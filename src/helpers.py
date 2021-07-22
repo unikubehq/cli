@@ -3,6 +3,7 @@ import sys
 from urllib.parse import urljoin
 
 import click_spinner
+import pkg_resources
 import requests
 from requests import HTTPError, Session
 
@@ -153,3 +154,14 @@ def check_running_cluster(ctx: ClickContext, cluster_provider_type: K8sProviderT
                     f"try again.",
                     _exit=True,
                 )
+
+
+def compare_current_and_latest_versions():
+    current_version = pkg_resources.require("unikube")[0].version
+    response = requests.get("https://api.github.com/repos/unikubehq/cli/releases")
+    latest_release_version = response.json()[0]["tag_name"]
+    latest_release_version = latest_release_version.replace("-", ".")
+    if current_version != latest_release_version:
+        console.info(
+            f"You are using unikube version {current_version}; however, version {latest_release_version} is available."
+        )
