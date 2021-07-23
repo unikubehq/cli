@@ -4,6 +4,7 @@ import unittest
 from click.testing import CliRunner
 
 from src.cli import auth, deck
+from tests.login_testcase import LoginTestCase
 from unikube import ClickContext
 
 
@@ -57,29 +58,7 @@ def test_ingress():
     assert result.exit_code == 1
 
 
-class DeckTestCase(unittest.TestCase):
-    def setUp(self) -> None:
-        self.runner = CliRunner()
-
-        email = os.getenv("TESTRUNNER_EMAIL")
-        secret = os.getenv("TESTRUNNER_SECRET")
-        self.assertIsNotNone(email)
-        self.assertIsNotNone(secret)
-
-        self.runner.invoke(
-            auth.login,
-            ["--email", email, "--password", secret],
-            obj=ClickContext(),
-        )
-
-    def tearDown(self) -> None:
-        result = self.runner.invoke(
-            auth.logout,
-            obj=ClickContext(),
-        )
-        self.assertEqual(result.output, "[INFO] Logout completed.\n")
-        self.assertEqual(result.exit_code, 0)
-
+class DeckTestCase(LoginTestCase):
     def test_deck_info(self):
         result = self.runner.invoke(
             deck.info,
