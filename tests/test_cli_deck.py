@@ -1,61 +1,6 @@
-import os
-import unittest
-
-from click.testing import CliRunner
-
-from src.cli import auth, deck
+from src.cli import deck
 from tests.login_testcase import LoginTestCase
 from unikube import ClickContext
-
-
-def check():
-    """Function used to mock check function"""
-    pass
-
-
-def test_list():
-    runner = CliRunner()
-    obj = ClickContext()
-    obj.auth.check = check
-    result = runner.invoke(
-        deck.list,
-        [
-            "--organization",
-            "13fc0b1b-3bc1-4a69-8e80-835fb1515bc4",
-            "--project",
-            "13fc0b1b-3bc1-4a69-8e80-835fb1515bc4",
-        ],
-        obj=obj,
-    )
-    assert result.exit_code == 1
-
-
-def test_info():
-    runner = CliRunner()
-    obj = ClickContext()
-    obj.auth.check = check
-    result = runner.invoke(
-        deck.info,
-        [
-            "13fc0b1b-3bc1-4a69-8e80-835fb1515bc4",
-        ],
-        obj=obj,
-    )
-    assert result.exit_code == 1
-
-
-def test_ingress():
-    runner = CliRunner()
-    obj = ClickContext()
-    obj.auth.check = check
-    result = runner.invoke(
-        deck.ingress,
-        [
-            "13fc0b1b-3bc1-4a69-8e80-835fb1515bc4",
-        ],
-        obj=obj,
-    )
-    assert result.exit_code == 1
 
 
 class DeckTestCase(LoginTestCase):
@@ -70,6 +15,17 @@ class DeckTestCase(LoginTestCase):
         self.assertIn("Value", result.output)
         self.assertIn("buzzword-counter", result.output)
         self.assertEqual(result.exit_code, 0)
+
+    def test_info_not_existing_deck(self):
+
+        result = self.runner.invoke(
+            deck.info,
+            [
+                "not_existing_deck",
+            ],
+            obj=ClickContext(),
+        )
+        self.assertIn("[ERROR] Deck does not exist.", result.output)
 
     def test_deck_list(self):
 

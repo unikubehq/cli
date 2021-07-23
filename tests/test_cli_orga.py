@@ -1,17 +1,6 @@
-from click.testing import CliRunner
-
 from src.cli import orga
 from tests.login_testcase import LoginTestCase
 from unikube import ClickContext
-
-
-def test_orga_list():
-    runner = CliRunner()
-    result = runner.invoke(
-        orga.list,
-        obj=ClickContext(),
-    )
-    assert result.exit_code == 1
 
 
 class OrgaTestCase(LoginTestCase):
@@ -27,6 +16,14 @@ class OrgaTestCase(LoginTestCase):
         self.assertIn("title", result.output)
         self.assertIn("ACME", result.output)
         self.assertEqual(result.exit_code, 0)
+
+    def test_info_not_existing_orga(self):
+        result = self.runner.invoke(
+            orga.info,
+            "not_existing_orga",
+            obj=ClickContext(),
+        )
+        self.assertIn("[ERROR] Organization does not exist.", result.output)
 
     def test_orga_list(self):
 

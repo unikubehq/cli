@@ -1,9 +1,4 @@
-import os
-import unittest
-
-from click.testing import CliRunner
-
-from src.cli import auth, project
+from src.cli import project
 from tests.login_testcase import LoginTestCase
 from unikube import ClickContext
 
@@ -20,6 +15,15 @@ class ProjectTestCase(LoginTestCase):
         self.assertIn("Value", result.output)
         self.assertIn("buzzword-counter", result.output)
         self.assertEqual(result.exit_code, 0)
+
+    def test_info_not_existing_project(self):
+        result = self.runner.invoke(
+            project.info,
+            ["not-existing-project"],
+            obj=ClickContext(),
+        )
+
+        self.assertIn("[ERROR] Project does not exist.", result.output)
 
     def test_project_list(self):
 
