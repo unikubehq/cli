@@ -1,29 +1,29 @@
 from click.testing import CliRunner
 
 from src.cli import system
+from tests.login_testcase import LoginTestCase
 from unikube import ClickContext
 
 
-def test_system_install() -> None:
-    runner = CliRunner()
-    result = runner.invoke(
-        system.install,
-        obj=ClickContext(),
-    )
-    assert (
-        "[WARNING] You are not running the installation with an administrative account. You may be prompted for"
-        " your password." in result.output
-    )
-    assert "[INFO] All dependencies are already satisfied. No action taken." in result.output
-    assert result.exit_code == 0
+class SystemTestCase(LoginTestCase):
+    def test_system_install(self):
+        result = self.runner.invoke(
+            system.install,
+            obj=ClickContext(),
+        )
+        self.assertIn(
+            "[WARNING] You are not running the installation with an administrative account. You may be prompted for"
+            " your password.",
+            result.output,
+        )
+        self.assertIn("[INFO] All dependencies are already satisfied. No action taken.", result.output)
+        self.assertEqual(result.exit_code, 0)
 
+    def test_system_verify(self):
+        result = self.runner.invoke(
+            system.verify,
+            obj=ClickContext(),
+        )
 
-def test_system_verify() -> None:
-    runner = CliRunner()
-    result = runner.invoke(
-        system.verify,
-        obj=ClickContext(),
-    )
-
-    assert "[SUCCESS] Local dependencies verified." in result.output
-    assert result.exit_code == 0
+        self.assertIn("[SUCCESS] Local dependencies verified.", result.output)
+        self.assertEqual(result.exit_code, 0)
