@@ -66,7 +66,7 @@ class ProjectTestCase(unittest.TestCase):
     def test_project_use(self):
         result = self.runner.invoke(
             project.use,
-            ["ed5390e7-16f6-4f6c-9b7b-5f3bd2db1718"],
+            ["b464a6a7-7367-41d3-92a3-d3d98ed10cb5"],
             obj=ClickContext(),
         )
 
