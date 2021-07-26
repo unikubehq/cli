@@ -15,7 +15,7 @@ def test_login_failed():
         ["--email", "test@test.de", "--password", "unsecure"],
         obj=ClickContext(),
     )
-    assert result.output == "[ERROR] Login failed. Please check email and password.\n"
+    assert "[ERROR] Login failed. Please check email and password.\n" in result.output
     assert result.exit_code == 0
 
 
@@ -83,7 +83,7 @@ def test_login_logout_success():
         ["--email", email, "--password", secret],
         obj=ClickContext(),
     )
-    assert result.output == "[SUCCESS] Login successful. Hello Testrunner!\n"
+    assert "[SUCCESS] Login successful. Hello Testrunner!\n" in result.output
     assert result.exit_code == 0
 
     result = runner.invoke(
