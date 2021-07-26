@@ -1,12 +1,12 @@
-from src.cli import deck
+from src.cli import project
 from tests.login_testcase import LoginTestCase
 from unikube import ClickContext
 
 
-class DeckTestCase(LoginTestCase):
-    def test_deck_info(self):
+class ProjectTestCase(LoginTestCase):
+    def test_project_info(self):
         result = self.runner.invoke(
-            deck.info,
+            project.info,
             ["buzzword-counter"],
             obj=ClickContext(),
         )
@@ -16,55 +16,52 @@ class DeckTestCase(LoginTestCase):
         self.assertIn("buzzword-counter", result.output)
         self.assertEqual(result.exit_code, 0)
 
-    def test_info_not_existing_deck(self):
-
+    def test_info_not_existing_project(self):
         result = self.runner.invoke(
-            deck.info,
-            [
-                "not_existing_deck",
-            ],
-            obj=ClickContext(),
-        )
-        self.assertIn("[ERROR] Deck does not exist.", result.output)
-
-    def test_deck_list(self):
-
-        result = self.runner.invoke(
-            deck.list,
+            project.info,
+            ["not-existing-project"],
             obj=ClickContext(),
         )
 
-        self.assertIn("project", result.output)
-        self.assertIn("id", result.output)
-        self.assertIn("title", result.output)
+        self.assertIn("[ERROR] Project does not exist.", result.output)
+
+    def test_project_list(self):
+
+        result = self.runner.invoke(
+            project.list,
+            obj=ClickContext(),
+        )
+
+        self.assertIn("Id", result.output)
+        self.assertIn("name", result.output)
         self.assertIn("buzzword-counter", result.output)
         self.assertEqual(result.exit_code, 0)
 
-    def test_deck_use_failing(self):
+    def test_project_use_failing(self):
         result = self.runner.invoke(
-            deck.use,
+            project.use,
             obj=ClickContext(),
         )
 
-        self.assertIn("\n[?] Please select a deck: buzzword-counter\n > buzzword-counter\n\n", result.output)
+        self.assertIn("Please select a project: buzzword-counter", result.output)
         self.assertEqual(result.exit_code, 1)
 
-    def test_deck_use(self):
+    def test_project_use(self):
         result = self.runner.invoke(
-            deck.use,
-            ["4634368f-1751-40ae-9cd7-738fcb656a0d"],
+            project.use,
+            ["b464a6a7-7367-41d3-92a3-d3d98ed10cb5"],
             obj=ClickContext(),
         )
 
-        self.assertIn("[SUCCESS] Deck context: organization_id=", result.output)
+        self.assertIn("[SUCCESS] Project context: organization_id=", result.output)
         self.assertEqual(result.exit_code, 0)
 
-    def test_deck_use_remove(self):
+    def test_project_use_remove(self):
         result = self.runner.invoke(
-            deck.use,
+            project.use,
             ["-r"],
             obj=ClickContext(),
         )
 
-        self.assertIn("[SUCCESS] Deck context removed.\n", result.output)
+        self.assertIn("[SUCCESS] Project context removed.\n", result.output)
         self.assertEqual(result.exit_code, 0)
