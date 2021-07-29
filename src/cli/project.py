@@ -254,36 +254,43 @@ def up(ctx, project, organization, ingress, provider, workers, **kwargs):
     Start/Resume a project cluster.
     """
 
-    # GraphQL
     try:
-        graph_ql = GraphQL(authentication=ctx.auth)
-        data = graph_ql.query(
-            """
-            {
-                allProjects {
-                    results {
-                        id
-                        title
-                        clusterSettings {
+        if not organization:
+            graph_ql = GraphQL(authentication=ctx.auth)
+            data = graph_ql.query(
+                """
+                {
+                    allProjects {
+                        results {
                             id
-                            port
+                            title
+                            clusterSettings {
+                                id
+                                port
+                            }
                         }
                     }
                 }
-            }
-            """
-        )
+                """
+            )
+        else:
+            graph_ql = GraphQL(authentication=ctx.auth)
+            organization_id = get_organization_id_by_title(graph_ql, organization)
+            if organization_id:
+                data = get_projects_by_organization_id(graph_ql, organization_id)
+            else:
+                console.error("Wrong organization title. Such organization does not exist.")
+                exit(1)
     except Exception as e:
         data = None
         console.debug(e)
         console.exit_generic_error()
 
     project_list = data["allProjects"]["results"]
-
     # argument
     if not project:
         # argument from context
-        context = ctx.context.get(organization=organization)
+        context = ctx.context.get()
         if context.project_id:
             project_instance = ctx.context.get_project()
             project = project_instance["title"] + f"({project_instance['id']})"
