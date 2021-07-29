@@ -168,3 +168,68 @@ def compare_current_and_latest_versions():
             console.info(
                 f"You are using unikube version {current_version}; however, version {latest_release_version} is available."
             )
+
+
+def get_organization_id_by_title(graph_ql, organization):
+    organization_id = None
+    organization_list = graph_ql.query(
+        """
+        {
+            allOrganizations {
+                results {
+                    id
+                    title
+                }
+            }
+        }
+        """
+    )
+    for orga in organization_list["allOrganizations"]["results"]:
+        if orga["title"] == organization:
+            organization_id = orga["id"]
+    return organization_id
+
+
+def get_list_of_project_ids_by_organization_id(graph_ql, organization_id):
+    data = graph_ql.query(
+        """
+        query($organization_id: UUID) {
+            allProjects(organizationId: $organization_id) {
+                results {
+                    title
+                    id
+                    organization {
+                        id
+                    }
+                }
+            }
+        }
+        """,
+        query_variables={
+            "organization_id": organization_id,
+        },
+    )
+    project_ids = [project["id"] for project in data["allProjects"]["results"]]
+    return project_ids
+
+
+def get_projects_by_organization_id(graph_ql, organization_id):
+    data = graph_ql.query(
+        """
+        query($organization_id: UUID) {
+            allProjects(organizationId: $organization_id) {
+                results {
+                    title
+                    id
+                    organization {
+                        id
+                    }
+                }
+            }
+        }
+        """,
+        query_variables={
+            "organization_id": organization_id,
+        },
+    )
+    return data
