@@ -8,7 +8,14 @@ import click_spinner
 import src.cli.console as console
 from src import settings
 from src.graphql import GraphQL
-from src.helpers import check_running_cluster, select_entity, select_entity_from_cluster_list
+from src.helpers import (
+    check_running_cluster,
+    get_list_of_project_ids_by_organization_id,
+    get_organization_id_by_title,
+    get_projects_by_organization_id,
+    select_entity,
+    select_entity_from_cluster_list,
+)
 from src.keycloak.permissions import KeycloakPermissions
 from src.local.providers.types import K8sProviderType
 from src.local.system import Telepresence
@@ -23,8 +30,8 @@ def list(ctx, organization, **kwargs):
     List all your projects.
     """
 
-    context = ctx.context.get(organization=organization)
-
+    context = ctx.context.get()
+    project_ids_for_organization = None
     # keycloak
     try:
         keycloak_permissions = KeycloakPermissions(authentication=ctx.auth)
@@ -33,13 +40,25 @@ def list(ctx, organization, **kwargs):
         permission_list = None
         console.debug(e)
         console.exit_generic_error()
+    if organization:
+        # GraphQL
+        try:
+            graph_ql = GraphQL(authentication=ctx.auth)
+            organization_id = get_organization_id_by_title(graph_ql, organization)
+            if organization_id:
+                project_ids_for_organization = get_list_of_project_ids_by_organization_id(graph_ql, organization_id)
+            else:
+                console.error("Wrong organization title. Such organization does not exist.")
+                exit(1)
+        except Exception as e:
+            console.debug(e)
+            console.exit_generic_error()
 
     # append "(active)"
     if context.project_id:
         for permission in permission_list:
             if permission.rsid == context.project_id:
                 permission.rsid += " (active)"
-
     # console
     project_list = []
     for permission in permission_list:
@@ -48,14 +67,17 @@ def list(ctx, organization, **kwargs):
             name = re.findall(r"project (.+?)\({rsid}\)".format(rsid=permission.rsid), permission.rsname)[0]
         except Exception:
             name = permission.rsname
-
-        project_list.append(
-            {
-                "id": permission.rsid,
-                "name": name,
-            }
-        )
-
+        if (
+            project_ids_for_organization
+            and permission.rsid in project_ids_for_organization
+            or not project_ids_for_organization
+        ):
+            project_list.append(
+                {
+                    "id": permission.rsid,
+                    "name": name,
+                }
+            )
     if not project_list:
         console.info("No projects available. Please go to https://app.unikube.io and create a project.")
         exit(0)
@@ -346,7 +368,6 @@ def down(ctx, project, **kwargs):
 
     cluster_list = ctx.cluster_manager.get_cluster_list(ready=True)
     cluster_title_list = [item.name + f"({item.id})" for item in cluster_list]
-    # import pdb;pdb.set_trace()
 
     # argument
     if not project:
