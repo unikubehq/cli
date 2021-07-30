@@ -10,81 +10,17 @@ from src import settings
 from src.graphql import GraphQL
 from src.helpers import (
     check_running_cluster,
-    get_list_of_project_ids_by_organization_id,
     get_organization_id_by_title,
-    get_projects_by_organization_id,
+    get_project_list_by_permission,
+    get_projects_for_organization,
     select_entity,
     select_entity_from_cluster_list,
+    select_project,
 )
 from src.keycloak.permissions import KeycloakPermissions
 from src.local.providers.types import K8sProviderType
 from src.local.system import Telepresence
 from src.storage.user import get_local_storage_user
-
-
-def get_projects_for_organization(ctx, organization):
-    # GraphQL
-    project_ids_for_organization = None
-    try:
-        graph_ql = GraphQL(authentication=ctx.auth)
-        organization_id = get_organization_id_by_title(graph_ql, organization)
-        if organization_id:
-            project_ids_for_organization = get_list_of_project_ids_by_organization_id(graph_ql, organization_id)
-        else:
-            console.error("Wrong organization title. Such organization does not exist.")
-            exit(1)
-    except Exception as e:
-        console.debug(e)
-        console.exit_generic_error()
-    return project_ids_for_organization
-
-
-def get_project_list_by_permission(permission_list, project_ids_for_organization):
-    project_list = []
-    for permission in permission_list:
-        # parse name
-        try:
-            name = re.findall(r"project (.+?)\({rsid}\)".format(rsid=permission.rsid), permission.rsname)[0]
-        except Exception:
-            name = permission.rsname
-        if (
-            project_ids_for_organization
-            and permission.rsid in project_ids_for_organization
-            or not project_ids_for_organization
-        ):
-            project_list.append(
-                {
-                    "id": permission.rsid,
-                    "name": name,
-                }
-            )
-    return project_list
-
-
-def select_project(ctx, project_list):
-    # argument from context
-    context = ctx.context.get()
-
-    if context.project_id:
-        project_instance = ctx.context.get_project()
-        project = project_instance["title"] + f"({project_instance['id']})"
-
-    # argument from console
-    else:
-        cluster_list = ctx.cluster_manager.get_cluster_list(ready=True)
-        cluster_id_list = [item.id for item in cluster_list]
-
-        project_list_choices = [
-            item["title"] + f"({item['id']})" for item in project_list if item["id"] not in cluster_id_list
-        ]
-
-        project = console.list(
-            message="Please select a project",
-            choices=project_list_choices,
-        )
-        if project is None:
-            exit(1)
-    return project
 
 
 @click.command()
@@ -106,7 +42,8 @@ def list(ctx, organization, **kwargs):
         console.debug(e)
         console.exit_generic_error()
     if organization:
-        project_ids_for_organization = get_projects_for_organization(ctx, organization)
+        graph_ql = GraphQL(authentication=ctx.auth)
+        project_ids_for_organization = get_projects_for_organization(graph_ql, organization)
 
     # append "(active)"
     if context.project_id:
@@ -293,30 +230,32 @@ def up(ctx, project, organization, ingress, provider, workers, **kwargs):
 
     try:
         graph_ql = GraphQL(authentication=ctx.auth)
-        if not organization:
-            data = graph_ql.query(
-                """
-                {
-                    allProjects {
-                        results {
+        if organization:
+            organization_id = get_organization_id_by_title(graph_ql, organization)
+        else:
+            organization_id = None
+        data = graph_ql.query(
+            """
+            query($organization_id: UUID) {
+                allProjects(organizationId: $organization_id) {
+                    results {
+                        title
+                        id
+                        organization {
                             id
-                            title
-                            clusterSettings {
-                                id
-                                port
-                            }
+                        }
+                        clusterSettings {
+                            id
+                            port
                         }
                     }
                 }
-                """
-            )
-        else:
-            organization_id = get_organization_id_by_title(graph_ql, organization)
-            if organization_id:
-                data = get_projects_by_organization_id(graph_ql, organization_id)
-            else:
-                console.error("Wrong organization title. Such organization does not exist.")
-                exit(1)
+            }
+            """,
+            query_variables={
+                "organization_id": organization_id,
+            },
+        )
     except Exception as e:
         data = None
         console.debug(e)
