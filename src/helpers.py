@@ -221,6 +221,10 @@ def get_projects_by_organization_id(graph_ql, organization_id):
                     organization {
                         id
                     }
+                    clusterSettings {
+                        id
+                        port
+                    }
                 }
             }
         }
