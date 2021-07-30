@@ -22,6 +22,71 @@ from src.local.system import Telepresence
 from src.storage.user import get_local_storage_user
 
 
+def get_projects_for_organization(ctx, organization):
+    # GraphQL
+    project_ids_for_organization = None
+    try:
+        graph_ql = GraphQL(authentication=ctx.auth)
+        organization_id = get_organization_id_by_title(graph_ql, organization)
+        if organization_id:
+            project_ids_for_organization = get_list_of_project_ids_by_organization_id(graph_ql, organization_id)
+        else:
+            console.error("Wrong organization title. Such organization does not exist.")
+            exit(1)
+    except Exception as e:
+        console.debug(e)
+        console.exit_generic_error()
+    return project_ids_for_organization
+
+
+def get_project_list_by_permission(permission_list, project_ids_for_organization):
+    project_list = []
+    for permission in permission_list:
+        # parse name
+        try:
+            name = re.findall(r"project (.+?)\({rsid}\)".format(rsid=permission.rsid), permission.rsname)[0]
+        except Exception:
+            name = permission.rsname
+        if (
+            project_ids_for_organization
+            and permission.rsid in project_ids_for_organization
+            or not project_ids_for_organization
+        ):
+            project_list.append(
+                {
+                    "id": permission.rsid,
+                    "name": name,
+                }
+            )
+    return project_list
+
+
+def select_project(ctx, project_list):
+    # argument from context
+    context = ctx.context.get()
+
+    if context.project_id:
+        project_instance = ctx.context.get_project()
+        project = project_instance["title"] + f"({project_instance['id']})"
+
+    # argument from console
+    else:
+        cluster_list = ctx.cluster_manager.get_cluster_list(ready=True)
+        cluster_id_list = [item.id for item in cluster_list]
+
+        project_list_choices = [
+            item["title"] + f"({item['id']})" for item in project_list if item["id"] not in cluster_id_list
+        ]
+
+        project = console.list(
+            message="Please select a project",
+            choices=project_list_choices,
+        )
+        if project is None:
+            exit(1)
+    return project
+
+
 @click.command()
 @click.option("--organization", "-o", help="Select an organization")
 @click.pass_obj
@@ -41,18 +106,7 @@ def list(ctx, organization, **kwargs):
         console.debug(e)
         console.exit_generic_error()
     if organization:
-        # GraphQL
-        try:
-            graph_ql = GraphQL(authentication=ctx.auth)
-            organization_id = get_organization_id_by_title(graph_ql, organization)
-            if organization_id:
-                project_ids_for_organization = get_list_of_project_ids_by_organization_id(graph_ql, organization_id)
-            else:
-                console.error("Wrong organization title. Such organization does not exist.")
-                exit(1)
-        except Exception as e:
-            console.debug(e)
-            console.exit_generic_error()
+        project_ids_for_organization = get_projects_for_organization(ctx, organization)
 
     # append "(active)"
     if context.project_id:
@@ -60,24 +114,7 @@ def list(ctx, organization, **kwargs):
             if permission.rsid == context.project_id:
                 permission.rsid += " (active)"
     # console
-    project_list = []
-    for permission in permission_list:
-        # parse name
-        try:
-            name = re.findall(r"project (.+?)\({rsid}\)".format(rsid=permission.rsid), permission.rsname)[0]
-        except Exception:
-            name = permission.rsname
-        if (
-            project_ids_for_organization
-            and permission.rsid in project_ids_for_organization
-            or not project_ids_for_organization
-        ):
-            project_list.append(
-                {
-                    "id": permission.rsid,
-                    "name": name,
-                }
-            )
+    project_list = get_project_list_by_permission(permission_list, project_ids_for_organization)
     if not project_list:
         console.info("No projects available. Please go to https://app.unikube.io and create a project.")
         exit(0)
@@ -255,8 +292,8 @@ def up(ctx, project, organization, ingress, provider, workers, **kwargs):
     """
 
     try:
+        graph_ql = GraphQL(authentication=ctx.auth)
         if not organization:
-            graph_ql = GraphQL(authentication=ctx.auth)
             data = graph_ql.query(
                 """
                 {
@@ -274,7 +311,6 @@ def up(ctx, project, organization, ingress, provider, workers, **kwargs):
                 """
             )
         else:
-            graph_ql = GraphQL(authentication=ctx.auth)
             organization_id = get_organization_id_by_title(graph_ql, organization)
             if organization_id:
                 data = get_projects_by_organization_id(graph_ql, organization_id)
@@ -289,27 +325,7 @@ def up(ctx, project, organization, ingress, provider, workers, **kwargs):
     project_list = data["allProjects"]["results"]
     # argument
     if not project:
-        # argument from context
-        context = ctx.context.get()
-        if context.project_id:
-            project_instance = ctx.context.get_project()
-            project = project_instance["title"] + f"({project_instance['id']})"
-
-        # argument from console
-        else:
-            cluster_list = ctx.cluster_manager.get_cluster_list(ready=True)
-            cluster_id_list = [item.id for item in cluster_list]
-
-            project_list_choices = [
-                item["title"] + f"({item['id']})" for item in project_list if item["id"] not in cluster_id_list
-            ]
-
-            project = console.list(
-                message="Please select a project",
-                choices=project_list_choices,
-            )
-            if project is None:
-                return False
+        project = select_project(ctx, project_list)
 
     project_instance = select_entity(project_list, project)
     if not project_instance:
