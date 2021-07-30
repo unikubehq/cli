@@ -194,6 +194,9 @@ class Context:
                     project(id: $id) {
                         title
                         id
+                        organization {
+                            title
+                        }
                     }
                 }
                 """,

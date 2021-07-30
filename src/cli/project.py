@@ -8,7 +8,7 @@ import click_spinner
 import src.cli.console as console
 from src import settings
 from src.graphql import GraphQL
-from src.helpers import check_running_cluster, select_entity, select_entity_from_cluster_list
+from src.helpers import check_running_cluster, select_entity, select_entity_from_cluster_list, select_project_entity
 from src.keycloak.permissions import KeycloakPermissions
 from src.local.providers.types import K8sProviderType
 from src.local.system import Telepresence
@@ -57,8 +57,7 @@ def list(ctx, organization, **kwargs):
         )
 
     if not project_list:
-        console.info("No projects available. Please go to https://app.unikube.io and create a project.")
-        exit(0)
+        console.info("No projects available. Please go to https://app.unikube.io and create a project.", _exit=True)
 
     console.table(
         data=project_list,
@@ -91,6 +90,9 @@ def info(ctx, project, **kwargs):
                         description
                         specRepository
                         specRepositoryBranch
+                        organization {
+                            title
+                        }
                     }
                 }
             }
@@ -108,22 +110,24 @@ def info(ctx, project, **kwargs):
         context = ctx.context.get()
         if context.project_id:
             project_instance = ctx.context.get_project()
-            project = project_instance["title"] + f"({project_instance['id']})"
+            project = f'{project_instance["title"]} ({project_instance["organization"]["title"]})'
 
         # argument from console
         else:
             project = console.list(
                 message="Please select a project",
-                choices=[project["title"] + f"({project['id']})" for project in project_list],
+                choices=[project["title"] for project in project_list],
+                identifiers=[project["organization"]["title"] for project in project_list],
             )
             if project is None:
                 return None
 
     # select
-    project_selected = select_entity(project_list, project)
+    project_selected = select_project_entity(entity_list=project_list, selection=project)
 
     # console
     if project_selected:
+        project_selected["organization"] = project_selected.pop("organization").get("title", "-")
         project_selected["repository"] = project_selected.pop("specRepository")
         project_selected["repository branch"] = project_selected.pop("specRepositoryBranch")
 
