@@ -176,6 +176,7 @@ def use(ctx, project_id, remove, **kwargs):
                         id
                         organization {
                             id
+                            title
                         }
                     }
                 }
@@ -198,22 +199,23 @@ def use(ctx, project_id, remove, **kwargs):
         project_title = console.list(
             message="Please select a project",
             choices=[project["title"] for project in project_dict.values()],
+            identifiers=[project["organization"]["title"] for project in project_dict.values()],
         )
         if project_title is None:
             return False
 
-        for id, project in project_dict.items():
-            if project["title"] == project_title:
-                project_id = id
+        # select
+        project_selected = select_project_entity(entity_list=project_list, selection=project_title)
+    else:
+        project_selected = project_dict.get(project_id, None)
 
-    project = project_dict.get(project_id, None)
-    if not project:
-        console.error(f"Unknown project with id: {project_id}.")
+    if not project_selected:
+        console.error(f"Unknown project with id: {project_id}.", _exit=True)
 
     # set project
     user_data.context.deck_id = None
-    user_data.context.project_id = project["id"]
-    user_data.context.organization_id = project["organization"]["id"]
+    user_data.context.project_id = project_selected["id"]
+    user_data.context.organization_id = project_selected["organization"]["id"]
     local_storage_user.set(user_data)
 
     console.success(f"Project context: {user_data.context}")
@@ -250,6 +252,9 @@ def up(ctx, project, organization, ingress, provider, workers, **kwargs):
                             id
                             port
                         }
+                        organization {
+                            title
+                        }
                     }
                 }
             }
@@ -268,25 +273,26 @@ def up(ctx, project, organization, ingress, provider, workers, **kwargs):
         context = ctx.context.get(organization=organization)
         if context.project_id:
             project_instance = ctx.context.get_project()
-            project = project_instance["title"] + f"({project_instance['id']})"
+            project = f'{project_instance["title"]} ({project_instance["organization"]["title"]})'
 
         # argument from console
         else:
             cluster_list = ctx.cluster_manager.get_cluster_list(ready=True)
             cluster_id_list = [item.id for item in cluster_list]
 
-            project_list_choices = [
-                item["title"] + f"({item['id']})" for item in project_list if item["id"] not in cluster_id_list
-            ]
-
             project = console.list(
                 message="Please select a project",
-                choices=project_list_choices,
+                choices=[project["title"] for project in project_list if project["id"] not in cluster_id_list],
+                identifiers=[
+                    project["organization"]["title"] for project in project_list if project["id"] not in cluster_id_list
+                ],
             )
+
             if project is None:
                 return False
 
-    project_instance = select_entity(project_list, project)
+    project_instance = select_project_entity(entity_list=project_list, selection=project)
+
     if not project_instance:
         console.info(f"The project '{project}' could not be found.")
         return None
