@@ -19,6 +19,7 @@ from src.local.system import Telepresence
 def select_project_entity(entity_list, selection):
     # get identifier if available
     identifier_search = re.search("(?<=\\()[^)]*(?=\\))", selection)
+    similar_entities = []
     try:
         identifier = identifier_search.group(0)
     except Exception:
@@ -29,13 +30,20 @@ def select_project_entity(entity_list, selection):
         # match directly
         if not identifier_search:
             if selection == entity.get("title", None):
-                return entity
+                similar_entities.append(entity)
 
         # match with identifier
         if identifier:
             if selection == f'{entity["title"]} ({entity["organization"]["title"]})':
                 return entity
-
+    if len(similar_entities) > 1:
+        console.warning(
+            f"Entity {similar_entities[0].get('title')} has a duplicate title. Specify organization in parentheses "
+            f"directly after title in parentheses."
+        )
+        return None
+    elif len(similar_entities) == 1:
+        return similar_entities[0]
     else:
         console.debug(f"Entity {selection} was not found.")
         return None
