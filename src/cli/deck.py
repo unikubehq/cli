@@ -71,13 +71,10 @@ def get_install_uninstall_arguments(ctx, deck: str):
             )
             if deck is None:
                 exit(1)
-
-    # check access to the deck
-    if not deck:
-        console.error(f"The deck '{deck}' could not be found.", _exit=True)
-
-    # get deck
+    # get deck from duplicates
     deck_selected = select_entity(deck_list, deck)
+    if not deck_selected:
+        console.error(f"The deck '{deck}' could not be found.", _exit=True)
     return deck_selected
 
 
@@ -326,7 +323,7 @@ def use(ctx, deck_id, remove, **kwargs):
 
     deck = deck_dict.get(deck_id, None)
     if not deck:
-        console.error(f"Unknown deck with id: {deck_id}.")
+        console.error(f"Unknown deck with id: {deck_id}.", _exit=True)
 
     # set deck
     user_data.context.organization_id = deck["project"]["organization"]["id"]
