@@ -164,6 +164,14 @@ def use(ctx, project_id, remove, **kwargs):
         console.success("Project context removed.")
         return None
 
+    # project context is already set
+    if context.project_id:
+        console.info(
+            "Project context is already set. If you want to set a new project context, please remove current "
+            "context using 'unikube project use -r'",
+            _exit=True,
+        )
+
     # GraphQL
     try:
         graph_ql = GraphQL(authentication=ctx.auth)
@@ -276,6 +284,8 @@ def up(ctx, project, organization, ingress, provider, workers, **kwargs):
         if context.project_id:
             project_instance = ctx.context.get_project()
             project = f'{project_instance["title"]} ({project_instance["organization"]["title"]})'
+            if project_instance["id"] in cluster_id_list:
+                console.info(f"Project '{project}' is already up.", _exit=True)
 
         # argument from console
         else:
@@ -356,8 +366,6 @@ def down(ctx, project, **kwargs):
     """
 
     cluster_list = ctx.cluster_manager.get_cluster_list(ready=True)
-    cluster_title_list = [item.name + f"({item.id})" for item in cluster_list]
-
     # argument
     if not project:
         # argument from context
@@ -371,7 +379,7 @@ def down(ctx, project, **kwargs):
             project = console.list(
                 message="Please select a project",
                 message_no_choices="No cluster is running.",
-                choices=cluster_title_list,
+                choices=[item.name + f"({item.id})" for item in cluster_list],
             )
             if project is None:
                 return None
@@ -391,7 +399,6 @@ def down(ctx, project, **kwargs):
                 cluster_data=cluster_data,
             )
             break
-
     # cluster down
     if not cluster.exists():
         # something went wrong or cluster was already delete from somewhere else
