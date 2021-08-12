@@ -39,13 +39,13 @@ def select_project_entity(entity_list, selection):
     if len(similar_entities) > 1:
         console.warning(
             f"Entity {similar_entities[0].get('title')} has a duplicate title. Specify organization in parentheses "
-            f"directly after title in parentheses."
+            f"directly after the title.",
+            _exit=True,
         )
-        return None
     elif len(similar_entities) == 1:
         return similar_entities[0]
     else:
-        console.debug(f"Entity {selection} was not found.")
+        console.warning(f"Entity {selection} was not found.")
         return None
 
 
@@ -93,7 +93,6 @@ def select_entity_from_cluster_list(cluster_list, identifier):
     elif len(similar_entities) == 1:
         return similar_entities[0]
     else:
-        console.warning(f"Entity {identifier} was not found.")
         return None
 
 
