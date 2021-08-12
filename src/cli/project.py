@@ -266,6 +266,8 @@ def up(ctx, project, organization, ingress, provider, workers, **kwargs):
         console.exit_generic_error()
 
     project_list = data["allProjects"]["results"]
+    cluster_list = ctx.cluster_manager.get_cluster_list(ready=True)
+    cluster_id_list = [item.id for item in cluster_list]
 
     # argument
     if not project:
@@ -277,8 +279,6 @@ def up(ctx, project, organization, ingress, provider, workers, **kwargs):
 
         # argument from console
         else:
-            cluster_list = ctx.cluster_manager.get_cluster_list(ready=True)
-            cluster_id_list = [item.id for item in cluster_list]
 
             project = console.list(
                 message="Please select a project",
@@ -291,7 +291,8 @@ def up(ctx, project, organization, ingress, provider, workers, **kwargs):
             if project is None:
                 return False
 
-    project_instance = select_project_entity(entity_list=project_list, selection=project)
+    project_list_without_clusters = [project for project in project_list if project["id"] not in cluster_id_list]
+    project_instance = select_project_entity(entity_list=project_list_without_clusters, selection=project)
 
     if not project_instance:
         console.info(f"The project '{project}' could not be found.")
@@ -356,7 +357,6 @@ def down(ctx, project, **kwargs):
 
     cluster_list = ctx.cluster_manager.get_cluster_list(ready=True)
     cluster_title_list = [item.name + f"({item.id})" for item in cluster_list]
-    # import pdb;pdb.set_trace()
 
     # argument
     if not project:
@@ -380,7 +380,7 @@ def down(ctx, project, **kwargs):
 
     # check if project is in local storage
     if not project_instance:
-        console.info("The project cluster could not be found.")
+        console.info(f"The project cluster for '{project}' could not be found.")
         return None
 
     # get cluster
@@ -446,7 +446,7 @@ def delete(ctx, project, **kwargs):
     project_instance = select_entity_from_cluster_list(cluster_list, project)
 
     if not project_instance:
-        console.info(f"The project '{project}' could not be found.")
+        console.info(f"The project cluster for '{project}' could not be found.")
         return None
 
     # initial warning
