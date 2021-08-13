@@ -161,8 +161,7 @@ def list(ctx, organization=None, project=None, **kwargs):
 
     deck_list = data["allDecks"]["results"]
     if not deck_list:
-        console.info("No decks available. Please go to https://app.unikube.io and create a project.")
-        exit(0)
+        console.warning("No decks available. Please go to https://app.unikube.io and create a project.", _exit=True)
 
     # format list to table
     table_data = []
