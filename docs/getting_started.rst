@@ -2,7 +2,7 @@
 Getting Started
 ===============
 
-Unikube is a tool to enable developers to create cloud native applications locally.
+Unikube is a tool to enable developers to develop cloud native applications locally.
 
 Unikube CLI Installation
 ========================
@@ -23,7 +23,7 @@ In order to install the latest pre-release use
 After the installation has completed, open up a new shell and run :code:`unikube --version` to verify your installation. 
 Now you can get started by logging in into your account.
 
-You don't have an Unikube account? Register at `unikube.io <https://app.unikube.io>`__!
+You don't have an Unikube account? Register at `unikube.io <https://unikube.io>`__!
 
 **Note**: `python2` is not supported. Therefore, depending on your local python installation, you may need to run :code:`pip3 install unikube`.
 
@@ -73,6 +73,6 @@ Using unikube is as easy as:
 .. code-block:: shell
 
    unikube login
-   unikube project up <project>
+   unikube project up hello-unikube
 
 At this point, your local cluster is up and running! Happy developing!
