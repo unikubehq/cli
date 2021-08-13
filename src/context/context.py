@@ -1,10 +1,10 @@
 import os
 from abc import ABC, abstractmethod
 from typing import List, Union
-from uuid import UUID
 
 from src import settings
 from src.cli import console
+from src.context.helper import is_valid_uuid4
 from src.context.types import ContextData
 from src.graphql import GraphQL
 from src.storage.user import LocalStorageUser, get_local_storage_user
@@ -23,43 +23,22 @@ class ClickOptionContext(IContext):
         self.click_options = click_options
 
     def get(self, **kwargs) -> ContextData:
-        # uuid validation
-        def is_valid_uuid4(uuid):
-            try:
-                _ = UUID(uuid, version=4)
-                return True
-            except Exception:
-                return False
-
-        # organization
-        organization = self.click_options.get("organization", None)
-        if organization:
-            if is_valid_uuid4(organization):
-                organization_id = organization
+        def _get_and_validate_argument_id(argument_name: str):
+            argument = self.click_options.get(argument_name, None)
+            if argument:
+                if is_valid_uuid4(argument):
+                    argument_id = argument
+                else:
+                    raise Exception(f"Invalid {argument_name} id.")
             else:
-                raise NotImplementedError
-        else:
-            organization_id = None
+                argument_id = None
 
-        # project
-        project = self.click_options.get("project", None)
-        if project:
-            if is_valid_uuid4(organization):
-                project_id = project
-            else:
-                raise NotImplementedError
-        else:
-            project_id = None
+            return argument_id
 
-        # deck
-        deck = self.click_options.get("deck", None)
-        if deck:
-            if is_valid_uuid4(deck):
-                deck_id = deck
-            else:
-                raise NotImplementedError
-        else:
-            deck_id = None
+        # arguments
+        organization_id = _get_and_validate_argument_id("organization")
+        project_id = _get_and_validate_argument_id("project")
+        deck_id = _get_and_validate_argument_id("deck")
 
         return ContextData(
             organization_id=organization_id,
