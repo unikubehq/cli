@@ -36,7 +36,7 @@ Detailed information about shortcuts can be found in the corresponding group sec
 
 .. click:: unikube:orga
   :prog: unikube orga
-  :commands: list
+  :commands: list, info, use
   :nested: full
 
 
@@ -44,5 +44,19 @@ Detailed information about shortcuts can be found in the corresponding group sec
 
 .. click:: unikube:project
   :prog: unikube project
-  :commands: list, up
+  :commands: list, info, use, up, down, delete
+  :nested: full
+
+.. _unikube_deck:
+
+.. click:: unikube:deck
+  :prog: unikube deck
+  :commands: list, info, use, install, uninstall, ingress
+  :nested: full
+
+.. _unikube_app:
+
+.. click:: unikube:app
+  :prog: unikube app
+  :commands: list, info, use, shell, exec, switch, logs
   :nested: full

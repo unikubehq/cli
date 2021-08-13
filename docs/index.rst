@@ -7,6 +7,7 @@ Welcome to the Unikube CLI Documentation!
    :maxdepth: 2
 
    getting_started/index
+   users_guide/index
    reference/index
 
 
