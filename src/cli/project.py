@@ -388,7 +388,7 @@ def down(ctx, project, **kwargs):
 
     # check if project is in local storage
     if not project_instance:
-        console.info(f"The project cluster for '{project}' could not be found.")
+        console.info(f"The project cluster for '{project}' is not up or does not exist yet.")
         return None
 
     # get cluster
