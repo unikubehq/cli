@@ -76,7 +76,7 @@ Create release (e.g.: 1.0.0-dev2 -> 1.0.0):
 
 ---
 
-Tests for the unikube cli are developed using the `pytest` framework in conmbination with the _click.testing_ module.
+Tests for the unikube cli are developed using the `pytest` framework in combination with the _click.testing_ module.
 
 Thus, it is possible to run the tests using `pytest` or by configuring the testing environment/options within your IDE to use `pytest`.
 
@@ -89,7 +89,7 @@ TESTRUNNER_SECRET=...
 
 Otherwise, tests might fail locally, even if they are correct.
 
-It is possible to set the environment variables using an `.env` file within your virtual environment or by providing them explicitely:
+It is possible to set the environment variables using an `.env` file within your virtual environment or by providing them explicitly:
 
 ```
 TESTRUNNER_EMAIL=... TESTRUNNER_SECRET=... pytest
