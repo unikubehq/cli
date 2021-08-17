@@ -8,7 +8,15 @@ import click_spinner
 import src.cli.console as console
 from src import settings
 from src.graphql import GraphQL
-from src.helpers import check_running_cluster, select_entity, select_entity_from_cluster_list
+from src.helpers import (
+    check_running_cluster,
+    get_organization_id_by_title,
+    get_project_list_by_permission,
+    get_projects_for_organization,
+    select_entity,
+    select_entity_from_cluster_list,
+    select_project,
+)
 from src.keycloak.permissions import KeycloakPermissions
 from src.local.providers.types import K8sProviderType
 from src.local.system import Telepresence
@@ -23,8 +31,8 @@ def list(ctx, organization, **kwargs):
     List all your projects.
     """
 
-    context = ctx.context.get(organization=organization)
-
+    context = ctx.context.get()
+    project_ids_for_organization = None
     # keycloak
     try:
         keycloak_permissions = KeycloakPermissions(authentication=ctx.auth)
@@ -33,29 +41,17 @@ def list(ctx, organization, **kwargs):
         permission_list = None
         console.debug(e)
         console.exit_generic_error()
+    if organization:
+        graph_ql = GraphQL(authentication=ctx.auth)
+        project_ids_for_organization = get_projects_for_organization(graph_ql, organization)
 
     # append "(active)"
     if context.project_id:
         for permission in permission_list:
             if permission.rsid == context.project_id:
                 permission.rsid += " (active)"
-
     # console
-    project_list = []
-    for permission in permission_list:
-        # parse name
-        try:
-            name = re.findall(r"project (.+?)\({rsid}\)".format(rsid=permission.rsid), permission.rsname)[0]
-        except Exception:
-            name = permission.rsname
-
-        project_list.append(
-            {
-                "id": permission.rsid,
-                "name": name,
-            }
-        )
-
+    project_list = get_project_list_by_permission(permission_list, project_ids_for_organization)
     if not project_list:
         console.info("No projects available. Please go to https://app.unikube.io and create a project.")
         exit(0)
@@ -232,16 +228,22 @@ def up(ctx, project, organization, ingress, provider, workers, **kwargs):
     Start/Resume a project cluster.
     """
 
-    # GraphQL
     try:
         graph_ql = GraphQL(authentication=ctx.auth)
+        if organization:
+            organization_id = get_organization_id_by_title(graph_ql, organization)
+        else:
+            organization_id = None
         data = graph_ql.query(
             """
-            {
-                allProjects {
+            query($organization_id: UUID) {
+                allProjects(organizationId: $organization_id) {
                     results {
-                        id
                         title
+                        id
+                        organization {
+                            id
+                        }
                         clusterSettings {
                             id
                             port
@@ -249,7 +251,10 @@ def up(ctx, project, organization, ingress, provider, workers, **kwargs):
                     }
                 }
             }
-            """
+            """,
+            query_variables={
+                "organization_id": organization_id,
+            },
         )
     except Exception as e:
         data = None
@@ -257,30 +262,9 @@ def up(ctx, project, organization, ingress, provider, workers, **kwargs):
         console.exit_generic_error()
 
     project_list = data["allProjects"]["results"]
-
     # argument
     if not project:
-        # argument from context
-        context = ctx.context.get(organization=organization)
-        if context.project_id:
-            project_instance = ctx.context.get_project()
-            project = project_instance["title"] + f"({project_instance['id']})"
-
-        # argument from console
-        else:
-            cluster_list = ctx.cluster_manager.get_cluster_list(ready=True)
-            cluster_id_list = [item.id for item in cluster_list]
-
-            project_list_choices = [
-                item["title"] + f"({item['id']})" for item in project_list if item["id"] not in cluster_id_list
-            ]
-
-            project = console.list(
-                message="Please select a project",
-                choices=project_list_choices,
-            )
-            if project is None:
-                return False
+        project = select_project(ctx, project_list)
 
     project_instance = select_entity(project_list, project)
     if not project_instance:
@@ -346,7 +330,6 @@ def down(ctx, project, **kwargs):
 
     cluster_list = ctx.cluster_manager.get_cluster_list(ready=True)
     cluster_title_list = [item.name + f"({item.id})" for item in cluster_list]
-    # import pdb;pdb.set_trace()
 
     # argument
     if not project:

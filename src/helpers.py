@@ -168,3 +168,107 @@ def compare_current_and_latest_versions():
             console.info(
                 f"You are using unikube version {current_version}; however, version {latest_release_version} is available."
             )
+
+
+def get_organization_id_by_title(graph_ql, organization):
+    organization_id = None
+    organization_list = graph_ql.query(
+        """
+        {
+            allOrganizations {
+                results {
+                    id
+                    title
+                }
+            }
+        }
+        """
+    )
+    for orga in organization_list["allOrganizations"]["results"]:
+        if orga["title"] == organization:
+            organization_id = orga["id"]
+    if organization_id:
+        return organization_id
+    else:
+        console.error("Wrong organization title. Such organization does not exist.", _exit=True)
+
+
+def get_projects_for_organization(graph_ql, organization):
+    # GraphQL
+    project_ids_for_organization = None
+    try:
+        organization_id = get_organization_id_by_title(graph_ql, organization)
+        if organization_id:
+            data = graph_ql.query(
+                """
+                query($organization_id: UUID) {
+                    allProjects(organizationId: $organization_id) {
+                        results {
+                            title
+                            id
+                            organization {
+                                id
+                            }
+                        }
+                    }
+                }
+                """,
+                query_variables={
+                    "organization_id": organization_id,
+                },
+            )
+            project_ids_for_organization = [project["id"] for project in data["allProjects"]["results"]]
+        else:
+            console.error("Wrong organization title. Such organization does not exist.", _exit=True)
+    except Exception as e:
+        console.debug(e)
+        console.exit_generic_error()
+    return project_ids_for_organization
+
+
+def get_project_list_by_permission(permission_list, project_ids_for_organization):
+    project_list = []
+    for permission in permission_list:
+        # parse name
+        try:
+            name = re.findall(r"project (.+?)\({rsid}\)".format(rsid=permission.rsid), permission.rsname)[0]
+        except Exception:
+            name = permission.rsname
+        if (
+            project_ids_for_organization
+            and permission.rsid in project_ids_for_organization
+            or not project_ids_for_organization
+        ):
+            project_list.append(
+                {
+                    "id": permission.rsid,
+                    "name": name,
+                }
+            )
+    return project_list
+
+
+def select_project(ctx, project_list):
+    # argument from context
+    context = ctx.context.get()
+
+    if context.project_id:
+        project_instance = ctx.context.get_project()
+        project = project_instance["title"] + f"({project_instance['id']})"
+
+    # argument from console
+    else:
+        cluster_list = ctx.cluster_manager.get_cluster_list(ready=True)
+        cluster_id_list = [item.id for item in cluster_list]
+
+        project_list_choices = [
+            item["title"] + f"({item['id']})" for item in project_list if item["id"] not in cluster_id_list
+        ]
+
+        project = console.list(
+            message="Please select a project",
+            choices=project_list_choices,
+        )
+        if project is None:
+            exit(1)
+    return project
