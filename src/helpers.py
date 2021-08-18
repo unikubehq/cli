@@ -16,6 +16,39 @@ from src.local.providers.types import K8sProviderType
 from src.local.system import Telepresence
 
 
+def select_project_entity(entity_list, selection):
+    # get identifier if available
+    identifier_search = re.search("(?<=\\()[^)]*(?=\\))", selection)
+    similar_entities = []
+    try:
+        identifier = identifier_search.group(0)
+    except Exception:
+        identifier = None
+
+    # entity selection
+    for entity in entity_list:
+        # match directly
+        if not identifier_search:
+            if selection == entity.get("title", None):
+                similar_entities.append(entity)
+
+        # match with identifier
+        if identifier:
+            if selection == f'{entity["title"]} ({entity["organization"]["title"]})':
+                return entity
+    if len(similar_entities) > 1:
+        console.warning(
+            f"Entity {similar_entities[0].get('title')} has a duplicate title. Specify organization in parentheses "
+            f"directly after the title.",
+            _exit=True,
+        )
+    elif len(similar_entities) == 1:
+        return similar_entities[0]
+    else:
+        console.warning(f"Entity {selection} was not found.")
+        return None
+
+
 def select_entity(entity_list, identifier):
     # parsing id, which should be in parentheses after the project title
     id = re.search("(?<=\\()[^)]*(?=\\))", identifier)
@@ -60,7 +93,6 @@ def select_entity_from_cluster_list(cluster_list, identifier):
     elif len(similar_entities) == 1:
         return similar_entities[0]
     else:
-        console.warning(f"Entity {identifier} was not found.")
         return None
 
 

@@ -1,4 +1,4 @@
-from src.cli import project
+from src.cli import orga, project
 from tests.login_testcase import LoginTestCase
 from unikube import ClickContext
 
@@ -52,16 +52,18 @@ class ProjectTestCase(LoginTestCase):
             ["b464a6a7-7367-41d3-92a3-d3d98ed10cb5"],
             obj=ClickContext(),
         )
-
-        self.assertIn("[SUCCESS] Project context: organization_id=", result.output)
-        self.assertEqual(result.exit_code, 0)
-
-    def test_project_use_remove(self):
-        result = self.runner.invoke(
+        remove_project_ctx = self.runner.invoke(
             project.use,
             ["-r"],
             obj=ClickContext(),
         )
+        remove_orga_ctx = self.runner.invoke(
+            orga.use,
+            ["-r"],
+            obj=ClickContext(),
+        )
 
-        self.assertIn("[SUCCESS] Project context removed.\n", result.output)
+        self.assertIn("[SUCCESS] Project context: organization_id=", result.output)
+        self.assertIn("[SUCCESS] Project context removed.\n", remove_project_ctx.output)
+        self.assertIn("[SUCCESS] Organization context removed.\n", remove_orga_ctx.output)
         self.assertEqual(result.exit_code, 0)

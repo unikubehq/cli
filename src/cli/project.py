@@ -8,15 +8,7 @@ import click_spinner
 import src.cli.console as console
 from src import settings
 from src.graphql import GraphQL
-from src.helpers import (
-    check_running_cluster,
-    get_organization_id_by_title,
-    get_project_list_by_permission,
-    get_projects_for_organization,
-    select_entity,
-    select_entity_from_cluster_list,
-    select_project,
-)
+from src.helpers import check_running_cluster, select_entity, select_entity_from_cluster_list, select_project_entity
 from src.keycloak.permissions import KeycloakPermissions
 from src.local.providers.types import K8sProviderType
 from src.local.system import Telepresence
@@ -53,8 +45,7 @@ def list(ctx, organization, **kwargs):
     # console
     project_list = get_project_list_by_permission(permission_list, project_ids_for_organization)
     if not project_list:
-        console.info("No projects available. Please go to https://app.unikube.io and create a project.")
-        exit(0)
+        console.info("No projects available. Please go to https://app.unikube.io and create a project.", _exit=True)
 
     console.table(
         data=project_list,
@@ -87,6 +78,9 @@ def info(ctx, project, **kwargs):
                         description
                         specRepository
                         specRepositoryBranch
+                        organization {
+                            title
+                        }
                     }
                 }
             }
@@ -104,22 +98,24 @@ def info(ctx, project, **kwargs):
         context = ctx.context.get()
         if context.project_id:
             project_instance = ctx.context.get_project()
-            project = project_instance["title"] + f"({project_instance['id']})"
+            project = f'{project_instance["title"]} ({project_instance["organization"]["title"]})'
 
         # argument from console
         else:
             project = console.list(
                 message="Please select a project",
-                choices=[project["title"] + f"({project['id']})" for project in project_list],
+                choices=[project["title"] for project in project_list],
+                identifiers=[project["organization"]["title"] for project in project_list],
             )
             if project is None:
                 return None
 
     # select
-    project_selected = select_entity(project_list, project)
+    project_selected = select_project_entity(entity_list=project_list, selection=project)
 
     # console
     if project_selected:
+        project_selected["organization"] = project_selected.pop("organization").get("title", "-")
         project_selected["repository"] = project_selected.pop("specRepository")
         project_selected["repository branch"] = project_selected.pop("specRepositoryBranch")
 
@@ -156,6 +152,14 @@ def use(ctx, project_id, remove, **kwargs):
         console.success("Project context removed.")
         return None
 
+    # project context is already set
+    if context.project_id:
+        console.info(
+            "Project context is already set. If you want to set a new project context, please remove current "
+            "context using 'unikube project use -r'",
+            _exit=True,
+        )
+
     # GraphQL
     try:
         graph_ql = GraphQL(authentication=ctx.auth)
@@ -168,6 +172,7 @@ def use(ctx, project_id, remove, **kwargs):
                         id
                         organization {
                             id
+                            title
                         }
                     }
                 }
@@ -190,22 +195,23 @@ def use(ctx, project_id, remove, **kwargs):
         project_title = console.list(
             message="Please select a project",
             choices=[project["title"] for project in project_dict.values()],
+            identifiers=[project["organization"]["title"] for project in project_dict.values()],
         )
         if project_title is None:
             return False
 
-        for id, project in project_dict.items():
-            if project["title"] == project_title:
-                project_id = id
+        # select
+        project_selected = select_project_entity(entity_list=project_list, selection=project_title)
+    else:
+        project_selected = project_dict.get(project_id, None)
 
-    project = project_dict.get(project_id, None)
-    if not project:
-        console.error(f"Unknown project with id: {project_id}.")
+    if not project_selected:
+        console.error(f"Unknown project with id: {project_id}.", _exit=True)
 
     # set project
     user_data.context.deck_id = None
-    user_data.context.project_id = project["id"]
-    user_data.context.organization_id = project["organization"]["id"]
+    user_data.context.project_id = project_selected["id"]
+    user_data.context.organization_id = project_selected["organization"]["id"]
     local_storage_user.set(user_data)
 
     console.success(f"Project context: {user_data.context}")
@@ -248,6 +254,9 @@ def up(ctx, project, organization, ingress, provider, workers, **kwargs):
                             id
                             port
                         }
+                        organization {
+                            title
+                        }
                     }
                 }
             }
@@ -262,11 +271,36 @@ def up(ctx, project, organization, ingress, provider, workers, **kwargs):
         console.exit_generic_error()
 
     project_list = data["allProjects"]["results"]
+    cluster_list = ctx.cluster_manager.get_cluster_list(ready=True)
+    cluster_id_list = [item.id for item in cluster_list]
+
     # argument
     if not project:
-        project = select_project(ctx, project_list)
+        # argument from context
+        context = ctx.context.get(organization=organization)
+        if context.project_id:
+            project_instance = ctx.context.get_project()
+            project = f'{project_instance["title"]} ({project_instance["organization"]["title"]})'
+            if project_instance["id"] in cluster_id_list:
+                console.info(f"Project '{project}' is already up.", _exit=True)
 
-    project_instance = select_entity(project_list, project)
+        # argument from console
+        else:
+
+            project = console.list(
+                message="Please select a project",
+                choices=[project["title"] for project in project_list if project["id"] not in cluster_id_list],
+                identifiers=[
+                    project["organization"]["title"] for project in project_list if project["id"] not in cluster_id_list
+                ],
+            )
+
+            if project is None:
+                return False
+
+    project_list_without_clusters = [project for project in project_list if project["id"] not in cluster_id_list]
+    project_instance = select_project_entity(entity_list=project_list_without_clusters, selection=project)
+
     if not project_instance:
         console.info(f"The project '{project}' could not be found.")
         return None
@@ -329,7 +363,6 @@ def down(ctx, project, **kwargs):
     """
 
     cluster_list = ctx.cluster_manager.get_cluster_list(ready=True)
-    cluster_title_list = [item.name + f"({item.id})" for item in cluster_list]
 
     # argument
     if not project:
@@ -344,7 +377,7 @@ def down(ctx, project, **kwargs):
             project = console.list(
                 message="Please select a project",
                 message_no_choices="No cluster is running.",
-                choices=cluster_title_list,
+                choices=[item.name + f"({item.id})" for item in cluster_list],
             )
             if project is None:
                 return None
@@ -353,7 +386,7 @@ def down(ctx, project, **kwargs):
 
     # check if project is in local storage
     if not project_instance:
-        console.info("The project cluster could not be found.")
+        console.info(f"The project cluster for '{project}' is not up or does not exist yet.")
         return None
 
     # get cluster
@@ -364,7 +397,6 @@ def down(ctx, project, **kwargs):
                 cluster_data=cluster_data,
             )
             break
-
     # cluster down
     if not cluster.exists():
         # something went wrong or cluster was already delete from somewhere else
@@ -419,7 +451,7 @@ def delete(ctx, project, **kwargs):
     project_instance = select_entity_from_cluster_list(cluster_list, project)
 
     if not project_instance:
-        console.info(f"The project '{project}' could not be found.")
+        console.info(f"The project cluster for '{project}' could not be found.")
         return None
 
     # initial warning
