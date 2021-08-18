@@ -22,7 +22,7 @@ def resolve_duplicates(choices: list, identifiers: list):
 def list(
     message: str,
     choices: list,
-    identifiers: list = [],
+    identifiers: list = None,
     allow_duplicates: bool = False,
     message_no_choices: str = "No choices available!",
 ):
