@@ -23,8 +23,8 @@ def list(ctx, organization, **kwargs):
     List all your projects.
     """
 
-    context = ctx.context.get(organization=organization)
-
+    context = ctx.context.get()
+    project_ids_for_organization = None
     # keycloak
     try:
         keycloak_permissions = KeycloakPermissions(authentication=ctx.auth)
@@ -33,29 +33,17 @@ def list(ctx, organization, **kwargs):
         permission_list = None
         console.debug(e)
         console.exit_generic_error()
+    if organization:
+        graph_ql = GraphQL(authentication=ctx.auth)
+        project_ids_for_organization = get_projects_for_organization(graph_ql, organization)
 
     # append "(active)"
     if context.project_id:
         for permission in permission_list:
             if permission.rsid == context.project_id:
                 permission.rsid += " (active)"
-
     # console
-    project_list = []
-    for permission in permission_list:
-        # parse name
-        try:
-            name = re.findall(r"project (.+?)\({rsid}\)".format(rsid=permission.rsid), permission.rsname)[0]
-        except Exception:
-            name = permission.rsname
-
-        project_list.append(
-            {
-                "id": permission.rsid,
-                "name": name,
-            }
-        )
-
+    project_list = get_project_list_by_permission(permission_list, project_ids_for_organization)
     if not project_list:
         console.info("No projects available. Please go to https://app.unikube.io and create a project.", _exit=True)
 
@@ -246,16 +234,22 @@ def up(ctx, project, organization, ingress, provider, workers, **kwargs):
     Start/Resume a project cluster.
     """
 
-    # GraphQL
     try:
         graph_ql = GraphQL(authentication=ctx.auth)
+        if organization:
+            organization_id = get_organization_id_by_title(graph_ql, organization)
+        else:
+            organization_id = None
         data = graph_ql.query(
             """
-            {
-                allProjects {
+            query($organization_id: UUID) {
+                allProjects(organizationId: $organization_id) {
                     results {
-                        id
                         title
+                        id
+                        organization {
+                            id
+                        }
                         clusterSettings {
                             id
                             port
@@ -266,7 +260,10 @@ def up(ctx, project, organization, ingress, provider, workers, **kwargs):
                     }
                 }
             }
-            """
+            """,
+            query_variables={
+                "organization_id": organization_id,
+            },
         )
     except Exception as e:
         data = None
@@ -366,6 +363,7 @@ def down(ctx, project, **kwargs):
     """
 
     cluster_list = ctx.cluster_manager.get_cluster_list(ready=True)
+
     # argument
     if not project:
         # argument from context
