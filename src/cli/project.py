@@ -8,7 +8,14 @@ import click_spinner
 import src.cli.console as console
 from src import settings
 from src.graphql import GraphQL
-from src.helpers import check_running_cluster, select_entity, select_entity_from_cluster_list, select_project_entity
+from src.helpers import (
+    check_running_cluster,
+    get_organization_id_by_title,
+    get_project_list_by_permission,
+    get_projects_for_organization,
+    select_entity_from_cluster_list,
+    select_project_entity,
+)
 from src.keycloak.permissions import KeycloakPermissions
 from src.local.providers.types import K8sProviderType
 from src.local.system import Telepresence
