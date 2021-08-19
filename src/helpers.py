@@ -191,15 +191,25 @@ def check_running_cluster(ctx: ClickContext, cluster_provider_type: K8sProviderT
 def compare_current_and_latest_versions():
     try:
         current_version = pkg_resources.require("unikube")[0].version
-    except pkg_resources.DistributionNotFound as e:
-        console.warning(f"Version of the package could not be found: {e}")
-    else:
         all_releases = requests.get("https://api.github.com/repos/unikubehq/cli/releases")
+        if all_releases.status_code == 403:
+            console.info("Versions cannot be compared, as API rate limit was exceeded")
+            return None
         latest_release_version = all_releases.json()[0]["tag_name"].replace("-", ".")
         if current_version != latest_release_version:
             console.info(
                 f"You are using unikube version {current_version}; however, version {latest_release_version} is available."
             )
+    except pkg_resources.DistributionNotFound as e:
+        console.warning(f"Version of the package could not be found: {e}")
+    except Exception:
+        import traceback
+
+        console.info(f"Versions cannot be compared, because of error {traceback.format_exc()}")
+
+
+def compare_decorator(f):
+    compare_current_and_latest_versions()
 
 
 def get_organization_id_by_title(graph_ql, organization):

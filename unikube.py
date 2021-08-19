@@ -1,6 +1,7 @@
 import sys
 
 import click
+from click.decorators import version_option
 
 import src.cli.console as console
 from src.cli import app as app_cmd
@@ -10,6 +11,7 @@ from src.cli import orga as orga_cmd
 from src.cli import project as project_cmd
 from src.cli import system as system_cmd
 from src.context import ClickContext
+from src.helpers import compare_decorator
 
 version = sys.version_info
 if version.major == 2:
@@ -19,8 +21,9 @@ if version.major == 2:
 
 # click -----
 @click.group()
-@click.version_option()
+@version_option()
 @click.pass_context
+@compare_decorator
 def cli(ctx, **kwargs):
     ctx.obj = ClickContext()
 
