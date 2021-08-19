@@ -329,21 +329,19 @@ class KubeAPI(object):
                 return pod
         return None
 
-    def get_logs(self, pod, follow):
+    def get_logs(self, pod, follow, container=None):
         if follow:
             w = watch.Watch()
             try:
                 for log in w.stream(
-                    self._core_api.read_namespaced_pod_log,
-                    name=pod,
-                    namespace=self._namespace,
+                    self._core_api.read_namespaced_pod_log, name=pod, namespace=self._namespace, container=container
                 ):
                     click.echo(log)
             except ApiException as e:
                 console.error(str(e))
         else:
             try:
-                ret = self._core_api.read_namespaced_pod_log(name=pod, namespace=self._namespace)
+                ret = self._core_api.read_namespaced_pod_log(name=pod, namespace=self._namespace, container=container)
             except ApiException as e:
                 console.error(str(e))
             else:

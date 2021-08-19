@@ -338,7 +338,7 @@ def use(ctx, deck_id, remove, **kwargs):
 @click.pass_obj
 def install(ctx, deck, **kwargs):
     """
-    Install deck.
+    Install a deck.
     """
 
     deck = get_install_uninstall_arguments(ctx=ctx, deck=deck)
@@ -372,7 +372,7 @@ def install(ctx, deck, **kwargs):
     # console
     console.table(
         ingress_data,
-        headers={"name": "Name", "url": "URLs"},
+        headers={"name": "Name", "url": "URLs", "paths": "Paths"},
     )
 
 
