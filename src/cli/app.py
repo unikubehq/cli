@@ -110,7 +110,7 @@ def get_deck_from_arguments(ctx, organization_id: str, project_id: str, deck_id:
     return cluster_data, deck
 
 
-def argument_app(k8s, app: str):
+def argument_app(k8s, app: str = None):
     if not app:
         app_choices = [pod.metadata.name for pod in k8s.get_pods().items]
         app = console.list(
@@ -125,6 +125,29 @@ def argument_app(k8s, app: str):
         console.error("App does not exist.", _exit=True)
 
     return app
+
+
+def get_container(pod):
+    containers = pod.to_dict()["spec"]["containers"]
+    cont_choices = [cont["name"] for cont in containers]
+    if len(cont_choices) == 1:
+        return containers[0]
+    cont = console.list(
+        message="Please select a container",
+        choices=cont_choices,
+    )
+
+    return next(c for c in containers if c["name"] == cont)
+
+
+def env_display(container: dict) -> str:
+    name_len = max(map(len, (var["name"] for var in container["env"])), default=0)
+    lines = []
+    for var in container["env"]:
+        if var["value"] is not None:
+            line = f'{var["name"].ljust(name_len)} {var["value"]}'
+            lines.append(line)
+    return "\n".join(lines)
 
 
 @click.command()
@@ -415,8 +438,26 @@ def expose(**kwargs):
 
 
 @click.command()
-def env(**kwargs):
-    raise NotImplementedError
+@click.argument("app", required=False)
+@click.option("--organization", "-o", help="Select an organization")
+@click.option("--project", "-p", help="Select a project")
+@click.option("--deck", "-d", help="Select a deck")
+@click.pass_obj
+def env(ctx, app, organization=None, project=None, deck=None, **kwargs):
+    ctx.auth.check()
+    cluster_data, deck = get_deck_from_arguments(ctx, organization, project, deck)
+
+    # get cluster
+    cluster = get_cluster_or_exit(ctx, cluster_data.id)
+    provider_data = cluster.storage.get()
+    k8s = KubeAPI(provider_data, deck)
+
+    app = argument_app(k8s, app)
+    pod = k8s.get_pod(app)
+    cont = get_container(pod)
+
+    # output
+    click.echo(env_display(cont))
 
 
 @click.command()

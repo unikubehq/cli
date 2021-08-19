@@ -306,6 +306,7 @@ class KubeAPI(object):
         self._namespace = self._deck["environment"][0]["namespace"] or "default"
         self._api_client = config.new_client_from_config(provider_data.kubeconfig_path)
         self._core_api = client.CoreV1Api(self._api_client)
+        self._apps_api = client.AppsV1Api(self._api_client)
         self._networking_api = client.NetworkingV1beta1Api(self._api_client)
 
     @property
@@ -357,4 +358,18 @@ class KubeAPI(object):
         ret = self._core_api.list_namespaced_config_map(self._namespace, watch=False)
         if name:
             ret = next(filter(lambda x: x.metadata.name == name, ret.items))
+        return ret
+
+    def get_deployments(self):
+        try:
+            return self._apps_api.list_namespaced_deployment(self._namespace, watch=False)
+        except MaxRetryError:
+            raise UnikubeClusterUnavailableError
+
+    def get_deployment(self, name=None):
+        ret = self._apps_api.list_namespaced_deployment(self._namespace, watch=False)
+        if name:
+            for x in ret.items:
+                if x.metadata.name == name:
+                    return x
         return ret
