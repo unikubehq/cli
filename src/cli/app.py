@@ -2,7 +2,8 @@ import os
 import re
 import signal
 import sys
-from time import sleep
+from collections import OrderedDict
+from typing import Tuple
 
 import click
 import click_spinner
@@ -133,7 +134,7 @@ def argument_app(k8s, app: str):
 @click.option("--deck", "-d", help="Select a deck")
 @click.pass_obj
 def list(ctx, organization, project, deck, **kwargs):
-    """List all apps/pods."""
+    """List all apps."""
 
     ctx.auth.check()
     cluster_data, deck = get_deck_from_arguments(ctx, organization, project, deck)
@@ -150,12 +151,73 @@ def list(ctx, organization, project, deck, **kwargs):
 
 
 @click.command()
+@click.argument("app", required=False)
 @click.option("--organization", "-o", help="Select an organization")
 @click.option("--project", "-p", help="Select a project")
 @click.option("--deck", "-d", help="Select a deck")
 @click.pass_obj
-def info(ctx, organization, project, deck, **kwargs):
-    raise NotImplementedError
+def info(ctx, app, organization, project, deck, **kwargs):
+    """Display the status for the given app name."""
+
+    ctx.auth.check()
+    cluster_data, deck = get_deck_from_arguments(ctx, organization, project, deck)
+
+    # get cluster
+    cluster = get_cluster_or_exit(ctx, cluster_data.id)
+    provider_data = cluster.storage.get()
+
+    # shell
+    k8s = KubeAPI(provider_data, deck)
+    app = argument_app(k8s, app)
+
+    # get the data of the selected pod
+    data = k8s.get_pod(app)
+    pod_status = data.status
+
+    console.info(f"This app runs {len(pod_status.container_statuses)} container(s).")
+    for idx, status in enumerate(pod_status.container_statuses):
+        console.info(f"Container {idx + 1}: {status.image}")
+        console.table(
+            [
+                {"State": "Running", "Value": status.state.running.started_at},
+                {"State": "Terminated", "Value": status.state.terminated},
+                {"State": "Waiting", "Value": status.state.waiting},
+            ]
+        )
+
+    conditions = []
+    for condition in pod_status.conditions:
+        conditions.append(
+            OrderedDict(
+                {
+                    "type": condition.type,
+                    "status": condition.status,
+                    "reason": condition.reason,
+                    "last_transition_time": condition.last_transition_time,
+                    "last_probe_time": condition.last_probe_time,
+                    "message": condition.message,
+                }
+            )
+        )
+
+    if conditions:
+        conditions = sorted(conditions, key=lambda x: x.get("last_transition_time").timestamp())
+        # print a line for padding on the console
+        print()
+        console.info("All conditions for this app:")
+        console.table(
+            conditions,
+            headers={
+                "type": "Type",
+                "status": "Status",
+                "reason": "Reason",
+                "last_transition_time": "Time",
+                "last_probe_time": "Probe Time",
+                "message": "Message",
+            },
+        )
+    else:
+        console.info("No condition to display")
 
 
 @click.command()
@@ -379,7 +441,7 @@ def switch(ctx, app, organization, project, deck, deployment, unikubefile, **kwa
 
 @click.command()
 def pulldb(**kwargs):
-    raise NotImplementedError
+    console.warning("This feature not yet available in your CLI version.")
 
 
 @click.command()
@@ -411,14 +473,84 @@ def logs(ctx, app, organization=None, project=None, deck=None, follow=False, **k
 
 @click.command()
 def expose(**kwargs):
-    raise NotImplementedError
+    console.warning("This feature not yet available in your CLI version.")
 
 
 @click.command()
-def env(**kwargs):
-    raise NotImplementedError
+@click.argument("app", required=False)
+@click.option("--init", "-i", is_flag=True, help="Display environment variables for the init container", default=False)
+@click.option("--organization", "-o", help="Select an organization")
+@click.option("--project", "-p", help="Select a project")
+@click.option("--deck", "-d", help="Select a deck")
+@click.pass_obj
+def env(ctx, app, init, organization, project, deck, **kwargs):
+    """Display the environment variables for the given app name."""
+
+    ctx.auth.check()
+    cluster_data, deck = get_deck_from_arguments(ctx, organization, project, deck)
+
+    # get cluster
+    cluster = get_cluster_or_exit(ctx, cluster_data.id)
+    provider_data = cluster.storage.get()
+
+    # shell
+    k8s = KubeAPI(provider_data, deck)
+    app = argument_app(k8s, app)
+
+    # get the data of the selected pod
+    data = k8s.get_pod(app)
+
+    if init:
+        containers = data.spec.init_containers
+    else:
+        containers = data.spec.containers
+
+    if containers:
+
+        console.info(f"This app runs {len(containers)} container(s).")
+        for idx, container in enumerate(containers):
+            console.info(f"Container {idx + 1}: {container.image}")
+            env_vars = []
+
+            def _value_from(s) -> Tuple[str, str]:
+                # return an indicator if this values comes from a secret and the name
+                if s.config_map_key_ref:
+                    return "ConfigMap", s.config_map_key_ref
+                elif s.field_ref and s.field_ref.field_path:
+                    return "Field", s.field_ref.field_path
+                elif s.resource_field_ref:
+                    return "ResourceField", s.resource_field_ref
+                elif s.secret_key_ref and s.secret_key_ref.name:
+                    return "Secret", f"Secret: {s.secret_key_ref.name} Key: {s.secret_key_ref.key}"
+
+            for env in container.env:
+                if env.value_from:
+                    type, source = _value_from(env.value_from)
+                else:
+                    type, source = "Definition", "-"
+                env_vars.append(
+                    OrderedDict(
+                        {
+                            "name": env.name,
+                            "value": env.value,
+                            "source_type": type,
+                            "path": source,
+                        }
+                    )
+                )
+            console.table(
+                env_vars,
+                headers={
+                    "name": "Name",
+                    "value": "Value",
+                    "path": "Path",
+                    "source_type": "Source Type",
+                },
+            )
+    else:
+        console.info("No container running")
 
 
 @click.command()
 def request_env(**kwargs):
-    raise NotImplementedError
+    console.warning("This feature not yet available in your CLI version.")
