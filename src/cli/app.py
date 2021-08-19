@@ -145,9 +145,26 @@ def list(ctx, organization, project, deck, **kwargs):
 
     # list
     k8s = KubeAPI(provider_data, deck)
-    pod_table = [{"id": pod.metadata.uid, "name": pod.metadata.name} for pod in k8s.get_pods().items]
+    pod_table = []
 
-    console.table(data=pod_table)
+    def _ready_ind(c) -> Tuple[bool, str]:
+        container_count = len(c)
+        ready_count = sum([val.ready for val in c])
+        return container_count == ready_count, f"{ready_count}/{container_count}"
+
+    for pod in k8s.get_pods().items:
+        all_ready, count = _ready_ind(pod.status.container_statuses)
+        pod_table.append(
+            OrderedDict({"name": pod.metadata.name, "ready": count, "state": "Ok" if all_ready else "Not Ok"})
+        )
+    console.table(
+        data=pod_table,
+        headers={
+            "name": "Name",
+            "ready": "Ready",
+            "state": "State",
+        },
+    )
 
 
 @click.command()
@@ -177,11 +194,22 @@ def info(ctx, app, organization, project, deck, **kwargs):
     console.info(f"This app runs {len(pod_status.container_statuses)} container(s).")
     for idx, status in enumerate(pod_status.container_statuses):
         console.info(f"Container {idx + 1}: {status.image}")
+        print("\nStartup command from workload manifest:")
         console.table(
             [
-                {"State": "Running", "Value": status.state.running.started_at},
-                {"State": "Terminated", "Value": status.state.terminated},
-                {"State": "Waiting", "Value": status.state.waiting},
+                ("Command", " ".join(data.spec.containers[idx].command) if data.spec.containers[idx].command else None),
+                ("Args", " ".join(data.spec.containers[idx].args) if data.spec.containers[idx].args else None),
+            ]
+        )
+        print("\nApp status:")
+        console.table(
+            [
+                {"State": "Running", "Value": status.state.running.started_at if status.state.running else None},
+                {
+                    "State": "Terminated",
+                    "Value": status.state.terminated.finished_at if status.state.terminated else None,
+                },
+                {"State": "Waiting", "Value": status.state.waiting.message if status.state.waiting else None},
             ]
         )
 
@@ -218,11 +246,6 @@ def info(ctx, app, organization, project, deck, **kwargs):
         )
     else:
         console.info("No condition to display")
-
-
-@click.command()
-def use(**kwargs):
-    raise NotImplementedError
 
 
 @click.command()
@@ -446,12 +469,13 @@ def pulldb(**kwargs):
 
 @click.command()
 @click.argument("app", required=False)
+@click.option("--container", "-c", help="Specify the container in this app")
 @click.option("--organization", "-o", help="Select an organization")
 @click.option("--project", "-p", help="Select a project")
 @click.option("--deck", "-d", help="Select a deck")
 @click.option("--follow", "-f", is_flag=True, default=False, help="Follow logs.")
 @click.pass_obj
-def logs(ctx, app, organization=None, project=None, deck=None, follow=False, **kwargs):
+def logs(ctx, app, container=None, organization=None, project=None, deck=None, follow=False, **kwargs):
     """Display the container's logs"""
 
     ctx.auth.check()
@@ -464,8 +488,20 @@ def logs(ctx, app, organization=None, project=None, deck=None, follow=False, **k
     # log
     k8s = KubeAPI(provider_data, deck)
     app = argument_app(k8s, app)
+    # get the data of the selected pod
 
-    logs = k8s.get_logs(app, follow)
+    if not container:
+        data = k8s.get_pod(app)
+        if len(data.spec.containers) > 1:
+            container = console.list(
+                message="Please select a container",
+                message_no_choices="No container is running.",
+                choices=[c.name for c in data.spec.containers],
+            )
+            if container is None:
+                exit(1)
+
+    logs = k8s.get_logs(app, follow, container=container)
 
     # output
     click.echo(logs)
@@ -493,7 +529,7 @@ def env(ctx, app, init, organization, project, deck, **kwargs):
     cluster = get_cluster_or_exit(ctx, cluster_data.id)
     provider_data = cluster.storage.get()
 
-    # shell
+    # env
     k8s = KubeAPI(provider_data, deck)
     app = argument_app(k8s, app)
 

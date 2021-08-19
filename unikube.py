@@ -97,7 +97,6 @@ def app(ctx):
 
 app.add_command(app_cmd.info)
 app.add_command(app_cmd.list)
-app.add_command(app_cmd.use)
 app.add_command(app_cmd.shell)
 app.add_command(app_cmd.switch)
 app.add_command(app_cmd.pulldb)
