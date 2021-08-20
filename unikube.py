@@ -1,7 +1,6 @@
 import sys
 
 import click
-from click.decorators import version_option
 
 import src.cli.console as console
 from src.cli import app as app_cmd
@@ -21,7 +20,7 @@ if version.major == 2:
 
 # click -----
 @click.group()
-@version_option()
+@click.version_option()
 @click.pass_context
 @compare_decorator
 def cli(ctx, **kwargs):
