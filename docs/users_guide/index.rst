@@ -2,10 +2,120 @@
 User's guide
 ============
 
+Unikube CLI has many convenient commands, that make it much easier to manage unikube.
+
+Unikubefile
+===========
+
+Unikubefile is a yaml file, that should have all the necessary information for unikube about the project. It should
+specify a docker build, volumes, environment, commands and context.
+
+An example unikube.yaml could look like this:
 
 
+.. code-block:: yaml
+
+    # unikube switch configuration file
+    apps:
+      projects:
+        build:
+          context:
+            organization: <Organization ID>
+            project: <Project ID>
+            deck: <Deck ID>
+          dockerfile: <Path to Dockerfile>
+        deployment: <Path to Deployment>
+        command: <Starting command>
+        volumes:
+          - <Path to the volume directory>
+        env:
+          - <Environment variable>:<Value>
+
+Build of the project should include a valid dockerfile (path to the dockerfile) and can include a context, which in
+turn could consist of organization, project and deck, any of which should be specified with ID respectively. Command is
+a starting command for a container e.g. django manage starting command to start Django application in the docker
+container.
+Volume should specify a valid path to the directory, where volume should be mounted.
+Environment variables can be added in the env section, specified by it's name followed by it's value separated with a
+colon.
+
+Command groups
+==============
+Commands are divided into several command groups, which represent a specific concept or unit. Command group is basically
+a generalized term for all the commands it has under the hood. For instance, command group ``unikube auth`` has several
+subcommands under the hood, which are all related to user authentication. The main command groups are:
+
+- auth
+- system
+- orga
+- project
+- deck
+- app
+
+Generally, command in unikube CLI looks like this:
+
+.. code-block:: shell
+
+   unikube <COMMAND GROUP> <COMMAND> [--OPTION]
+
+Auth command group
+==================
+Auth group includes following subcommands:
+
+- login
+- logout
+- status
+
+Authentication command group unites all subcommands for managing unikube authentication process. Beside standard ``login``
+and ``logout`` commands, you can check your current authentication status by using ``status`` command.
+``login`` command redirects user to the login webpage.
+If you want to login yourself via CLI without being redirected to the webpage, you can just specify parameters -e for
+email and -p for password as in the following command:
+
+.. code-block:: shell
+
+   unikube login -e <EMAIL> -p <PASSWORD>
+
+System command group
+====================
+System group includes following subcommands:
+
+- install
+- verify
+
+This command group includes two very important commands: ``install`` and ``verify``. Using these commands you can install
+all necessary dependencies for unikube and verify their versions. Via ``install`` command Docker,
+Docker Engine, Kubectl, k3d and Telepresence are installed.
+
+To reinstall dependency use ``--reinstall`` with the ``login`` command. You need to specify name of dependency with the
+``--reinstall`` option, as:
+
+.. code-block:: shell
+
+   unikube system install --reinstall Kubectl
+
+``verify`` command can be used with a verbose option to get a tabular view of installed dependencies, their status, version
+and a required version.
+
+Orga command group
+==================
+Orga group includes following subcommands:
+
+- list
+- info
+- use
 
 
+Every registered user can belong to one or multiple organizations and can get authorized for the projects of that
+organization. Unikube uses a concept of organization as a command group for managing information about organization.
+You can list all organizations you belong to by running ``unikube orga list`` command. It presents a tabular view of
+organizations with id and name of organization. ``unikube orga info`` command can be used to get more detailed
+information about particular organization. This command displays the id, title and an optional description of the
+organization. It belongs to the group of selection commands, thus it has three possible options:
+1. you can either manually enter the organization_id as an optional positional argument
+2. you can have a context already set with organization_id, then the info for the set organization will be displayed
+3. if none of the above options is specified, user will be prompted to the selection view of all possible organizations,
+that the user belongs to.
 
 Project command group
 =====================
@@ -19,6 +129,7 @@ Project is a very important command group. It includes following subcommands:
 - down
 - delete
 
+``unikube project list`` returns a tabular list of all available projects for the user alongside with the IDs.
 
 ``unikube project info`` is a selection command and displays the id, title and optional description of the
 project.
