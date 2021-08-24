@@ -68,3 +68,28 @@ class DeckTestCase(LoginTestCase):
 
         self.assertIn("[SUCCESS] Deck context removed.\n", result.output)
         self.assertEqual(result.exit_code, 0)
+
+    def test_deck_ingress(self):
+        result = self.runner.invoke(
+            deck.ingress,
+            ["4634368f-1751-40ae-9cd7-738fcb656a0d"],
+            obj=ClickContext(),
+        )
+
+        self.assertIn(
+            "[ERROR] The project cluster does not exist. Please be sure to run 'unikube project up' first.\n",
+            result.output,
+        )
+        self.assertEqual(result.exit_code, 1)
+
+    def test_deck_ingress_new(self):
+        result = self.runner.invoke(
+            deck.ingress,
+            obj=ClickContext(),
+        )
+
+        self.assertIn(
+            "\n[?] Please select a deck: buzzword-counter(4634368f-1751-40ae-9cd7-738fcb656a0d)\n > buzzword-counter(4634368f-1751-40ae-9cd7-738fcb656a0d)\n\n",
+            result.output,
+        )
+        self.assertEqual(result.exit_code, 1)
