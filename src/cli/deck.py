@@ -417,6 +417,9 @@ def uninstall(ctx, deck, **kwargs):
 @click.argument("deck", required=False)
 @click.pass_obj
 def ingress(ctx, deck, **kwargs):
+    """
+    Display ingress data for installed deck.
+    """
     deck = get_install_uninstall_arguments(ctx=ctx, deck=deck)
 
     # get cluster

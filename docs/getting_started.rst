@@ -2,7 +2,7 @@
 Getting Started
 ===============
 
-Unikube is a tool to enable developers to develop cloud native applications locally.
+Unikube is a tool to enable developers to create cloud native applications locally.
 
 Unikube CLI Installation
 ========================
@@ -21,14 +21,28 @@ In order to install the latest pre-release use
    pip install --upgrade unikube --pre
 
 After the installation has completed, open up a new shell and run :code:`unikube --version` to verify your installation. 
-Now you can get started by logging in into your account. You don't have an Unikube account? Register at `unikube.io <https://unikube.io>`__!
+Now you can get started by logging in into your account.
 
-Please note that `python2` is not supported. Therefore, depending on your local python installation, you may need to run :code:`pip3 install unikube`.
+You don't have an Unikube account? Register at `unikube.io <https://app.unikube.io>`__!
+
+**Note**: `python2` is not supported. Therefore, depending on your local python installation, you may need to run :code:`pip3 install unikube`.
 
 
 Authentication
 ==============
-Run :code:`unikube login` to authenticate with your Unikube account, or :code:`unikube logout` to log out of your account. 
+To authenticate with your Unikube account, run:
+
+.. code-block:: shell
+
+    unikube login
+
+It will redirect you to the login web page.
+
+To log out from your account, run:
+
+.. code-block:: shell
+
+    unikube logout
 
 
 Local System Preparation
@@ -39,7 +53,9 @@ After authentication, verify that your system is prepared for running a Kubernet
 
     unikube system verify
 
-Are you missing dependencies on your local machine? No Problem! Unikube makes it easys to install many of the required dependencies. Just execute:
+Are you missing dependencies on your local machine?
+
+No Problem! Unikube makes it easy to install many of the required dependencies. Just execute:
 
 .. code-block:: shell
 
@@ -57,6 +73,6 @@ Using unikube is as easy as:
 .. code-block:: shell
 
    unikube login
-   unikube project up hello-unikube
+   unikube project up <project>
 
 At this point, your local cluster is up and running! Happy developing!

@@ -13,7 +13,7 @@ from src.context import ClickContext
 
 version = sys.version_info
 if version.major == 2:
-    console.error("Python 2 is not supported for unikube. Please upgrade python.")
+    console.error("Python 2 is not supported for Unikube. Please upgrade python.")
     exit(1)
 
 
@@ -30,7 +30,9 @@ def cli(ctx, **kwargs):
 @click.pass_obj
 def system(ctx):
     """
-    Manage dependencies on your local machine. Install and verify required tools to get your cluster running.
+    The ``system`` command group includes commands to manage system dependencies on your local machine.
+    Using :ref:`reference/system:install` and :ref:`reference/auth:verify` you can install all necessary
+    dependencies for Unikube and verify their versions.
     """
 
 
@@ -43,7 +45,22 @@ system.add_command(system_cmd.verify)
 @click.pass_obj
 def orga(ctx):
     """
-    Manage your organizations.
+    Every registered user can belong to one or multiple organisations and can get authorized for the projects of that
+    organisation. This command group manages information about your organisations.
+    You can see all organizations you belong to with the :ref:`list command<reference/orga:list>`. It presents a
+    tabular view of organisations with ``id`` and ``name``. The :ref:`info command<reference/orga:info>` can be used to
+    get more detailed information about particular organisation. This command displays the ``id``, ``title`` and the
+    optional description of the organisation. The organisation belongs to the group of selection commands, thus it gives
+    three possible options:
+
+        1. you can either manually enter the ``organization_id`` as an optional argument
+
+        2. you can have a context already set with ``organization_id``, then the info for the set organisation will be
+           displayed
+
+        3. if none of the above options is specified, you will be prompted with the selection of all possible
+           organisations you have access to.
+
     """
 
 
@@ -99,11 +116,8 @@ app.add_command(app_cmd.info)
 app.add_command(app_cmd.list)
 app.add_command(app_cmd.shell)
 app.add_command(app_cmd.switch)
-app.add_command(app_cmd.pulldb)
 app.add_command(app_cmd.logs)
-app.add_command(app_cmd.expose)
 app.add_command(app_cmd.env)
-app.add_command(app_cmd.request_env)
 app.add_command(app_cmd.exec)
 
 
@@ -111,7 +125,10 @@ app.add_command(app_cmd.exec)
 @cli.group()
 def auth():
     """
-    Manage Unikube's authentication state.
+    The authentication command group unites all subcommands for managing Unikube's authentication process. Besides the
+    standard :ref:`reference/auth:login` and :ref:`reference/auth:logout` commands, you can check your current
+    authentication status by using :ref:`reference/auth:status` command.
+    A valid login state is required for most of the unikube CLI commands.
     """
 
 
