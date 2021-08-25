@@ -11,10 +11,12 @@ from src.local.dependency import install_dependency, probe_dependencies
 
 
 @click.command()
-@click.option("--reinstall", help="Reinstall the given dependencies")
+@click.option("--reinstall", help="Reinstall the given dependencies comma-separated.")
 def install(reinstall):
     """
-    Install dependencies on your local machine.
+    Install all required dependencies on your local machine.
+    In order to reinstall dependencies use the ``--reinstall`` argument. You need to specify the name of the dependency
+    with the ``--reinstall`` option, for example: ``--reinstall k3d,telepresence``
     """
 
     def _do_install():
@@ -65,10 +67,17 @@ def install(reinstall):
 
 
 @click.command()
-@click.option("--verbose", "-v", is_flag=True, default=False, help="")
+@click.option(
+    "--verbose",
+    "-v",
+    is_flag=True,
+    default=False,
+    help="Print a verbose table with state and " "actual version of a dependency.",
+)
 def verify(verbose):
     """
-    Verifies the installation of dependencies on your local machine.
+    Verifies the installation of dependencies on your local machine. If you need a verbose tabular output, please
+    add the ``--verbose`` flag to the command.
     """
 
     compare_current_and_latest_versions()

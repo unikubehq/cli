@@ -24,7 +24,7 @@ sys.path.insert(0, os.path.abspath(".."))
 
 project = "unikube-cli"
 copyright = "2021, Blueshoe GmbH"
-author = "Blueshoe"
+author = "The Unikube authors"
 
 
 # -- General configuration ---------------------------------------------------
@@ -32,7 +32,7 @@ author = "Blueshoe"
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ["sphinx.ext.autodoc", "sphinx_rtd_theme", "sphinx_click"]
+extensions = ["sphinx.ext.autodoc", "sphinx_rtd_theme", "sphinx_click", "sphinx.ext.autosectionlabel"]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
@@ -60,3 +60,4 @@ html_logo = "unikube_logo.svg"
 html_favicon = "_static/favicon/favicon.ico"
 
 pygments_style = "sphinx"
+autosectionlabel_prefix_document = True

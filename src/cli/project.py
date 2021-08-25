@@ -26,7 +26,7 @@ from src.storage.user import get_local_storage_user
 @click.pass_obj
 def list(ctx, organization, **kwargs):
     """
-    List all your projects.
+    Display a table of all available project names alongside with the ids.
     """
 
     context = ctx.context.get()
@@ -68,7 +68,7 @@ def list(ctx, organization, **kwargs):
 @click.pass_obj
 def info(ctx, project, **kwargs):
     """
-    Display further information of the selected project.
+    Displays the id, title and optional description of the selected project.
     """
 
     # GraphQL
@@ -142,7 +142,7 @@ def info(ctx, project, **kwargs):
 @click.pass_obj
 def use(ctx, project_id, remove, **kwargs):
     """
-    Set local project context.
+    Set the local project context. For more information please refer to :ref:`reference/overview:context management`.
     """
 
     # user_data / context
@@ -226,18 +226,24 @@ def use(ctx, project_id, remove, **kwargs):
 @click.command()
 @click.argument("project", required=False)
 @click.option("--organization", "-o", help="Select an organization")
-@click.option("--ingress", help="Specify the ingress port for the project", default=None)
+@click.option("--ingress", help="Overwrite the ingress port for the project from cluster settings", default=None)
 @click.option(
     "--provider",
     "-p",
-    help="Specify the Kubernetes provider type for this cluster",
+    help="Specify the Kubernetes provider type for this cluster (default uses k3d)",
     default=settings.UNIKUBE_DEFAULT_PROVIDER_TYPE.name,
 )
 @click.option("--workers", help="Specify count of k3d worker nodes", default=1)
 @click.pass_obj
 def up(ctx, project, organization, ingress, provider, workers, **kwargs):
     """
-    Start/Resume a project cluster.
+    This command starts or resumes a Kubernetes cluster for the specified project. As it is a selection command, the
+    project can be specified and/or filtered in several ways:
+
+    * as a positional argument, id or project title can be specified, or from a set context
+    * as interactive selection from available projects
+    * via ``-o`` or ``--organization`` option, specifying organisation to which a project belongs
+
     """
 
     try:

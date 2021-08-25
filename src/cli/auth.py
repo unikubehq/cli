@@ -16,7 +16,10 @@ from src.helpers import compare_current_and_latest_versions
 @click.pass_obj
 def login(ctx, email, password, **kwargs):
     """
-    Authenticate with a Unikube host.
+    Authenticate with a Unikube host. The default login process is a Browser-based method.
+    If you want to login without being redirected to the Browser, you can just specify the parameter
+    ``-e`` for email and enable the direct login method. For a non-interactive login, you can provide
+    ``-p`` along with the password.
     """
     compare_current_and_latest_versions()
     if email or password:

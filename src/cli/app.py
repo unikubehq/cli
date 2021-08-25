@@ -463,11 +463,6 @@ def switch(ctx, app, organization, project, deck, deployment, unikubefile, **kwa
 
 
 @click.command()
-def pulldb(**kwargs):
-    console.warning("This feature not yet available in your CLI version.")
-
-
-@click.command()
 @click.argument("app", required=False)
 @click.option("--container", "-c", help="Specify the container in this app")
 @click.option("--organization", "-o", help="Select an organization")
@@ -505,11 +500,6 @@ def logs(ctx, app, container=None, organization=None, project=None, deck=None, f
 
     # output
     click.echo(logs)
-
-
-@click.command()
-def expose(**kwargs):
-    console.warning("This feature not yet available in your CLI version.")
 
 
 @click.command()
@@ -585,8 +575,3 @@ def env(ctx, app, init, organization, project, deck, **kwargs):
             )
     else:
         console.info("No container running")
-
-
-@click.command()
-def request_env(**kwargs):
-    console.warning("This feature not yet available in your CLI version.")
