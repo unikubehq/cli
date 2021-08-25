@@ -7,7 +7,6 @@ Welcome to the Unikube CLI Documentation!
    :maxdepth: 2
 
    getting_started
-   provision
    development
    reference/overview
 
