@@ -6,9 +6,9 @@ Welcome to the Unikube CLI Documentation!
 .. toctree::
    :maxdepth: 2
 
-   getting_started/index
-   users_guide/index
-   reference/index
+   getting_started
+   development
+   reference/overview
 
 
 Indices and Tables
