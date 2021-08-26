@@ -36,34 +36,3 @@ class ProjectTestCase(LoginTestCase):
         self.assertIn("name", result.output)
         self.assertIn("buzzword-counter", result.output)
         self.assertEqual(result.exit_code, 0)
-
-    def test_project_use_failing(self):
-        result = self.runner.invoke(
-            project.use,
-            obj=ClickContext(),
-        )
-
-        self.assertIn("Please select a project: buzzword-counter", result.output)
-        self.assertEqual(result.exit_code, 1)
-
-    def test_project_use(self):
-        result = self.runner.invoke(
-            project.use,
-            ["b464a6a7-7367-41d3-92a3-d3d98ed10cb5"],
-            obj=ClickContext(),
-        )
-        remove_project_ctx = self.runner.invoke(
-            project.use,
-            ["-r"],
-            obj=ClickContext(),
-        )
-        remove_orga_ctx = self.runner.invoke(
-            orga.use,
-            ["-r"],
-            obj=ClickContext(),
-        )
-
-        self.assertIn("[SUCCESS] Project context: organization_id=", result.output)
-        self.assertIn("[SUCCESS] Project context removed.\n", remove_project_ctx.output)
-        self.assertIn("[SUCCESS] Organization context removed.\n", remove_orga_ctx.output)
-        self.assertEqual(result.exit_code, 0)

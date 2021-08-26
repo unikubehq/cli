@@ -112,7 +112,7 @@ class ContextArgumentsTest(unittest.TestCase):
         with self.assertRaises(Exception) as cm:
             _, _, _ = convert_context_arguments(ctx=ClickContext(), organization_argument="title")
 
-        self.assertEqual(str(cm.exception), "Organization name/title is not unique.")
+        self.assertEqual(str(cm.exception), "Organization name/slug is not unique.")
 
     @patch("src.graphql.GraphQL.query")
     def test_convert_context_arguments_slug(self, mock_graph_ql_query):

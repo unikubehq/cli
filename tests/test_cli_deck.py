@@ -40,35 +40,6 @@ class DeckTestCase(LoginTestCase):
         self.assertIn("buzzword-counter", result.output)
         self.assertEqual(result.exit_code, 0)
 
-    def test_deck_use_failing(self):
-        result = self.runner.invoke(
-            deck.use,
-            obj=ClickContext(),
-        )
-
-        self.assertIn("\n[?] Please select a deck: buzzword-counter\n > buzzword-counter\n\n", result.output)
-        self.assertEqual(result.exit_code, 1)
-
-    def test_deck_use(self):
-        result = self.runner.invoke(
-            deck.use,
-            ["4634368f-1751-40ae-9cd7-738fcb656a0d"],
-            obj=ClickContext(),
-        )
-
-        self.assertIn("[SUCCESS] Deck context: organization_id=", result.output)
-        self.assertEqual(result.exit_code, 0)
-
-    def test_deck_use_remove(self):
-        result = self.runner.invoke(
-            deck.use,
-            ["-r"],
-            obj=ClickContext(),
-        )
-
-        self.assertIn("[SUCCESS] Deck context removed.\n", result.output)
-        self.assertEqual(result.exit_code, 0)
-
     def test_deck_ingress(self):
         result = self.runner.invoke(
             deck.ingress,

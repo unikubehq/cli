@@ -36,32 +36,3 @@ class OrgaTestCase(LoginTestCase):
         self.assertIn("name", result.output)
         self.assertIn("acme", result.output)
         self.assertEqual(result.exit_code, 0)
-
-    def test_orga_use_failing(self):
-        result = self.runner.invoke(
-            orga.use,
-            obj=ClickContext(),
-        )
-
-        self.assertIn("[?] Please select an organization: ACME", result.output)
-        self.assertEqual(result.exit_code, 1)
-
-    def test_orga_use(self):
-        result = self.runner.invoke(
-            orga.use,
-            ["ceba2255-3113-4a2c-af7a-7e0c9e73cd0c"],
-            obj=ClickContext(),
-        )
-
-        self.assertIn("[SUCCESS] Organization context: organization_id=", result.output)
-        self.assertEqual(result.exit_code, 0)
-
-    def test_orga_use_remove(self):
-        result = self.runner.invoke(
-            orga.use,
-            ["-r"],
-            obj=ClickContext(),
-        )
-
-        self.assertIn("[SUCCESS] Organization context removed.\n", result.output)
-        self.assertEqual(result.exit_code, 0)
