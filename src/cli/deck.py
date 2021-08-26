@@ -338,7 +338,8 @@ def use(ctx, deck_id, remove, **kwargs):
 @click.pass_obj
 def install(ctx, deck, **kwargs):
     """
-    Install a deck.
+    Install a deck. For further information please refer to
+    :ref:`the documentation about the deck installation <provision:Deck Installation>`.
     """
 
     deck = get_install_uninstall_arguments(ctx=ctx, deck=deck)
@@ -381,7 +382,8 @@ def install(ctx, deck, **kwargs):
 @click.pass_obj
 def uninstall(ctx, deck, **kwargs):
     """
-    Uninstall a deck.
+    Uninstall a deck. For further information please refer to
+    :ref:`the documentation about deck uninstallation <provision:Deck Uninstallation>`.
     """
 
     deck = get_install_uninstall_arguments(ctx=ctx, deck=deck)

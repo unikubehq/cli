@@ -30,7 +30,7 @@ Decks on a ship usually serve different purposes or offer certain capabilities a
    did. I hope that helps to get the metaphor across.
 
 Decks do share common components which might end up as a production platform playing together. However, since
-it is not always feasible to run the entire production infrastructure on you Pentium i3 notebook, decks form
+it is not always feasible to run the entire production infrastructure on your Pentium i3 notebook, decks form
 a certain excerpt for you to work on. Just enough to get your work done in the required context. If you need another
 deck, ask your operators to create it upon your requirements or go on and define it yourself.
 

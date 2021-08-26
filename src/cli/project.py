@@ -437,7 +437,10 @@ def down(ctx, project, **kwargs):
 @click.argument("project", required=False)
 @click.pass_obj
 def delete(ctx, project, **kwargs):
-    """Delete the current project and all related data"""
+    """
+    Delete the current project and all related data. For further information please refer to
+    :ref:`the documentation about project deletion <provision:Delete a Project>`.
+    """
 
     cluster_list = ctx.cluster_manager.get_cluster_list()
     cluster_title_list = [item.name + f"({item.id})" for item in cluster_list]
