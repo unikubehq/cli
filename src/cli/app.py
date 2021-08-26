@@ -255,7 +255,8 @@ def info(ctx, app, organization, project, deck, **kwargs):
 @click.option("--deck", "-d", help="Select a deck")
 @click.pass_obj
 def shell(ctx, app, organization=None, project=None, deck=None, **kwargs):
-    """Drop into an interactive shell."""
+    """Drop into an interactive shell. For further information please refer to
+    :ref:`the documentation about the shell <development:Get an Interactive Shell>`."""
 
     ctx.auth.check()
     cluster_data, deck = get_deck_from_arguments(ctx, organization, project, deck)
@@ -315,7 +316,10 @@ def exec(ctx, **kwargs):
 @click.option("--unikubefile", help="Specify the path to the Unikubefile", type=str)
 @click.pass_obj
 def switch(ctx, app, organization, project, deck, deployment, unikubefile, **kwargs):
-    """Switch a running deployment with a local Docker image"""
+    """
+    Switch a running deployment with a local Docker image. For further information please refer to
+    :ref:`the documentation about the switch operation <development:Switch Operation>`.
+    """
 
     ctx.auth.check()
     cluster_data, deck = get_deck_from_arguments(ctx, organization, project, deck)
