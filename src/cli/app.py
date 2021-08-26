@@ -255,8 +255,10 @@ def info(ctx, app, organization, project, deck, **kwargs):
 @click.option("--deck", "-d", help="Select a deck")
 @click.pass_obj
 def shell(ctx, app, organization=None, project=None, deck=None, **kwargs):
-    """Drop into an interactive shell. For further information please refer to
-    :ref:`the documentation about the shell <development:Get an Interactive Shell>`."""
+    """
+    Drop into an interactive shell. For further information please refer to
+    :ref:`the documentation about the shell <development:Get an Interactive Shell>`.
+    """
 
     ctx.auth.check()
     cluster_data, deck = get_deck_from_arguments(ctx, organization, project, deck)
@@ -317,7 +319,7 @@ def exec(ctx, **kwargs):
 @click.pass_obj
 def switch(ctx, app, organization, project, deck, deployment, unikubefile, **kwargs):
     """
-    Switch a running deployment with a local Docker image. For further information please refer to
+    Switch a running deployment with a local Docker container. For further information please refer to
     :ref:`the documentation about the switch operation <development:Switch Operation>`.
     """
 
@@ -472,10 +474,14 @@ def switch(ctx, app, organization, project, deck, deployment, unikubefile, **kwa
 @click.option("--organization", "-o", help="Select an organization")
 @click.option("--project", "-p", help="Select a project")
 @click.option("--deck", "-d", help="Select a deck")
-@click.option("--follow", "-f", is_flag=True, default=False, help="Follow logs.")
+@click.option("--follow", "-f", is_flag=True, default=False, help="Follow the log stream.")
 @click.pass_obj
 def logs(ctx, app, container=None, organization=None, project=None, deck=None, follow=False, **kwargs):
-    """Display the container's logs"""
+    """
+    Display the logs for an app. If this app containers multiple containers, specify the ``container``
+    argument or choose it from the interactive selector. You can follow the log stream if you specify the
+    ``-f`` flag.
+    """
 
     ctx.auth.check()
     cluster_data, deck = get_deck_from_arguments(ctx, organization, project, deck)
@@ -514,7 +520,10 @@ def logs(ctx, app, container=None, organization=None, project=None, deck=None, f
 @click.option("--deck", "-d", help="Select a deck")
 @click.pass_obj
 def env(ctx, app, init, organization, project, deck, **kwargs):
-    """Display the environment variables for the given app name."""
+    """
+    Display the environment variables for the given app. This prints the environment variables for all containers. You
+    can print the environment variables for all init containers with the ``-i`` flag.
+    """
 
     ctx.auth.check()
     cluster_data, deck = get_deck_from_arguments(ctx, organization, project, deck)
