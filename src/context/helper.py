@@ -2,6 +2,7 @@ from uuid import UUID
 
 from slugify import slugify
 
+from src.cli import console
 from src.graphql import GraphQL
 
 
@@ -25,16 +26,16 @@ def __select_result(argument_value: str, results: list, exception_message: str =
     # check if name/title exists and is unique
     count = title_list.count(argument_value)
     if count == 0:
-        raise Exception(f"{exception_message.capitalize()} name/title does not exist.")
+        raise Exception(f"{exception_message.capitalize()} name/slug does not exist.")
 
     if count > 1:
-        raise Exception(f"{exception_message.capitalize()} name/title is not unique.")
+        raise Exception(f"{exception_message.capitalize()} name/slug is not unique.")
 
     # find index
     try:
         index = title_list.index(argument_value)
     except Exception:
-        raise Exception(f"Invalid {exception_message} name/title.")
+        raise Exception(f"Invalid {exception_message} name/slug.")
 
     # convert name/title to uuid
     return results[index]["id"]
@@ -51,8 +52,10 @@ def convert_organization_argument_to_uuid(ctx, argument_value: str) -> str:
         """
         query {
             allOrganizations {
-                title
-                id
+                results {
+                    title
+                    id
+                }
             }
         }
         """
@@ -98,7 +101,7 @@ def convert_deck_argument_to_uuid(ctx, argument_value: str, organization_id: str
     graph_ql = GraphQL(authentication=ctx.auth)
     data = graph_ql.query(
         """
-        query($organization_id: UUID) {
+        query($organization_id: UUID, $project_id: UUID) {
             allDecks(organizationId: $organization_id, projectId: $project_id) {
                 results {
                     title
@@ -120,24 +123,27 @@ def convert_deck_argument_to_uuid(ctx, argument_value: str, organization_id: str
 def convert_context_arguments(
     ctx, organization_argument: str = None, project_argument: str = None, deck_argument: str = None
 ):
-    # organization
-    if organization_argument:
-        organization_id = convert_organization_argument_to_uuid(ctx, organization_argument)
-    else:
-        organization_id = None
+    try:
+        # organization
+        if organization_argument:
+            organization_id = convert_organization_argument_to_uuid(ctx, organization_argument)
+        else:
+            organization_id = None
 
-    # project
-    if project_argument:
-        project_id = convert_project_argument_to_uuid(ctx, project_argument, organization_id=organization_id)
-    else:
-        project_id = None
+        # project
+        if project_argument:
+            project_id = convert_project_argument_to_uuid(ctx, project_argument, organization_id=organization_id)
+        else:
+            project_id = None
 
-    # deck
-    if deck_argument:
-        deck_id = convert_deck_argument_to_uuid(
-            ctx, deck_argument, organization_id=organization_id, project_id=project_id
-        )
-    else:
-        deck_id = None
+        # deck
+        if deck_argument:
+            deck_id = convert_deck_argument_to_uuid(
+                ctx, deck_argument, organization_id=organization_id, project_id=project_id
+            )
+        else:
+            deck_id = None
+    except Exception as e:
+        console.error(e, _exit=True)
 
     return organization_id, project_id, deck_id

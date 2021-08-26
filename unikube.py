@@ -5,6 +5,7 @@ import click
 import src.cli.console as console
 from src.cli import app as app_cmd
 from src.cli import auth as auth_cmd
+from src.cli import context as context_cmd
 from src.cli import deck as deck_cmd
 from src.cli import orga as orga_cmd
 from src.cli import project as project_cmd
@@ -13,8 +14,7 @@ from src.context import ClickContext
 
 version = sys.version_info
 if version.major == 2:
-    console.error("Python 2 is not supported for Unikube. Please upgrade python.")
-    exit(1)
+    console.error("Python 2 is not supported for Unikube. Please upgrade python.", _exit=True)
 
 
 # click -----
@@ -66,7 +66,6 @@ def orga(ctx):
 
 orga.add_command(orga_cmd.list)
 orga.add_command(orga_cmd.info)
-orga.add_command(orga_cmd.use)
 
 
 # project
@@ -80,7 +79,6 @@ def project(ctx):
 
 project.add_command(project_cmd.list)
 project.add_command(project_cmd.info)
-project.add_command(project_cmd.use)
 project.add_command(project_cmd.up)
 project.add_command(project_cmd.down)
 project.add_command(project_cmd.delete)
@@ -97,7 +95,6 @@ def deck(ctx):
 
 deck.add_command(deck_cmd.list)
 deck.add_command(deck_cmd.info)
-deck.add_command(deck_cmd.use)
 deck.add_command(deck_cmd.install)
 deck.add_command(deck_cmd.uninstall)
 deck.add_command(deck_cmd.ingress)
@@ -135,6 +132,20 @@ def auth():
 auth.add_command(auth_cmd.login)
 auth.add_command(auth_cmd.logout)
 auth.add_command(auth_cmd.status)
+
+
+# context
+@cli.group()
+@click.pass_obj
+def context(ctx):
+    """
+    Manage your context.
+    """
+
+
+context.add_command(context_cmd.set)
+context.add_command(context_cmd.remove)
+context.add_command(context_cmd.show)
 
 
 # shortcut
