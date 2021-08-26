@@ -37,7 +37,7 @@ def cli(ctx, **kwargs):
 def system(ctx):
     """
     The ``system`` command group includes commands to manage system dependencies on your local machine.
-    Using :ref:`reference/system:install` and :ref:`reference/auth:verify` you can install all necessary
+    Using :ref:`reference/system:install` and :ref:`reference/system:verify` you can install all necessary
     dependencies for Unikube and verify their versions.
     """
 

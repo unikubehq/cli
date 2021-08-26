@@ -319,7 +319,7 @@ def exec(ctx, **kwargs):
 @click.pass_obj
 def switch(ctx, app, organization, project, deck, deployment, unikubefile, **kwargs):
     """
-    Switch a running deployment with a local Docker image. For further information please refer to
+    Switch a running deployment with a local Docker container. For further information please refer to
     :ref:`the documentation about the switch operation <development:Switch Operation>`.
     """
 
@@ -520,7 +520,10 @@ def logs(ctx, app, container=None, organization=None, project=None, deck=None, f
 @click.option("--deck", "-d", help="Select a deck")
 @click.pass_obj
 def env(ctx, app, init, organization, project, deck, **kwargs):
-    """Display the environment variables for the given app name."""
+    """
+    Display the environment variables for the given app. This prints the environment variables for all containers. You
+    can print the environment variables for all init containers with the ``-i`` flag.
+    """
 
     ctx.auth.check()
     cluster_data, deck = get_deck_from_arguments(ctx, organization, project, deck)
