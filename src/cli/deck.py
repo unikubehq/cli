@@ -381,7 +381,7 @@ def install(ctx, deck, **kwargs):
 @click.pass_obj
 def uninstall(ctx, deck, **kwargs):
     """
-    Uninstall deck.
+    Uninstall a deck.
     """
 
     deck = get_install_uninstall_arguments(ctx=ctx, deck=deck)
@@ -418,7 +418,8 @@ def uninstall(ctx, deck, **kwargs):
 @click.pass_obj
 def ingress(ctx, deck, **kwargs):
     """
-    Display ingress data for installed deck.
+    Display ingress configuration for *installed* decks. This command prints a table containing URLs, paths and
+    the associated backends.
     """
     deck = get_install_uninstall_arguments(ctx=ctx, deck=deck)
 

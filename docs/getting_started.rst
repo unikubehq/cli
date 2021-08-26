@@ -36,7 +36,7 @@ To authenticate with your Unikube account, run:
 
     unikube login
 
-It will redirect you to the login web page.
+It will redirect you to the login web page. See :ref:`the login reference<reference/auth:login>` for more information.
 
 To log out from your account, run:
 

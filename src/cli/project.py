@@ -64,7 +64,7 @@ def list(ctx, organization, **kwargs):
 
 
 @click.command()
-@click.argument("project", required=False)
+@click.argument("project", required=False, help="The project title or id to get information for")
 @click.pass_obj
 def info(ctx, project, **kwargs):
     """

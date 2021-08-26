@@ -22,6 +22,12 @@ if version.major == 2:
 @click.version_option()
 @click.pass_context
 def cli(ctx, **kwargs):
+    """
+    The Unikube CLI provides several command groups to manage all required aspects to develop cloud native
+    software on a Kubernetes-based environment.
+
+    There are a couple of shortcut commands directly available from here.
+    """
     ctx.obj = ClickContext()
 
 
@@ -91,7 +97,8 @@ project.add_command(project_cmd.delete)
 @click.pass_obj
 def deck(ctx):
     """
-    Manage your decks.
+    Manage all decks you have access to. For further information please refer to
+    :ref:`the documentation about decks <provision:What is a Deck?>`.
     """
 
 
