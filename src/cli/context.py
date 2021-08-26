@@ -6,6 +6,14 @@ from src.graphql import GraphQL
 from src.storage.user import get_local_storage_user
 
 
+def show_context(user_data):
+    console.info("Context:")
+    console.echo(f"- organization: {user_data.context.organization_id}")
+    console.echo(f"- project: {user_data.context.project_id}")
+    console.echo(f"- deck: {user_data.context.deck_id}")
+    console.echo("")
+
+
 @click.command()
 @click.option("--organization", "-o", help="Select an organization")
 @click.option("--project", "-p", help="Select a project")
@@ -13,9 +21,7 @@ from src.storage.user import get_local_storage_user
 @click.pass_obj
 def set(ctx, organization=None, project=None, deck=None, **kwargs):
     """
-    Set context.
-
-    Set the local project context. For more information please refer to :ref:`reference/overview:context management`.
+    Set the local context. For more information please refer to :ref:`reference/overview:context management`.
     """
 
     organization_id, project_id, deck_id = convert_context_arguments(
@@ -26,6 +32,7 @@ def set(ctx, organization=None, project=None, deck=None, **kwargs):
         organization_id = console.organization_list(ctx=ctx)
         project_id = console.project_list(ctx=ctx, organization_id=organization_id)
         deck_id = console.deck_list(ctx=ctx, organization_id=organization_id, project_id=project_id)
+        console.echo("")
 
     # user_data / context
     local_storage_user = get_local_storage_user()
@@ -102,10 +109,7 @@ def set(ctx, organization=None, project=None, deck=None, **kwargs):
         user_data.context.organization_id = organization_id
         local_storage_user.set(user_data)
 
-    console.info("Context:")
-    console.info(f"- organization: {user_data.context.organization_id}")
-    console.info(f"- project: {user_data.context.project_id}")
-    console.info(f"- deck: {user_data.context.deck_id}")
+    show_context(user_data)
 
 
 @click.command()
@@ -159,7 +163,4 @@ def show(ctx, **kwargs):
     local_storage_user = get_local_storage_user()
     user_data = local_storage_user.get()
 
-    console.info("Context:")
-    console.info(f"- organization: {user_data.context.organization_id}")
-    console.info(f"- project: {user_data.context.project_id}")
-    console.info(f"- deck: {user_data.context.deck_id}")
+    show_context(user_data)
