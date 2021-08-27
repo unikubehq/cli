@@ -478,7 +478,7 @@ def switch(ctx, app, organization, project, deck, deployment, unikubefile, **kwa
 @click.pass_obj
 def logs(ctx, app, container=None, organization=None, project=None, deck=None, follow=False, **kwargs):
     """
-    Display the logs for an app. If this app containers multiple containers, specify the ``container``
+    Display the logs for an app. If this app contains multiple containers, specify the ``container``
     argument or choose it from the interactive selector. You can follow the log stream if you specify the
     ``-f`` flag.
     """

@@ -241,8 +241,8 @@ def up(ctx, project, organization, ingress, provider, workers, **kwargs):
     project can be specified and/or filtered in several ways:
 
     * as a positional argument, id or project title can be specified, or from a set context
-    * as interactive selection from available projects
-    * via ``-o`` or ``--organization`` option, specifying organisation to which a project belongs
+    * as an interactive selection from available projects
+    * via ``-o`` or ``--organization`` option, specifying an organisation to which a project belongs
 
     """
 
@@ -371,7 +371,7 @@ def up(ctx, project, organization, ingress, provider, workers, **kwargs):
 @click.pass_obj
 def down(ctx, project, **kwargs):
     """
-    Stop/Pause cluster.py
+    Stop/pause cluster.
     """
 
     cluster_list = ctx.cluster_manager.get_cluster_list(ready=True)

@@ -5,11 +5,11 @@ The Unikube CLI provides a convenient procedure to set up a Kubernetes-based dev
 (see :ref:`unikube project up<reference/project:up>`). This K8s cluster can be initially started, stopped, resumed and
 delete with the CLI. The infrastructure is encapsulated in the concept of a ``project``. The Unikube CLI currently
 allows you to have at most one project cluster running at a time. If you need to work on another project, you have to
-stop the project you may worked on before.
+stop any project you may worked on before.
 
 The project cluster can be created using different Kubernetes-providers. Currently, `k3d <https://k3d.io>`__ is the
-default cluster provider as it allows you to have multiple disjunct clusters side-by-side on one local machine. Anyway,
-there will be other Kubernetes-providers like ``microk8s``, ``minikube`` or ``dedicated remote K8s clusters`` in the
+default cluster provider as it allows you to have multiple separate clusters side-by-side on one local machine.
+There will be other Kubernetes-providers like ``microk8s``, ``minikube`` or ``dedicated remote K8s clusters`` in the
 future. The Unikube CLI will, however, abstract those details and provide you a uniform interface.
 
 What is a Deck?
@@ -52,12 +52,12 @@ is ready.
 
 Depending on the ``Environment`` settings on the Unikube platform, a deck is installed to a dedicated K8s namespace.
 If it's required you can still access this cluster using ``kubectl`` and manage things yourself. However, the Unikube
-team is working hard to make this a obsolete option.
+team is working hard to make this an obsolete option.
 
 Deck Uninstallation
 ===================
 You can uninstall a deck as well. The command :code:`unikube deck uninstall`
-(see :ref:`unikube deck uninstall<reference/deck:uninstall>`) allows you to select the superfluous deck and removes
+(see :ref:`unikube deck uninstall<reference/deck:uninstall>`) allows you to select the unneeded deck and removes
 it from your cluster.
 
 Delete a Project
