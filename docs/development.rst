@@ -18,7 +18,7 @@ For a range of different tasks you may have to run application specific commands
 
    unikube app shell
 
-You will be promted with all awailable apps in your current project context. Select the one you want and go ahead with
+You will be promted with all available apps in your current project context. Select the one you want and go ahead with
 your command line superpower.
 
 
