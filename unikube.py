@@ -1,6 +1,8 @@
 import sys
 
 import click
+from click._compat import iteritems
+from click.utils import echo
 
 import src.cli.console as console
 from src.cli import app as app_cmd
@@ -10,7 +12,7 @@ from src.cli import orga as orga_cmd
 from src.cli import project as project_cmd
 from src.cli import system as system_cmd
 from src.context import ClickContext
-from src.helpers import compare_decorator
+from src.helpers import compare_current_and_latest_versions
 
 version = sys.version_info
 if version.major == 2:
@@ -18,22 +20,48 @@ if version.major == 2:
     exit(1)
 
 
-# click -----
 @click.group()
-@click.version_option()
 @click.pass_context
-@compare_decorator
 def cli(ctx, **kwargs):
     ctx.obj = ClickContext()
 
 
-# system
+# click -----
+@click.command()
+def version():
+    """
+    Check unikube version.
+    """
+    ver = None
+    compare_current_and_latest_versions()
+    try:
+        import pkg_resources
+    except ImportError:
+        pass
+    else:
+        for dist in pkg_resources.working_set:
+            scripts = dist.get_entry_map().get("console_scripts") or {}
+            for _, entry_point in iteritems(scripts):
+                ver = dist.version
+                break
+    if ver is None:
+        raise RuntimeError("Could not determine version")
+    message = "unikube, version %(version)s"
+    echo(message % {"version": ver})
+
+
+cli.add_command(version)
+
+
 @cli.group()
 @click.pass_obj
 def system(ctx):
     """
     Manage dependencies on your local machine. Install and verify required tools to get your cluster running.
     """
+
+
+# system
 
 
 system.add_command(system_cmd.install)
