@@ -3,7 +3,6 @@ import click
 import src.cli.console as console
 from src.context.helper import convert_context_arguments
 from src.graphql import GraphQL
-from src.helpers import select_entity
 from src.keycloak.permissions import KeycloakPermissions
 
 
@@ -55,6 +54,7 @@ def info(ctx, organization, **kwargs):
     Display further information of the selected organization.
     """
 
+    # context
     organization_id, _, _ = convert_context_arguments(ctx=ctx, organization_argument=organization)
     context = ctx.context.get(organization=organization_id)
     organization_id = context.organization_id
