@@ -1,7 +1,7 @@
 =======================
 Developing with Unikube
 =======================
-Unikube does not simply give you the possibility to setup and run a local Kubernetes cluster. It aims to be an
+Unikube does not simply give you the possibility to set up and run a local Kubernetes cluster. It aims to be an
 application development system. Unikube developers are able to write code directly within a Kubernetes environment
 without the need to take care of any Kubernetes aspects.
 
@@ -18,7 +18,7 @@ For a range of different tasks you may have to run application specific commands
 
    unikube app shell
 
-You will be promted with all available apps in your current project context. Select the one you want and go ahead with
+You will be prompted with all available apps in your current project context. Select the one you want and go ahead with
 your command line superpower.
 
 
@@ -32,7 +32,7 @@ The command (see :ref:`unikube app switch<reference/app:switch>`):
 
 is the central entry point for local Kubernetes-based development. The idea is to literally *switch* a locally running
 container with an instance running in a (Unikube provided) Kubernetes cluster. All network traffic from and to the
-cluster instance is then tunneled to the local application. That enables developers to make changes to the source code,
+cluster instance is then tunneled to the local application. This enables developers to make changes to the source code,
 files, environment variables (and other settings) and let them run in the context of all the other attached services.
 
 .. figure:: _static/img/project-unikube-1.png
@@ -55,7 +55,7 @@ with the latest code. If you have overwritten environment variables they will be
 Before you can see the traffic hitting your local container you will be prompted for your root password. The Unikube CLI
 has to perform DNS modifications on your host system in order to be able to reach services within the cluster.
 
-If everything went fine to this point and your application server *supports code hot-reloading* you can see changes
+If everything went fine up to here and your application server *supports code hot-reloading* you can see changes
 in your current working tree immediately reflected in the cluster. You can still enter this container on an interactive
 shell with the ``unikube app shell`` (see :ref:`unikube app shell<reference/app:shell>`) command.
 
@@ -65,7 +65,7 @@ Unikubefile
 ===========
 
 The *Unikubefile* is a file with *yaml* notation, that should contain all necessary information for Unikube about
-the service. It specifies specify a Docker build, volumes, environment, commands and context. The file must be named
+the service. It specifies a Docker build, volumes, environment, commands and context. The file must be named
 *unikube.yaml* for the command :code:`unikube app switch` (see :ref:`unikube app switch<reference/app:switch>`)
 to be automatically used.
 
@@ -108,7 +108,7 @@ Docker documentation for more details.
 **deployment**: This is the target Kubernetes deployment for the `switch operation`_. This must exactly match the
 name of the deployment running in the cluster.
 
-**command**: If you container does not specify a run command or you want to overwrite it, that's the place for it. Write
+**command**: If your container does not specify a run command or you want to overwrite it, that's the place for it. Write
 it as a single string.
 
 **volumes**: Specify volume mounts for the development container, for instance your current working tree.

@@ -15,7 +15,7 @@ Context management
 Unikube's CLI can manage :ref:`organisations<unikube_orga>`, :ref:`projects<unikube_project>`,
 :ref:`decks<unikube_deck>` and interact with :ref:`apps<unikube_app>`. As it can be cumbersome to enter identifiers
 again and again, you can set a ``context`` for the commands to implicitly assume a certain unit (pretty much the same as
-with ``kubectl``). In order to set context, run the ``use`` command from the corresponding command groups:
+with ``kubectl``). In order to set a context, run the ``use`` command from the corresponding command groups:
 :ref:`unikube organisation use<reference/orga:use>`, :ref:`unikube project use<reference/project:use>` and
 :ref:`unikube deck use<reference/deck:use>`.
 

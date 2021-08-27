@@ -55,7 +55,7 @@ def orga(ctx):
     organisation. This command group manages information about your organisations.
     You can see all organizations you belong to with the :ref:`list command<reference/orga:list>`. It presents a
     tabular view of organisations with ``id`` and ``name``. The :ref:`info command<reference/orga:info>` can be used to
-    get more detailed information about particular organisation. This command displays the ``id``, ``title`` and the
+    get more detailed information about a particular organisation. This command displays the ``id``, ``title`` and the
     optional description of the organisation. The organisation belongs to the group of selection commands, thus it gives
     three possible options:
 
