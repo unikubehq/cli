@@ -200,6 +200,7 @@ def compare_current_and_latest_versions():
             console.info(
                 f"You are using unikube version {current_version}; however, version {latest_release_version} is available."
             )
+        return current_version
     except pkg_resources.DistributionNotFound as e:
         console.warning(f"Version of the package could not be found: {e}")
     except Exception:

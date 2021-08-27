@@ -38,22 +38,21 @@ def version():
     """
     Check unikube version.
     """
-    ver = None
-    compare_current_and_latest_versions()
-    try:
-        import pkg_resources
-    except ImportError:
-        pass
-    else:
-        for dist in pkg_resources.working_set:
-            scripts = dist.get_entry_map().get("console_scripts") or {}
-            for _, entry_point in iteritems(scripts):
-                ver = dist.version
-                break
-    if ver is None:
+    version = compare_current_and_latest_versions()
+    if not version:
+        try:
+            import pkg_resources
+        except ImportError:
+            pass
+        else:
+            for dist in pkg_resources.working_set:
+                scripts = dist.get_entry_map().get("console_scripts") or {}
+                for _, entry_point in iteritems(scripts):
+                    version = dist.version
+                    break
+    if version is None:
         raise RuntimeError("Could not determine version")
-    message = "unikube, version %(version)s"
-    echo(message % {"version": ver})
+    echo(f"unikube, version {version}")
 
 
 cli.add_command(version)
