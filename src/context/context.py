@@ -123,6 +123,9 @@ class Context:
         if settings.CLI_ALWAYS_SHOW_CONTEXT:
             from src.cli.context import show_context
 
-            show_context()
+            show_context(context)
 
         return context
+
+    def get_context_ids_from_arguments(self):
+        pass

@@ -6,11 +6,11 @@ from src.graphql import GraphQL
 from src.storage.user import get_local_storage_user
 
 
-def show_context(user_data):
+def show_context(context):
     console.info("Context:")
-    console.echo(f"- organization: {user_data.context.organization_id}")
-    console.echo(f"- project: {user_data.context.project_id}")
-    console.echo(f"- deck: {user_data.context.deck_id}")
+    console.echo(f"- organization: {context.organization_id}")
+    console.echo(f"- project: {context.project_id}")
+    console.echo(f"- deck: {context.deck_id}")
     console.echo("")
 
 
@@ -107,7 +107,7 @@ def set(ctx, organization=None, project=None, deck=None, **kwargs):
         user_data.context.organization_id = organization_id
         local_storage_user.set(user_data)
 
-    show_context(user_data)
+    show_context(user_data.context)
 
 
 @click.command()
@@ -161,4 +161,4 @@ def show(ctx, **kwargs):
     local_storage_user = get_local_storage_user()
     user_data = local_storage_user.get()
 
-    show_context(user_data)
+    show_context(user_data.context)
