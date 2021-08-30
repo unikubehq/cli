@@ -8,6 +8,10 @@ from src.cli import console
 from src.graphql import GraphQL
 
 
+class ArgumentError(Exception):
+    pass
+
+
 # uuid validation
 def is_valid_uuid4(uuid: str):
     try:
@@ -28,16 +32,16 @@ def __select_result(argument_value: str, results: list, exception_message: str =
     # check if name/title exists and is unique
     count = title_list.count(argument_value)
     if count == 0:
-        raise Exception(f"{exception_message.capitalize()} name/slug does not exist.")
+        raise ArgumentError(f"{exception_message.capitalize()} name/slug does not exist.")
 
     if count > 1:
-        raise Exception(f"{exception_message.capitalize()} name/slug is not unique.")
+        raise ArgumentError(f"{exception_message.capitalize()} name/slug is not unique.")
 
     # find index
     try:
         index = title_list.index(argument_value)
     except Exception:
-        raise Exception(f"Invalid {exception_message} name/slug.")
+        raise ArgumentError(f"Invalid {exception_message} name/slug.")
 
     # convert name/title to uuid
     return results[index]["id"]

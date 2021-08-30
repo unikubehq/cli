@@ -10,6 +10,10 @@ from src.unikubefile.selector import unikube_file_selector
 from src.unikubefile.unikube_file import UnikubeFile
 
 
+class ContextError(Exception):
+    pass
+
+
 class IContext(ABC):
     @abstractmethod
     def get(self, **kwargs) -> ContextData:
@@ -27,7 +31,7 @@ class ClickOptionContext(IContext):
                 if is_valid_uuid4(argument):
                     argument_id = argument
                 else:
-                    raise Exception(f"Invalid {argument_name} id.")
+                    raise ContextError(f"Invalid {argument_name} id.")
             else:
                 argument_id = None
 
