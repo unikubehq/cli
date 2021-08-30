@@ -23,7 +23,7 @@ class OrgaTestCase(LoginTestCase):
             "not_existing_orga",
             obj=ClickContext(),
         )
-        self.assertIn("[ERROR] Organization does not exist.", result.output)
+        self.assertIn("[ERROR] Organization name/slug does not exist.\n", result.output)
 
     def test_orga_list(self):
 

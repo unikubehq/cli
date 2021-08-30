@@ -20,12 +20,10 @@ class DeckTestCase(LoginTestCase):
 
         result = self.runner.invoke(
             deck.info,
-            [
-                "not_existing_deck",
-            ],
+            ["not_existing_deck"],
             obj=ClickContext(),
         )
-        self.assertIn("[ERROR] Deck does not exist.", result.output)
+        self.assertIn("[ERROR] Deck name/slug does not exist.\n", result.output)
 
     def test_deck_list(self):
 
@@ -53,14 +51,15 @@ class DeckTestCase(LoginTestCase):
         )
         self.assertEqual(result.exit_code, 1)
 
-    def test_deck_ingress_new(self):
+    def test_deck_ingress_project_not_up(self):
         result = self.runner.invoke(
             deck.ingress,
+            ["4634368f-1751-40ae-9cd7-738fcb656a0d"],
             obj=ClickContext(),
         )
 
         self.assertIn(
-            "\n[?] Please select a deck: buzzword-counter(4634368f-1751-40ae-9cd7-738fcb656a0d)\n > buzzword-counter(4634368f-1751-40ae-9cd7-738fcb656a0d)\n\n",
+            "[ERROR] The project cluster does not exist. Please be sure to run 'unikube project up' first.\n",
             result.output,
         )
         self.assertEqual(result.exit_code, 1)

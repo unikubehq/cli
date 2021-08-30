@@ -3,7 +3,6 @@ from uuid import UUID
 
 from slugify import slugify
 
-from src.authentication.authentication import IAuthentication
 from src.cli import console
 from src.graphql import GraphQL
 
@@ -47,7 +46,7 @@ def __select_result(argument_value: str, results: list, exception_message: str =
     return results[index]["id"]
 
 
-def convert_organization_argument_to_uuid(auth: IAuthentication, argument_value: str) -> str:
+def convert_organization_argument_to_uuid(auth, argument_value: str) -> str:
     # uuid provided (no conversion required)
     if is_valid_uuid4(argument_value):
         return argument_value
@@ -71,7 +70,7 @@ def convert_organization_argument_to_uuid(auth: IAuthentication, argument_value:
     return __select_result(argument_value, results, exception_message="organization")
 
 
-def convert_project_argument_to_uuid(auth: IAuthentication, argument_value: str, organization_id: str = None) -> str:
+def convert_project_argument_to_uuid(auth, argument_value: str, organization_id: str = None) -> str:
     # uuid provided (no conversion required)
     if is_valid_uuid4(argument_value):
         return argument_value
@@ -99,7 +98,7 @@ def convert_project_argument_to_uuid(auth: IAuthentication, argument_value: str,
 
 
 def convert_deck_argument_to_uuid(
-    auth: IAuthentication, argument_value: str, organization_id: str = None, project_id: str = None
+    auth, argument_value: str, organization_id: str = None, project_id: str = None
 ) -> str:
     # uuid provided (no conversion required)
     if is_valid_uuid4(argument_value):
@@ -129,7 +128,7 @@ def convert_deck_argument_to_uuid(
 
 
 def convert_context_arguments(
-    auth: IAuthentication, organization_argument: str = None, project_argument: str = None, deck_argument: str = None
+    auth, organization_argument: str = None, project_argument: str = None, deck_argument: str = None
 ) -> Tuple[str, str, str]:
     try:
         # organization
