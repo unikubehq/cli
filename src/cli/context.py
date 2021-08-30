@@ -63,11 +63,10 @@ def set(ctx, organization=None, project=None, deck=None, **kwargs):
                         "id": project_id,
                     },
                 )
+                organization_id = data["project"]["organization"]["id"]
             except Exception as e:
                 console.debug(e)
                 console.exit_generic_error()
-
-            organization_id = data["project"]["organization"]["id"]
 
         # set project
         user_data.context.deck_id = None
@@ -96,12 +95,11 @@ def set(ctx, organization=None, project=None, deck=None, **kwargs):
                         "id": deck_id,
                     },
                 )
+                organization_id = data["deck"]["project"]["organization"]["id"]
+                project_id = data["deck"]["project"]["id"]
             except Exception as e:
                 console.debug(e)
                 console.exit_generic_error()
-
-            organization_id = data["deck"]["project"]["organization"]["id"]
-            project_id = data["deck"]["project"]["id"]
 
         # set deck
         user_data.context.deck_id = deck_id
@@ -117,7 +115,7 @@ def set(ctx, organization=None, project=None, deck=None, **kwargs):
 @click.option("--project", "-p", is_flag=True, default=False, help="Remove project context")
 @click.option("--deck", "-d", is_flag=True, default=False, help="Remove deck context")
 @click.pass_obj
-def remove(ctx, organization, project, deck, **kwargs):
+def remove(ctx, organization=None, project=None, deck=None, **kwargs):
     """
     Remove context.
     """
