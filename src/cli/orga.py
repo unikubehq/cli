@@ -1,7 +1,6 @@
 import click
 
 import src.cli.console as console
-from src.context.helper import convert_context_arguments
 from src.graphql import GraphQL
 from src.keycloak.permissions import KeycloakPermissions
 
@@ -55,9 +54,7 @@ def info(ctx, organization, **kwargs):
     """
 
     # context
-    organization_id, _, _ = convert_context_arguments(ctx=ctx, organization_argument=organization)
-    context = ctx.context.get(organization=organization_id)
-    organization_id = context.organization_id
+    organization_id, _, _ = ctx.context.get_context_ids_from_arguments(organization_argument=organization)
 
     # argument
     if not organization_id:

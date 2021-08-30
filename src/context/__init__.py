@@ -7,5 +7,5 @@ class ClickContext(object):
 
         self.auth = get_authentication()
         self.storage_general = LocalStorageGeneral()
-        self.context = Context(auth=self.auth)
+        self.context: Context = Context(auth=self.auth)
         self.cluster_manager = K8sClusterManager()

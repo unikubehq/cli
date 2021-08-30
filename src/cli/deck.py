@@ -1,7 +1,6 @@
 import click
 
 import src.cli.console as console
-from src.context.helper import convert_context_arguments
 from src.graphql import GraphQL
 from src.helpers import check_environment_type_local_or_exit, download_manifest
 from src.local.system import KubeAPI, KubeCtl
@@ -93,12 +92,9 @@ def list(ctx, organization=None, project=None, **kwargs):
     """
 
     # context
-    organization_id, project_id, _ = convert_context_arguments(
-        ctx=ctx, organization_argument=organization, project_argument=project
+    organization_id, project_id, _ = ctx.context.get_context_ids_from_arguments(
+        organization_argument=organization, project_argument=project
     )
-    context = ctx.context.get(organization=organization_id, project=project_id)
-    organization_id = context.organization_id
-    project_id = context.project_id
 
     # GraphQL
     try:
@@ -163,13 +159,9 @@ def info(ctx, organization=None, project=None, deck=None, **kwargs):
     """
 
     # context
-    organization_id, project_id, deck_id = convert_context_arguments(
-        ctx=ctx, organization_argument=organization, project_argument=project, deck_argument=deck
+    organization_id, project_id, deck_id = ctx.context.get_context_ids_from_arguments(
+        organization_argument=organization, project_argument=project, deck_argument=deck
     )
-    context = ctx.context.get(organization=organization_id, project=project_id, deck=deck_id)
-    organization_id = context.organization_id
-    project_id = context.project_id
-    deck_id = context.deck_id
 
     # argument
     if not deck_id:
@@ -223,13 +215,9 @@ def install(ctx, organization=None, project=None, deck=None, **kwargs):
     """
 
     # context
-    organization_id, project_id, deck_id = convert_context_arguments(
-        ctx=ctx, organization_argument=organization, project_argument=project, deck_argument=deck
+    organization_id, project_id, deck_id = ctx.context.get_context_ids_from_arguments(
+        organization_argument=organization, project_argument=project, deck_argument=deck
     )
-    context = ctx.context.get(organization=organization_id, project=project_id, deck=deck_id)
-    organization_id = context.organization_id
-    project_id = context.project_id
-    deck_id = context.deck_id
 
     # argument
     if not deck_id:
@@ -283,13 +271,9 @@ def uninstall(ctx, organization=None, project=None, deck=None, **kwargs):
     """
 
     # context
-    organization_id, project_id, deck_id = convert_context_arguments(
-        ctx=ctx, organization_argument=organization, project_argument=project, deck_argument=deck
+    organization_id, project_id, deck_id = ctx.context.get_context_ids_from_arguments(
+        organization_argument=organization, project_argument=project, deck_argument=deck
     )
-    context = ctx.context.get(organization=organization_id, project=project_id, deck=deck_id)
-    organization_id = context.organization_id
-    project_id = context.project_id
-    deck_id = context.deck_id
 
     # argument
     if not deck_id:
@@ -337,13 +321,9 @@ def ingress(ctx, organization=None, project=None, deck=None, **kwargs):
     """
 
     # context
-    organization_id, project_id, deck_id = convert_context_arguments(
-        ctx=ctx, organization_argument=organization, project_argument=project, deck_argument=deck
+    organization_id, project_id, deck_id = ctx.context.get_context_ids_from_arguments(
+        organization_argument=organization, project_argument=project, deck_argument=deck
     )
-    context = ctx.context.get(organization=organization_id, project=project_id, deck=deck_id)
-    organization_id = context.organization_id
-    project_id = context.project_id
-    deck_id = context.deck_id
 
     # argument
     if not deck_id:

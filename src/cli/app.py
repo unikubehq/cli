@@ -8,7 +8,6 @@ import click_spinner
 
 from src import settings
 from src.cli import console
-from src.context.helper import convert_context_arguments
 from src.graphql import GraphQL
 from src.local.providers.helper import get_cluster_or_exit
 from src.local.system import Docker, KubeAPI, KubeCtl, Telepresence
@@ -18,13 +17,9 @@ from src.unikubefile.selector import unikube_file_selector
 
 def get_deck_from_arguments(ctx, organization_id: str, project_id: str, deck_id: str):
     # context
-    organization_id, project_id, deck_id = convert_context_arguments(
-        ctx=ctx, organization_argument=organization_id, project_argument=project_id, deck_argument=deck_id
+    organization_id, project_id, deck_id = ctx.context.get_context_ids_from_arguments(
+        organization_argument=organization_id, project_argument=project_id, deck_argument=deck_id
     )
-    context = ctx.context.get(organization=organization_id, project=project_id, deck=deck_id)
-    organization_id = context.organization_id
-    project_id = context.project_id
-    deck_id = context.deck_id
 
     # argument
     if not deck_id:

@@ -1,9 +1,9 @@
 import os
 from abc import ABC, abstractmethod
-from typing import List, Union
+from typing import List, Tuple, Union
 
 from src import settings
-from src.context.helper import is_valid_uuid4
+from src.context.helper import convert_context_arguments, is_valid_uuid4
 from src.context.types import ContextData
 from src.storage.user import LocalStorageUser, get_local_storage_user
 from src.unikubefile.selector import unikube_file_selector
@@ -127,5 +127,17 @@ class Context:
 
         return context
 
-    def get_context_ids_from_arguments(self):
-        pass
+    def get_context_ids_from_arguments(
+        self, organization_argument: str = None, project_argument: str = None, deck_argument: str = None
+    ) -> Tuple(str, str, str):
+        # convert context argments into ids
+        organization_id, project_id, deck_id = convert_context_arguments(
+            auth=self.auth,
+            organization_argument=organization_argument,
+            project_argument=project_argument,
+            deck_argument=deck_argument,
+        )
+
+        # consider context
+        context = self.get(organization=organization_id, project=project_id, deck=deck_id)
+        return context.organization_id, context.project_id, context.deck_id

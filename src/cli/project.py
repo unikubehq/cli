@@ -1,4 +1,3 @@
-import re
 import sys
 from time import sleep
 
@@ -7,7 +6,6 @@ import click_spinner
 
 import src.cli.console as console
 from src import settings
-from src.context.helper import convert_context_arguments, convert_project_argument_to_uuid
 from src.graphql import GraphQL
 from src.helpers import check_running_cluster
 from src.local.providers.types import K8sProviderType
@@ -23,9 +21,7 @@ def list(ctx, organization, **kwargs):
     """
 
     # context
-    organization_id, _, _ = convert_context_arguments(ctx=ctx, organization_argument=organization)
-    context = ctx.context.get(organization=organization_id)
-    organization_id = context.organization_id
+    organization_id, _, _ = ctx.context.get_context_ids_from_arguments(organization_argument=organization)
 
     # GraphQL
     try:
@@ -73,12 +69,9 @@ def info(ctx, project=None, organization=None, **kwargs):
     """
 
     # context
-    organization_id, project_id, _ = convert_context_arguments(
-        ctx=ctx, organization_argument=organization, project_argument=project
+    organization_id, project_id, _ = ctx.context.get_context_ids_from_arguments(
+        organization_argument=organization, project_argument=project
     )
-    context = ctx.context.get(organization=organization_id, project=project_id)
-    organization_id = context.organization_id
-    project_id = context.project_id
 
     # argument
     if not project_id:
@@ -152,12 +145,9 @@ def up(ctx, project=None, organization=None, ingress=None, provider=None, worker
     """
 
     # context
-    organization_id, project_id, _ = convert_context_arguments(
-        ctx=ctx, organization_argument=organization, project_argument=project
+    organization_id, project_id, _ = ctx.context.get_context_ids_from_arguments(
+        organization_argument=organization, project_argument=project
     )
-    context = ctx.context.get(organization=organization_id, project=project_id)
-    organization_id = context.organization_id
-    project_id = context.project_id
 
     # cluster information
     cluster_list = ctx.cluster_manager.get_cluster_list(ready=True)
@@ -265,12 +255,9 @@ def down(ctx, project=None, organization=None, **kwargs):
     """
 
     # context
-    organization_id, project_id, _ = convert_context_arguments(
-        ctx=ctx, organization_argument=organization, project_argument=project
+    organization_id, project_id, _ = ctx.context.get_context_ids_from_arguments(
+        organization_argument=organization, project_argument=project
     )
-    context = ctx.context.get(organization=organization_id, project=project_id)
-    organization_id = context.organization_id
-    project_id = context.project_id
 
     # cluster
     cluster_list = ctx.cluster_manager.get_cluster_list(ready=True)
@@ -326,12 +313,9 @@ def delete(ctx, project=None, organization=None, **kwargs):
     """Delete the current project and all related data"""
 
     # context
-    organization_id, project_id, _ = convert_context_arguments(
-        ctx=ctx, organization_argument=organization, project_argument=project
+    organization_id, project_id, _ = ctx.context.get_context_ids_from_arguments(
+        organization_argument=organization, project_argument=project
     )
-    context = ctx.context.get(organization=organization_id, project=project_id)
-    organization_id = context.organization_id
-    project_id = context.project_id
 
     # cluster
     cluster_list = ctx.cluster_manager.get_cluster_list()
