@@ -126,7 +126,7 @@ def convert_deck_argument_to_uuid(
 
 def convert_context_arguments(
     auth: IAuthentication, organization_argument: str = None, project_argument: str = None, deck_argument: str = None
-) -> Tuple(str, str, str):
+) -> Tuple[str, str, str]:
     try:
         # organization
         if organization_argument:

@@ -129,7 +129,7 @@ class Context:
 
     def get_context_ids_from_arguments(
         self, organization_argument: str = None, project_argument: str = None, deck_argument: str = None
-    ) -> Tuple(str, str, str):
+    ) -> Tuple[str, str, str]:
         # convert context argments into ids
         organization_id, project_id, deck_id = convert_context_arguments(
             auth=self.auth,
