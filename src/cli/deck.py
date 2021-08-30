@@ -1,81 +1,46 @@
 import click
 
 import src.cli.console as console
+from src.context.helper import convert_context_arguments
 from src.graphql import GraphQL
-from src.helpers import check_environment_type_local_or_exit, download_manifest, select_entity
+from src.helpers import check_environment_type_local_or_exit, download_manifest
 from src.local.system import KubeAPI, KubeCtl
-from src.storage.user import get_local_storage_user
 
 
-def get_install_uninstall_arguments(ctx, deck: str):
-    # user_data / context
-    local_storage_user = get_local_storage_user()
-    user_data = local_storage_user.get()
-    context = user_data.context
-
+def get_deck(ctx, deck_id: str):
     # GraphQL
     try:
         graph_ql = GraphQL(authentication=ctx.auth)
         data = graph_ql.query(
             """
-            query($organization_id: UUID, $project_id: UUID) {
-                allDecks(organizationId: $organization_id, projectId: $project_id, limit: 100) {
-                    totalCount
-                    results {
+            query($id: UUID) {
+                deck(id: $id) {
+                    id
+                    title
+                    environment {
+                        id
+                        type
+                        valuesPath
+                        namespace
+                    }
+                    project {
                         id
                         title
-                        environment {
-                            id
-                            type
-                            valuesPath
-                            namespace
-                        }
-                        project {
-                            id
+                        organization {
                             title
-                            organization {
-                                title
-                            }
                         }
                     }
                 }
             }
             """,
-            query_variables={
-                "organization_id": context.organization_id,
-                "project_id": context.project_id,
-            },
+            query_variables={"id": deck_id},
         )
-
+        deck = data["deck"]
     except Exception as e:
-        data = None
         console.debug(e)
         console.exit_generic_error()
 
-    deck_list = data["allDecks"]["results"]
-
-    # argument
-    if not deck:
-        # argument from context
-        context = ctx.context.get()
-        if context.deck_id:
-            deck_instance = ctx.context.get_deck()
-            deck = deck_instance["title"] + f"({deck_instance['id']})"
-
-        # argument from console
-        else:
-            deck_list_choices = [item["title"] + f"({item['id']})" for item in deck_list]
-            deck = console.list(
-                message="Please select a deck",
-                choices=deck_list_choices,
-            )
-            if deck is None:
-                exit(1)
-    # get deck from duplicates
-    deck_selected = select_entity(deck_list, deck)
-    if not deck_selected:
-        console.error(f"The deck '{deck}' could not be found.", _exit=True)
-    return deck_selected
+    return deck
 
 
 def get_cluster(ctx, deck: dict):
@@ -127,7 +92,13 @@ def list(ctx, organization=None, project=None, **kwargs):
     List all decks.
     """
 
-    context = ctx.context.get(organization=organization, project=project)
+    # context
+    organization_id, project_id, _ = convert_context_arguments(
+        ctx=ctx, organization_argument=organization, project_argument=project
+    )
+    context = ctx.context.get(organization=organization_id, project=project_id)
+    organization_id = context.organization_id
+    project_id = context.project_id
 
     # GraphQL
     try:
@@ -150,16 +121,15 @@ def list(ctx, organization=None, project=None, **kwargs):
             }
             """,
             query_variables={
-                "organization_id": context.organization_id,
-                "project_id": context.project_id,
+                "organization_id": organization_id,
+                "project_id": project_id,
             },
         )
+        deck_list = data["allDecks"]["results"]
     except Exception as e:
-        data = None
         console.debug(e)
         console.exit_generic_error()
 
-    deck_list = data["allDecks"]["results"]
     if not deck_list:
         console.warning("No decks available. Please go to https://app.unikube.io and create a project.", _exit=True)
 
@@ -168,10 +138,10 @@ def list(ctx, organization=None, project=None, **kwargs):
     for deck in deck_list:
         data = {}
 
-        if not context.organization_id:
+        if not organization_id:
             data["organization"] = deck["project"]["organization"]["title"]
 
-        if not context.project_id:
+        if not project_id:
             data["project"] = deck["project"]["title"]
 
         data["id"] = deck["id"]
@@ -183,62 +153,51 @@ def list(ctx, organization=None, project=None, **kwargs):
 
 
 @click.command()
+@click.option("--organization", "-o", help="Select an organization")
+@click.option("--project", "-p", help="Select a project")
 @click.argument("deck", required=False)
 @click.pass_obj
-def info(ctx, deck, **kwargs):
+def info(ctx, organization=None, project=None, deck=None, **kwargs):
     """
     Display further information of the selected deck.
     """
 
-    context = ctx.context.get()
+    # context
+    organization_id, project_id, deck_id = convert_context_arguments(
+        ctx=ctx, organization_argument=organization, project_argument=project, deck_argument=deck
+    )
+    context = ctx.context.get(organization=organization_id, project=project_id, deck=deck_id)
+    organization_id = context.organization_id
+    project_id = context.project_id
+    deck_id = context.deck_id
+
+    # argument
+    if not deck_id:
+        deck_id = console.deck_list(ctx, organization_id=organization_id, project_id=project_id)
+        if not deck_id:
+            return None
 
     # GraphQL
     try:
         graph_ql = GraphQL(authentication=ctx.auth)
         data = graph_ql.query(
             """
-            query($organization_id: UUID, $project_id: UUID) {
-                allDecks(organizationId: $organization_id, projectId: $project_id) {
-                    results {
-                        id
-                        title
-                        description
-                        namespace
-                        type
-                    }
+            query($id: UUID) {
+                deck(id: $id) {
+                    id
+                    title
+                    description
+                    namespace
+                    type
                 }
             }
             """,
-            query_variables={
-                "organization_id": context.organization_id,
-                "project_id": context.project_id,
-            },
+            query_variables={"id": deck_id},
         )
-    except Exception:
-        data = None
+        deck_selected = data["deck"]
+    except Exception as e:
+        console.debug(e)
         console.exit_generic_error()
-
-    deck_list = data["allDecks"]["results"]
-
-    # argument
-    if not deck:
-        # argument from context
-        context = ctx.context.get()
-        if context.deck_id:
-            deck_instance = ctx.context.get_deck()
-            deck = deck_instance["title"] + f"({deck_instance['id']})"
-
-        # argument from console
-        else:
-            deck = console.list(
-                message="Please select a deck",
-                choices=[deck["title"] + f"({deck['id']})" for deck in deck_list],
-            )
-            if deck is None:
-                return None
-
-    # select
-    deck_selected = select_entity(deck_list, deck)
 
     # console
     if deck_selected:
@@ -254,14 +213,31 @@ def info(ctx, deck, **kwargs):
 
 
 @click.command()
+@click.option("--organization", "-o", help="Select an organization")
+@click.option("--project", "-p", help="Select a project")
 @click.argument("deck", required=False)
 @click.pass_obj
-def install(ctx, deck, **kwargs):
+def install(ctx, organization=None, project=None, deck=None, **kwargs):
     """
     Install a deck.
     """
 
-    deck = get_install_uninstall_arguments(ctx=ctx, deck=deck)
+    # context
+    organization_id, project_id, deck_id = convert_context_arguments(
+        ctx=ctx, organization_argument=organization, project_argument=project, deck_argument=deck
+    )
+    context = ctx.context.get(organization=organization_id, project=project_id, deck=deck_id)
+    organization_id = context.organization_id
+    project_id = context.project_id
+    deck_id = context.deck_id
+
+    # argument
+    if not deck_id:
+        deck_id = console.deck_list(ctx, organization_id=organization_id, project_id=project_id)
+        if not deck_id:
+            return None
+
+    deck = get_deck(ctx, deck_id=deck_id)
 
     # cluster
     cluster = get_cluster(ctx=ctx, deck=deck)
@@ -297,14 +273,31 @@ def install(ctx, deck, **kwargs):
 
 
 @click.command()
+@click.option("--organization", "-o", help="Select an organization")
+@click.option("--project", "-p", help="Select a project")
 @click.argument("deck", required=False)
 @click.pass_obj
-def uninstall(ctx, deck, **kwargs):
+def uninstall(ctx, organization=None, project=None, deck=None, **kwargs):
     """
     Uninstall deck.
     """
 
-    deck = get_install_uninstall_arguments(ctx=ctx, deck=deck)
+    # context
+    organization_id, project_id, deck_id = convert_context_arguments(
+        ctx=ctx, organization_argument=organization, project_argument=project, deck_argument=deck
+    )
+    context = ctx.context.get(organization=organization_id, project=project_id, deck=deck_id)
+    organization_id = context.organization_id
+    project_id = context.project_id
+    deck_id = context.deck_id
+
+    # argument
+    if not deck_id:
+        deck_id = console.deck_list(ctx, organization_id=organization_id, project_id=project_id)
+        if not deck_id:
+            return None
+
+    deck = get_deck(ctx, deck_id=deck_id)
 
     # cluster
     cluster = get_cluster(ctx=ctx, deck=deck)
@@ -334,13 +327,31 @@ def uninstall(ctx, deck, **kwargs):
 
 
 @click.command()
+@click.option("--organization", "-o", help="Select an organization")
+@click.option("--project", "-p", help="Select a project")
 @click.argument("deck", required=False)
 @click.pass_obj
-def ingress(ctx, deck, **kwargs):
+def ingress(ctx, organization=None, project=None, deck=None, **kwargs):
     """
     Display ingress data for installed deck.
     """
-    deck = get_install_uninstall_arguments(ctx=ctx, deck=deck)
+
+    # context
+    organization_id, project_id, deck_id = convert_context_arguments(
+        ctx=ctx, organization_argument=organization, project_argument=project, deck_argument=deck
+    )
+    context = ctx.context.get(organization=organization_id, project=project_id, deck=deck_id)
+    organization_id = context.organization_id
+    project_id = context.project_id
+    deck_id = context.deck_id
+
+    # argument
+    if not deck_id:
+        deck_id = console.deck_list(ctx, organization_id=organization_id, project_id=project_id)
+        if not deck_id:
+            return None
+
+    deck = get_deck(ctx, deck_id=deck_id)
 
     # get cluster
     cluster = get_cluster(ctx=ctx, deck=deck)
