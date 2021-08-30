@@ -25,7 +25,7 @@ def set(ctx, organization=None, project=None, deck=None, **kwargs):
     """
 
     organization_id, project_id, deck_id = convert_context_arguments(
-        ctx=ctx, organization_argument=organization, project_argument=project, deck_argument=deck
+        auth=ctx.auth, organization_argument=organization, project_argument=project, deck_argument=deck
     )
 
     if not (organization or project or deck):

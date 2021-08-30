@@ -1,8 +1,10 @@
 import unittest
 from unittest.mock import patch
 
+from src.authentication.authentication import TokenAuthentication
 from src.context import ClickContext
 from src.context.helper import convert_context_arguments, convert_organization_argument_to_uuid, is_valid_uuid4
+from src.storage.general import LocalStorageGeneral
 
 
 class IsValidUuid4Test(unittest.TestCase):
@@ -83,7 +85,7 @@ class ContextArgumentsTest(unittest.TestCase):
         }
 
         organization_id, project_id, deck_id = convert_context_arguments(
-            ctx=ClickContext(),
+            auth=TokenAuthentication(local_storage_general=LocalStorageGeneral()),
             organization_argument=test_organization_id,
             project_argument=test_project_id,
             deck_argument=test_deck_id,
@@ -110,7 +112,9 @@ class ContextArgumentsTest(unittest.TestCase):
         }
 
         with self.assertRaises(Exception) as cm:
-            _, _, _ = convert_context_arguments(ctx=ClickContext(), organization_argument="title")
+            _, _, _ = convert_context_arguments(
+                auth=TokenAuthentication(local_storage_general=LocalStorageGeneral()), organization_argument="title"
+            )
 
         self.assertEqual(str(cm.exception), "Organization name/slug is not unique.")
 
@@ -128,5 +132,7 @@ class ContextArgumentsTest(unittest.TestCase):
             },
         }
 
-        organization_id, _, _ = convert_context_arguments(ctx=ClickContext(), organization_argument="test-title")
+        organization_id, _, _ = convert_context_arguments(
+            auth=TokenAuthentication(local_storage_general=LocalStorageGeneral()), organization_argument="test-title"
+        )
         self.assertEqual(organization_id, test_organization_id)
