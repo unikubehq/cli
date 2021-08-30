@@ -69,13 +69,6 @@ class LocalContext(IContext):
         return user_data.context
 
 
-class ImplizitContext(IContext):
-    """Implicit context, e.g.: user has only one organization"""
-
-    def get(self, **kwargs) -> ContextData:
-        return ContextData()
-
-
 class ContextLogic:
     def __init__(self, context_order: List[IContext]):
         self.context_order = context_order
@@ -122,7 +115,6 @@ class Context:
                     )
                 ),
                 LocalContext(local_storage_user=local_storage_user),
-                ImplizitContext(),
             ]
         )
         context = context_logic.get()
