@@ -313,7 +313,7 @@ def delete(ctx, project=None, organization=None, **kwargs):
     """
     Delete the current project and all related data. For further information please refer to
     :ref:`the documentation about project deletion <provision:Delete a Project>`.
-    """=======
+    """
 
     # context
     organization_id, project_id, _ = ctx.context.get_context_ids_from_arguments(
