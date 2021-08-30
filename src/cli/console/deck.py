@@ -32,11 +32,10 @@ def deck_list(ctx, organization_id: str = None, project_id: str = None) -> Union
                 "project_id": project_id,
             },
         )
+        deck_list = data["allDecks"]["results"]
     except Exception as e:
         console.debug(e)
         console.exit_generic_error()
-
-    deck_list = data["allDecks"]["results"]
 
     selection = console.list(
         message="Please select a deck",

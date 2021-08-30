@@ -3,10 +3,8 @@ from abc import ABC, abstractmethod
 from typing import List, Union
 
 from src import settings
-from src.cli import console
 from src.context.helper import is_valid_uuid4
 from src.context.types import ContextData
-from src.graphql import GraphQL
 from src.storage.user import LocalStorageUser, get_local_storage_user
 from src.unikubefile.selector import unikube_file_selector
 from src.unikubefile.unikube_file import UnikubeFile
@@ -131,79 +129,8 @@ class Context:
 
         # show context
         if settings.CLI_ALWAYS_SHOW_CONTEXT:
-            console.info(f"context: {context}")
+            from src.cli.context import show_context
+
+            show_context()
 
         return context
-
-    def __graph_ql(self, query: str, query_variables: dict) -> Union[dict, None]:
-        graph_ql = GraphQL(authentication=self._auth)
-        result = graph_ql.query(
-            query,
-            query_variables=query_variables,
-        )
-        key = next(iter(result))
-        data = result[key]
-        return data
-
-    def get_organization(self) -> dict:
-        try:
-            organization = self.__graph_ql(
-                """
-                query($id: UUID!) {
-                    organization(id: $id) {
-                        title
-                        id
-                    }
-                }
-                """,
-                query_variables={
-                    "id": self.get().organization_id,
-                },
-            )
-            return organization
-        except Exception as e:
-            console.debug(e)
-            console.error("Invalid organization context. Please adjust or remove the current context.", _exit=True)
-
-    def get_project(self) -> dict:
-        try:
-            project = self.__graph_ql(
-                """
-                query($id: UUID) {
-                    project(id: $id) {
-                        title
-                        id
-                        organization {
-                            title
-                        }
-                    }
-                }
-                """,
-                query_variables={
-                    "id": self.get().project_id,
-                },
-            )
-            return project
-        except Exception as e:
-            console.debug(e)
-            console.error("Invalid project context. Please adjust or remove the current context.", _exit=True)
-
-    def get_deck(self) -> dict:
-        try:
-            deck = self.__graph_ql(
-                """
-                query($id: UUID) {
-                    deck(id: $id) {
-                        title
-                        id
-                    }
-                }
-                """,
-                query_variables={
-                    "id": self.get().deck_id,
-                },
-            )
-            return deck
-        except Exception as e:
-            console.debug(e)
-            console.error("Invalid deck context. Please adjust or remove the current context.", _exit=True)

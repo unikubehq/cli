@@ -31,11 +31,10 @@ def project_list(
                 "organization_id": organization_id,
             },
         )
+        project_list = data["allProjects"]["results"]
     except Exception as e:
         console.debug(e)
         console.exit_generic_error()
-
-    project_list = data["allProjects"]["results"]
 
     # options
     choices = [project["title"] for project in project_list]

@@ -22,11 +22,10 @@ def organization_list(ctx) -> Union[None, str]:
             }
             """
         )
+        organization_list = data["allOrganizations"]["results"]
     except Exception as e:
         console.debug(e)
         console.exit_generic_error()
-
-    organization_list = data["allOrganizations"]["results"]
 
     selection = console.list(
         message="Please select an organization",
