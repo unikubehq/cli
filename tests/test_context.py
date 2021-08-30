@@ -32,7 +32,9 @@ class ContextArgumentsTest(unittest.TestCase):
             }
         }
 
-        organization_id = convert_organization_argument_to_uuid(ctx=ClickContext(), argument_value="title")
+        organization_id = convert_organization_argument_to_uuid(
+            auth=TokenAuthentication(local_storage_general=LocalStorageGeneral()), argument_value="title"
+        )
         self.assertEqual(organization_id, test_organization_id)
 
     @patch("src.graphql.GraphQL.query")
@@ -49,7 +51,9 @@ class ContextArgumentsTest(unittest.TestCase):
             }
         }
 
-        organization_id = convert_organization_argument_to_uuid(ctx=ClickContext(), argument_value=test_organization_id)
+        organization_id = convert_organization_argument_to_uuid(
+            auth=TokenAuthentication(local_storage_general=LocalStorageGeneral()), argument_value=test_organization_id
+        )
         self.assertEqual(organization_id, test_organization_id)
 
     @patch("src.graphql.GraphQL.query")
