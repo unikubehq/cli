@@ -50,16 +50,3 @@ class DeckTestCase(LoginTestCase):
             result.output,
         )
         self.assertEqual(result.exit_code, 1)
-
-    def test_deck_ingress_project_not_up(self):
-        result = self.runner.invoke(
-            deck.ingress,
-            ["4634368f-1751-40ae-9cd7-738fcb656a0d"],
-            obj=ClickContext(),
-        )
-
-        self.assertIn(
-            "[ERROR] The project cluster does not exist. Please be sure to run 'unikube project up' first.\n",
-            result.output,
-        )
-        self.assertEqual(result.exit_code, 1)
