@@ -159,15 +159,15 @@ def up(ctx, project=None, organization=None, ingress=None, provider=None, worker
     organization_id = context.organization_id
     project_id = context.project_id
 
-    # argument
-    if not project_id:
-        project_id = console.project_list(ctx, organization_id=organization_id)
-        if not project_id:
-            return None
-
     # cluster information
     cluster_list = ctx.cluster_manager.get_cluster_list(ready=True)
     cluster_id_list = [item.id for item in cluster_list]
+
+    # argument
+    if not project_id:
+        project_id = console.project_list(ctx, organization_id=organization_id, exclude=cluster_id_list)
+        if not project_id:
+            return None
 
     if project_id in cluster_id_list:
         console.info(f"Project '{project}' is already up.", _exit=True)
@@ -277,24 +277,11 @@ def down(ctx, project=None, organization=None, **kwargs):
 
     # argument
     if not project_id:
-        # see `def project_list` -> but limited
-        selection = console.list(
-            message="Please select a project",
-            choices=[cluster.name for cluster in cluster_list],
-            identifiers=[cluster.id for cluster in cluster_list],
-            message_no_choices="No projects available!",
+        project_id = console.project_list(
+            ctx, organization_id=organization_id, filter=[cluster.id for cluster in cluster_list]
         )
-        if selection is None:
+        if not project_id:
             return None
-
-        # get identifier if available
-        identifier_search = re.search("(?<=\\()[^)]*(?=\\))", selection)
-        try:
-            project_argument = identifier_search.group(0)
-        except Exception:
-            project_argument = selection
-
-        project_id = convert_project_argument_to_uuid(ctx, argument_value=project_argument)
 
     # check if project is in local storage
     if project_id not in [cluster.id for cluster in cluster_list]:
@@ -351,24 +338,11 @@ def delete(ctx, project=None, organization=None, **kwargs):
 
     # argument
     if not project_id:
-        # see `def project_list` -> but limited
-        selection = console.list(
-            message="Please select a project",
-            choices=[cluster.name for cluster in cluster_list],
-            identifiers=[cluster.id for cluster in cluster_list],
-            message_no_choices="No projects available!",
+        project_id = console.project_list(
+            ctx, organization_id=organization_id, filter=[cluster.id for cluster in cluster_list]
         )
-        if selection is None:
+        if not project_id:
             return None
-
-        # get identifier if available
-        identifier_search = re.search("(?<=\\()[^)]*(?=\\))", selection)
-        try:
-            project_argument = identifier_search.group(0)
-        except Exception:
-            project_argument = selection
-
-        project_id = convert_project_argument_to_uuid(ctx, argument_value=project_argument)
 
     if project_id not in [cluster.id for cluster in cluster_list]:
         console.info(f"The project cluster for '{project}' could not be found.", _exit=True)

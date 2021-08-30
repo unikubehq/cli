@@ -1,12 +1,14 @@
 import re
-from typing import Union
+from typing import List, Union
 
 import src.cli.console as console
 from src.context.helper import convert_project_argument_to_uuid
 from src.graphql import GraphQL
 
 
-def project_list(ctx, organization_id: str = None) -> Union[None, str]:
+def project_list(
+    ctx, organization_id: str = None, filter: List[str] = None, exclude: List[str] = None
+) -> Union[None, str]:
     # GraphQL
     try:
         graph_ql = GraphQL(authentication=ctx.auth)
@@ -35,10 +37,40 @@ def project_list(ctx, organization_id: str = None) -> Union[None, str]:
 
     project_list = data["allProjects"]["results"]
 
+    # options
+    choices = [project["title"] for project in project_list]
+    identifiers = [project["id"] for project in project_list]
+
+    # filter
+    if filter:
+        choices_filtered = []
+        identifiers_filtered = []
+        for project in project_list:
+            if project["id"] in filter:
+                choices_filtered.append(project["title"])
+                identifiers_filtered.append(project["id"])
+
+        choices = choices_filtered
+        identifiers = identifiers_filtered
+
+    # exclude
+    if exclude:
+        choices_filtered = []
+        identifiers_filtered = []
+        for project in project_list:
+            if project["id"] in exclude:
+                continue
+
+            choices_filtered.append(project["title"])
+            identifiers_filtered.append(project["id"])
+
+        choices = choices_filtered
+        identifiers = identifiers_filtered
+
     selection = console.list(
         message="Please select a project",
-        choices=[project["title"] for project in project_list],
-        identifiers=[project["id"] for project in project_list],
+        choices=choices,
+        identifiers=identifiers,
         message_no_choices="No projects available!",
     )
     if selection is None:
