@@ -213,6 +213,7 @@ def install(ctx, organization=None, project=None, deck=None, **kwargs):
     """
     Install a deck. For further information please refer to
     :ref:`
+    """
 
     # context
     organization_id, project_id, deck_id = ctx.context.get_context_ids_from_arguments(
