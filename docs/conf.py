@@ -22,7 +22,7 @@ sys.path.insert(0, os.path.abspath(".."))
 
 # -- Project information -----------------------------------------------------
 
-project = "unikube-cli"
+project = "Unikube CLI"
 copyright = "2021, Blueshoe GmbH"
 author = "The Unikube authors"
 

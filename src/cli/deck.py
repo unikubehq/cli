@@ -211,8 +211,8 @@ def info(ctx, organization=None, project=None, deck=None, **kwargs):
 @click.pass_obj
 def install(ctx, organization=None, project=None, deck=None, **kwargs):
     """
-    Install a deck.
-    """
+    Install a deck. For further information please refer to
+    :ref:`
 
     # context
     organization_id, project_id, deck_id = ctx.context.get_context_ids_from_arguments(
@@ -267,7 +267,8 @@ def install(ctx, organization=None, project=None, deck=None, **kwargs):
 @click.pass_obj
 def uninstall(ctx, organization=None, project=None, deck=None, **kwargs):
     """
-    Uninstall deck.
+    Uninstall a deck. For further information please refer to
+    :ref:`the documentation about deck uninstallation <provision:Deck Uninstallation>`.
     """
 
     # context
@@ -317,7 +318,8 @@ def uninstall(ctx, organization=None, project=None, deck=None, **kwargs):
 @click.pass_obj
 def ingress(ctx, organization=None, project=None, deck=None, **kwargs):
     """
-    Display ingress data for installed deck.
+    Display ingress configuration for *installed* decks. This command prints a table containing URLs, paths and
+    the associated backends.
     """
 
     # context

@@ -36,7 +36,7 @@ To authenticate with your Unikube account, run:
 
     unikube login
 
-It will redirect you to the login web page.
+It will redirect you to the login web page. See :ref:`the login reference<reference/auth:login>` for more information.
 
 To log out from your account, run:
 
@@ -62,7 +62,8 @@ No Problem! Unikube makes it easy to install many of the required dependencies. 
    unikube system install
 
 Now you can run :code:`unikube system verify` again to check if all dependencies have been installed correctly.
-
+See the :ref:`install reference<reference/system:install>` or :ref:`verify reference<reference/system:verify>` for more
+information.
 
 Hello Unikube!
 ==============

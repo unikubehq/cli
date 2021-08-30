@@ -1,6 +1,8 @@
 import sys
 
 import click
+from click._compat import iteritems
+from click.utils import echo
 
 import src.cli.console as console
 from src.cli import app as app_cmd
@@ -11,29 +13,62 @@ from src.cli import orga as orga_cmd
 from src.cli import project as project_cmd
 from src.cli import system as system_cmd
 from src.context import ClickContext
+from src.helpers import compare_current_and_latest_versions
 
 version = sys.version_info
 if version.major == 2:
     console.error("Python 2 is not supported for Unikube. Please upgrade python.", _exit=True)
 
 
-# click -----
 @click.group()
-@click.version_option()
 @click.pass_context
 def cli(ctx, **kwargs):
+    """
+    The Unikube CLI provides several command groups to manage all required aspects to develop cloud native
+    software on a Kubernetes-based environment.
+
+    There are a couple of shortcut commands directly available from here.
+    """
     ctx.obj = ClickContext()
 
 
-# system
+# click -----
+@click.command()
+def version():
+    """
+    Check unikube version.
+    """
+    version = compare_current_and_latest_versions()
+    if not version:
+        try:
+            import pkg_resources
+        except ImportError:
+            pass
+        else:
+            for dist in pkg_resources.working_set:
+                scripts = dist.get_entry_map().get("console_scripts") or {}
+                for _, entry_point in iteritems(scripts):
+                    version = dist.version
+                    break
+    if version is None:
+        raise RuntimeError("Could not determine version")
+    echo(f"unikube, version {version}")
+
+
+cli.add_command(version)
+
+
 @cli.group()
 @click.pass_obj
 def system(ctx):
     """
     The ``system`` command group includes commands to manage system dependencies on your local machine.
-    Using :ref:`reference/system:install` and :ref:`reference/auth:verify` you can install all necessary
+    Using :ref:`reference/system:install` and :ref:`reference/system:verify` you can install all necessary
     dependencies for Unikube and verify their versions.
     """
+
+
+# system
 
 
 system.add_command(system_cmd.install)
@@ -49,7 +84,7 @@ def orga(ctx):
     organisation. This command group manages information about your organisations.
     You can see all organizations you belong to with the :ref:`list command<reference/orga:list>`. It presents a
     tabular view of organisations with ``id`` and ``name``. The :ref:`info command<reference/orga:info>` can be used to
-    get more detailed information about particular organisation. This command displays the ``id``, ``title`` and the
+    get more detailed information about a particular organisation. This command displays the ``id``, ``title`` and the
     optional description of the organisation. The organisation belongs to the group of selection commands, thus it gives
     three possible options:
 
@@ -89,7 +124,8 @@ project.add_command(project_cmd.delete)
 @click.pass_obj
 def deck(ctx):
     """
-    Manage your decks.
+    Manage all decks you have access to. For further information please refer to
+    :ref:`the documentation about decks <provision:What is a Deck?>`.
     """
 
 

@@ -139,8 +139,8 @@ def up(ctx, project=None, organization=None, ingress=None, provider=None, worker
     project can be specified and/or filtered in several ways:
 
     * as a positional argument, id or project title can be specified, or from a set context
-    * as interactive selection from available projects
-    * via ``-o`` or ``--organization`` option, specifying organisation to which a project belongs
+    * as an interactive selection from available projects
+    * via ``-o`` or ``--organization`` option, specifying an organisation to which a project belongs
 
     """
 
@@ -251,7 +251,7 @@ def up(ctx, project=None, organization=None, ingress=None, provider=None, worker
 @click.pass_obj
 def down(ctx, project=None, organization=None, **kwargs):
     """
-    Stop/Pause cluster.py
+    Stop/pause cluster.
     """
 
     # context
@@ -310,7 +310,10 @@ def down(ctx, project=None, organization=None, **kwargs):
 @click.option("--organization", "-o", help="Select an organization")
 @click.pass_obj
 def delete(ctx, project=None, organization=None, **kwargs):
-    """Delete the current project and all related data"""
+    """
+    Delete the current project and all related data. For further information please refer to
+    :ref:`the documentation about project deletion <provision:Delete a Project>`.
+    """=======
 
     # context
     organization_id, project_id, _ = ctx.context.get_context_ids_from_arguments(
