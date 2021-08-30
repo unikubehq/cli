@@ -82,5 +82,5 @@ def project_list(
     except Exception:
         project_argument = selection
 
-    project_id = convert_project_argument_to_uuid(ctx, argument_value=project_argument)
+    project_id = convert_project_argument_to_uuid(ctx.auth, argument_value=project_argument)
     return project_id

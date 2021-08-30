@@ -43,5 +43,5 @@ def organization_list(ctx) -> Union[None, str]:
     except Exception:
         organization_argument = selection
 
-    organization_id = convert_organization_argument_to_uuid(ctx, argument_value=organization_argument)
+    organization_id = convert_organization_argument_to_uuid(ctx.auth, argument_value=organization_argument)
     return organization_id

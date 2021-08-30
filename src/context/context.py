@@ -132,7 +132,7 @@ class Context:
     ) -> Tuple[str, str, str]:
         # convert context argments into ids
         organization_id, project_id, deck_id = convert_context_arguments(
-            auth=self.auth,
+            auth=self._auth,
             organization_argument=organization_argument,
             project_argument=project_argument,
             deck_argument=deck_argument,
