@@ -117,7 +117,7 @@ def set(ctx, organization=None, project=None, deck=None, **kwargs):
 @click.pass_obj
 def remove(ctx, organization=None, project=None, deck=None, **kwargs):
     """
-    Remove context.
+    Remove the local context.
     """
 
     # user_data / context
@@ -154,7 +154,7 @@ def remove(ctx, organization=None, project=None, deck=None, **kwargs):
 @click.pass_obj
 def show(ctx, **kwargs):
     """
-    Show context.
+    Show the local context.
     """
 
     # user_data / context

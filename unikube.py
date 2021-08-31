@@ -175,7 +175,9 @@ auth.add_command(auth_cmd.status)
 @click.pass_obj
 def context(ctx):
     """
-    Manage your context.
+    The ``context`` command group enables you to modify the local context.
+    You can :ref:`reference/context:set` and :ref:`reference/context:remove` the organization, project
+    and deck context. Use :ref:`reference/context:show` to show the current context.
     """
 
 
