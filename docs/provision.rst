@@ -4,8 +4,8 @@ Provision of a Development Environment
 The Unikube CLI provides a convenient procedure to set up a Kubernetes-based development environment
 (see :ref:`unikube project up<reference/project:up>`). This K8s cluster can be initially started, stopped, resumed and
 delete with the CLI. The infrastructure is encapsulated in the concept of a ``project``. The Unikube CLI currently
-allows you to have at most one project cluster running at a time. If you need to work on another project, you have to
-stop any project you may worked on before.
+allows you to have at most one project cluster running at a time. If you need to work on another project, you need to
+stop the project you have worked on before.
 
 The project cluster can be created using different Kubernetes-providers. Currently, `k3d <https://k3d.io>`__ is the
 default cluster provider as it allows you to have multiple separate clusters side-by-side on one local machine.
