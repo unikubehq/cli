@@ -241,7 +241,9 @@ class Telepresence(KubeCtl):
                 )
         except KeyboardInterrupt:
             pass
+        console.info("Stopping the switch operation. It takes a few seconds to reset the cluster.")
         self.leave(deployment, namespace, silent=True)
+        self.uninstall(deployment, namespace, silent=True)
 
     def leave(self, deployment, namespace=None, silent=False):
         arguments = ["leave", "--no-report"]
@@ -253,6 +255,19 @@ class Telepresence(KubeCtl):
         process = self._execute(arguments)
         if not silent and process.returncode and process.returncode != 0:
             console.error("There was an error with leaving the deployment, please find details above", _exit=False)
+
+    def uninstall(self, deployment, namespace=None, silent=False):
+        arguments = ["uninstall", "--agent", deployment]
+        if namespace:
+            arguments.append(f"{deployment}-{namespace}")
+        else:
+            arguments.append(deployment)
+        console.debug(arguments)
+        process = self._execute(arguments)
+        if not silent and process.returncode and process.returncode != 0:
+            console.error(
+                "There was an error with uninstalling the traffic agent, please find details above", _exit=False
+            )
 
     def _get_environment(self):
         env = super(Telepresence, self)._get_environment()

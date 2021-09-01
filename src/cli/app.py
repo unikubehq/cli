@@ -227,15 +227,15 @@ def shell(ctx, app, organization=None, project=None, deck=None, **kwargs):
 
     # get the data of the selected pod
     data = k8s.get_pod(app)
-
+    telepresence = Telepresence(provider_data)
+    # the corresponding deployment by getting rid of the pod name suffix
+    deployment = "-".join(data.metadata.name.split("-")[0:-2])
     # 1. check if this pod is of a switched deployment (in case of an active Telepresence)
-    if data.metadata.labels.get("telepresence"):
-        # the corresponding deployment by getting rid of the telepresence suffix
-        deployment = "-".join(data.metadata.name.split("-")[0:-1])
 
+    if telepresence.is_swapped(deployment):
         # the container name generated in "app switch" for that pod
         container_name = settings.TELEPRESENCE_DOCKER_IMAGE_FORMAT.format(
-            project=cluster_data.name, deck=deck["title"], name=deployment
+            project=cluster_data.name.lower(), deck=deck["title"].lower(), name=deployment.lower()
         ).replace(":", "")
 
         if Docker().check_running(container_name):
