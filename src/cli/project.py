@@ -7,18 +7,9 @@ import click_spinner
 import src.cli.console as console
 from src import settings
 from src.graphql import GraphQL
-from src.helpers import (
-    check_running_cluster,
-    get_organization_id_by_title,
-    get_project_list_by_permission,
-    get_projects_for_organization,
-    select_entity_from_cluster_list,
-    select_project_entity,
-)
-from src.keycloak.permissions import KeycloakPermissions
+from src.helpers import check_running_cluster
 from src.local.providers.types import K8sProviderType
 from src.local.system import Telepresence
-from src.storage.user import get_local_storage_user
 
 
 @click.command()
@@ -29,95 +20,89 @@ def list(ctx, organization, **kwargs):
     Display a table of all available project names alongside with the ids.
     """
 
-    context = ctx.context.get()
-    project_ids_for_organization = None
-    # keycloak
-    try:
-        keycloak_permissions = KeycloakPermissions(authentication=ctx.auth)
-        permission_list = keycloak_permissions.get_permissions_by_scope("project:*")
-    except Exception as e:
-        permission_list = None
-        console.debug(e)
-        console.exit_generic_error()
-    if organization:
-        graph_ql = GraphQL(authentication=ctx.auth)
-        project_ids_for_organization = get_projects_for_organization(graph_ql, organization)
-
-    # append "(active)"
-    if context.project_id:
-        for permission in permission_list:
-            if permission.rsid == context.project_id:
-                permission.rsid += " (active)"
-    # console
-    project_list = get_project_list_by_permission(permission_list, project_ids_for_organization)
-    if not project_list:
-        console.info("No projects available. Please go to https://app.unikube.io and create a project.", _exit=True)
-
-    console.table(
-        data=project_list,
-        headers={
-            "id": "Id",
-            "slug": "Identifier",
-            "description": "Description",
-        },
-    )
-
-
-@click.command()
-@click.argument("project", required=False)
-@click.pass_obj
-def info(ctx, project, **kwargs):
-    """
-    Displays the id, title and optional description of the selected project.
-    """
+    # context
+    organization_id, _, _ = ctx.context.get_context_ids_from_arguments(organization_argument=organization)
 
     # GraphQL
     try:
         graph_ql = GraphQL(authentication=ctx.auth)
         data = graph_ql.query(
             """
-            {
-                allProjects {
+            query($organization_id: UUID) {
+                allProjects(organizationId: $organization_id) {
                     results {
-                        id
                         title
+                        id
                         description
-                        specRepository
-                        specRepositoryBranch
-                        organization {
-                            title
-                        }
                     }
                 }
             }
-            """
+            """,
+            query_variables={"organization_id": organization_id},
         )
-    except Exception:
-        data = None
+        project_list = data["allProjects"]["results"]
+    except Exception as e:
+        console.debug(e)
         console.exit_generic_error()
 
-    project_list = data["allProjects"]["results"]
+    # console
+    if len(project_list) < 1:
+        console.info("No projects available. Please go to https://app.unikube.io and create a project.", _exit=True)
+
+    console.table(
+        data={
+            "id": [p["id"] for p in project_list],
+            "title": [p["title"] for p in project_list],
+            "description": [p["description"] for p in project_list],
+        },
+        headers=["id", "name", "description"],
+    )
+
+
+@click.command()
+@click.argument("project", required=False)
+@click.option("--organization", "-o", help="Select an organization")
+@click.pass_obj
+def info(ctx, project=None, organization=None, **kwargs):
+    """
+    Displays the id, title and optional description of the selected project.
+    """
+
+    # context
+    organization_id, project_id, _ = ctx.context.get_context_ids_from_arguments(
+        organization_argument=organization, project_argument=project
+    )
 
     # argument
-    if not project:
-        # argument from context
-        context = ctx.context.get()
-        if context.project_id:
-            project_instance = ctx.context.get_project()
-            project = f'{project_instance["title"]} ({project_instance["organization"]["title"]})'
+    if not project_id:
+        project_id = console.project_list(ctx, organization_id=organization_id)
+        if not project_id:
+            return None
 
-        # argument from console
-        else:
-            project = console.list(
-                message="Please select a project",
-                choices=[project["title"] for project in project_list],
-                identifiers=[project["organization"]["title"] for project in project_list],
-            )
-            if project is None:
-                return None
-
-    # select
-    project_selected = select_project_entity(entity_list=project_list, selection=project)
+    # GraphQL
+    try:
+        graph_ql = GraphQL(authentication=ctx.auth)
+        data = graph_ql.query(
+            """
+            query($id: UUID!) {
+                project(id: $id) {
+                    id
+                    title
+                    description
+                    specRepository
+                    specRepositoryBranch
+                    organization {
+                        title
+                    }
+                }
+            }
+            """,
+            query_variables={"id": project_id},
+        )
+        project_selected = data["project"]
+    except Exception as e:
+        console.debug(e)
+        console.exit_generic_error()
 
     # console
     if project_selected:
@@ -137,93 +122,6 @@ def info(ctx, project, **kwargs):
 
 
 @click.command()
-@click.argument("project_id", required=False)
-@click.option("--remove", "-r", is_flag=True, default=False, help="Remove local organization context")
-@click.pass_obj
-def use(ctx, project_id, remove, **kwargs):
-    """
-    Set the local project context. For more information please refer to :ref:`reference/overview:context management`.
-    """
-
-    # user_data / context
-    local_storage_user = get_local_storage_user()
-    user_data = local_storage_user.get()
-    context = user_data.context
-
-    # option: --remove
-    if remove:
-        user_data.context.deck_id = None
-        user_data.context.project_id = None
-        local_storage_user.set(user_data)
-        console.success("Project context removed.")
-        return None
-
-    # project context is already set
-    if context.project_id:
-        console.info(
-            "Project context is already set. If you want to set a new project context, please remove current "
-            "context using 'unikube project use -r'",
-            _exit=True,
-        )
-
-    # GraphQL
-    try:
-        graph_ql = GraphQL(authentication=ctx.auth)
-        data = graph_ql.query(
-            """
-            query($organization_id: UUID) {
-                allProjects(organizationId: $organization_id) {
-                    results {
-                        title
-                        id
-                        organization {
-                            id
-                            title
-                        }
-                    }
-                }
-            }
-            """,
-            query_variables={
-                "organization_id": context.organization_id,
-            },
-        )
-    except Exception as e:
-        data = None
-        console.debug(e)
-        console.exit_generic_error()
-
-    project_list = data["allProjects"]["results"]
-    project_dict = {project["id"]: project for project in project_list}
-
-    # argument
-    if not project_id:
-        project_title = console.list(
-            message="Please select a project",
-            choices=[project["title"] for project in project_dict.values()],
-            identifiers=[project["organization"]["title"] for project in project_dict.values()],
-        )
-        if project_title is None:
-            return False
-
-        # select
-        project_selected = select_project_entity(entity_list=project_list, selection=project_title)
-    else:
-        project_selected = project_dict.get(project_id, None)
-
-    if not project_selected:
-        console.error(f"Unknown project with id: {project_id}.", _exit=True)
-
-    # set project
-    user_data.context.deck_id = None
-    user_data.context.project_id = project_selected["id"]
-    user_data.context.organization_id = project_selected["organization"]["id"]
-    local_storage_user.set(user_data)
-
-    console.success(f"Project context: {user_data.context}")
-
-
-@click.command()
 @click.argument("project", required=False)
 @click.option("--organization", "-o", help="Select an organization")
 @click.option("--ingress", help="Overwrite the ingress port for the project from cluster settings", default=None)
@@ -235,7 +133,7 @@ def use(ctx, project_id, remove, **kwargs):
 )
 @click.option("--workers", help="Specify count of k3d worker nodes", default=1)
 @click.pass_obj
-def up(ctx, project, organization, ingress, provider, workers, **kwargs):
+def up(ctx, project=None, organization=None, ingress=None, provider=None, workers=None, **kwargs):
     """
     This command starts or resumes a Kubernetes cluster for the specified project. As it is a selection command, the
     project can be specified and/or filtered in several ways:
@@ -246,76 +144,57 @@ def up(ctx, project, organization, ingress, provider, workers, **kwargs):
 
     """
 
+    # context
+    organization_id, project_id, _ = ctx.context.get_context_ids_from_arguments(
+        organization_argument=organization, project_argument=project
+    )
+
+    # cluster information
+    cluster_list = ctx.cluster_manager.get_cluster_list(ready=True)
+    cluster_id_list = [item.id for item in cluster_list]
+
+    # argument
+    if not project_id:
+        project_id = console.project_list(ctx, organization_id=organization_id, exclude=cluster_id_list)
+        if not project_id:
+            return None
+
+    if project_id in cluster_id_list:
+        console.info(f"Project '{project}' is already up.", _exit=True)
+
+    # GraphQL
     try:
         graph_ql = GraphQL(authentication=ctx.auth)
-        if organization:
-            organization_id = get_organization_id_by_title(graph_ql, organization)
-        else:
-            organization_id = None
         data = graph_ql.query(
             """
-            query($organization_id: UUID) {
-                allProjects(organizationId: $organization_id) {
-                    results {
-                        title
+            query($id: UUID) {
+                project(id: $id) {
+                    title
+                    id
+                    organization {
                         id
-                        organization {
-                            id
-                        }
-                        clusterSettings {
-                            id
-                            port
-                        }
-                        organization {
-                            title
-                        }
+                    }
+                    clusterSettings {
+                        id
+                        port
+                    }
+                    organization {
+                        title
                     }
                 }
             }
             """,
             query_variables={
-                "organization_id": organization_id,
+                "id": project_id,
             },
         )
+        project_selected = data["project"]
     except Exception as e:
-        data = None
         console.debug(e)
         console.exit_generic_error()
 
-    project_list = data["allProjects"]["results"]
-    cluster_list = ctx.cluster_manager.get_cluster_list(ready=True)
-    cluster_id_list = [item.id for item in cluster_list]
-
-    # argument
-    if not project:
-        # argument from context
-        context = ctx.context.get(organization=organization)
-        if context.project_id:
-            project_instance = ctx.context.get_project()
-            project = f'{project_instance["title"]} ({project_instance["organization"]["title"]})'
-            if project_instance["id"] in cluster_id_list:
-                console.info(f"Project '{project}' is already up.", _exit=True)
-
-        # argument from console
-        else:
-
-            project = console.list(
-                message="Please select a project",
-                choices=[project["title"] for project in project_list if project["id"] not in cluster_id_list],
-                identifiers=[
-                    project["organization"]["title"] for project in project_list if project["id"] not in cluster_id_list
-                ],
-            )
-
-            if project is None:
-                return False
-
-    project_list_without_clusters = [project for project in project_list if project["id"] not in cluster_id_list]
-    project_instance = select_project_entity(entity_list=project_list_without_clusters, selection=project)
-
-    if not project_instance:
-        console.info(f"The project '{project}' could not be found.")
-        return None
+    if not project_selected:
+        console.info(f"The project '{project}' could not be found.", _exit=True)
 
     try:
         cluster_provider_type = K8sProviderType[provider]
@@ -326,16 +205,16 @@ def up(ctx, project, organization, ingress, provider, workers, **kwargs):
             _exit=True,
         )
 
-    check_running_cluster(ctx, cluster_provider_type, project_instance)
+    check_running_cluster(ctx, cluster_provider_type, project_selected)
 
     # get project id
     if ingress is None:
-        ingress = project_instance["clusterSettings"]["port"]
+        ingress = project_selected["clusterSettings"]["port"]
 
     # cluster up
-    cluster_data = ctx.cluster_manager.get(id=project_instance["id"])
-    cluster_data.name = project_instance["title"]
-    ctx.cluster_manager.set(id=project_instance["id"], data=cluster_data)
+    cluster_data = ctx.cluster_manager.get(id=project_selected["id"])
+    cluster_data.name = project_selected["title"]
+    ctx.cluster_manager.set(id=project_selected["id"], data=cluster_data)
 
     cluster = ctx.cluster_manager.select(cluster_data=cluster_data, cluster_provider_type=cluster_provider_type)
     console.info(
@@ -359,7 +238,7 @@ def up(ctx, project, organization, ingress, provider, workers, **kwargs):
     # console
     if success:
         console.info("Now connecting Telepresence daemon. You probably have to enter your 'sudo' password.")
-        sleep(5)  # todo busywait for the cluster to become actually available
+        sleep(5)  # TODO: busywait for the cluster to become actually available
         Telepresence(cluster.storage.get()).start()
         console.success("The project cluster is up.")
     else:
@@ -368,56 +247,49 @@ def up(ctx, project, organization, ingress, provider, workers, **kwargs):
 
 @click.command()
 @click.argument("project", required=False)
+@click.option("--organization", "-o", help="Select an organization")
 @click.pass_obj
-def down(ctx, project, **kwargs):
+def down(ctx, project=None, organization=None, **kwargs):
     """
     Stop/pause cluster.
     """
 
+    # context
+    organization_id, project_id, _ = ctx.context.get_context_ids_from_arguments(
+        organization_argument=organization, project_argument=project
+    )
+
+    # cluster
     cluster_list = ctx.cluster_manager.get_cluster_list(ready=True)
 
     # argument
-    if not project:
-        # argument from context
-        context = ctx.context.get()
-        if context.project_id:
-            project_instance = ctx.context.get_project()
-            project = project_instance["title"] + f"({project_instance['id']})"
-
-        # argument from console
-        else:
-            project = console.list(
-                message="Please select a project",
-                message_no_choices="No cluster is running.",
-                choices=[item.name + f"({item.id})" for item in cluster_list],
-            )
-            if project is None:
-                return None
-
-    project_instance = select_entity_from_cluster_list(cluster_list, project)
+    if not project_id:
+        project_id = console.project_list(
+            ctx, organization_id=organization_id, filter=[cluster.id for cluster in cluster_list]
+        )
+        if not project_id:
+            return None
 
     # check if project is in local storage
-    if not project_instance:
-        console.info(f"The project cluster for '{project}' is not up or does not exist yet.")
-        return None
+    if project_id not in [cluster.id for cluster in cluster_list]:
+        console.info(f"The project cluster for '{project_id}' is not up or does not exist yet.", _exit=True)
 
     # get cluster
     cluster = None
     for cluster_data in cluster_list:
-        if cluster_data.id == project_instance.id:
+        if cluster_data.id == project_id:
             cluster = ctx.cluster_manager.select(
                 cluster_data=cluster_data,
             )
             break
+
     # cluster down
     if not cluster.exists():
         # something went wrong or cluster was already delete from somewhere else
-        console.info(f"No Kubernetes cluster to stop for '{cluster.display_name}'")
-        return None
+        console.info(f"No Kubernetes cluster to stop for '{cluster.display_name}'", _exit=True)
 
     if not cluster.ready():
-        console.info(f"Kubernetes cluster for '{cluster.display_name}' is not running")
-        return None
+        console.info(f"Kubernetes cluster for '{cluster.display_name}' is not running", _exit=True)
 
     console.info("Stopping Telepresence daemon.")
     Telepresence(cluster.storage.get()).stop()
@@ -435,39 +307,32 @@ def down(ctx, project, **kwargs):
 
 @click.command()
 @click.argument("project", required=False)
+@click.option("--organization", "-o", help="Select an organization")
 @click.pass_obj
-def delete(ctx, project, **kwargs):
+def delete(ctx, project=None, organization=None, **kwargs):
     """
     Delete the current project and all related data. For further information please refer to
     :ref:`the documentation about project deletion <provision:Delete a Project>`.
     """
 
+    # context
+    organization_id, project_id, _ = ctx.context.get_context_ids_from_arguments(
+        organization_argument=organization, project_argument=project
+    )
+
+    # cluster
     cluster_list = ctx.cluster_manager.get_cluster_list()
-    cluster_title_list = [item.name + f"({item.id})" for item in cluster_list]
 
     # argument
-    if not project:
-        # argument from context
-        context = ctx.context.get()
-        if context.project_id:
-            project_instance = ctx.context.get_project()
-            project = project_instance["title"] + f"({project_instance['id']})"
+    if not project_id:
+        project_id = console.project_list(
+            ctx, organization_id=organization_id, filter=[cluster.id for cluster in cluster_list]
+        )
+        if not project_id:
+            return None
 
-        # argument from console
-        else:
-            project = console.list(
-                message="Please select a project",
-                message_no_choices="No cluster available.",
-                choices=cluster_title_list,
-            )
-            if project is None:
-                return None
-
-    project_instance = select_entity_from_cluster_list(cluster_list, project)
-
-    if not project_instance:
-        console.info(f"The project cluster for '{project}' could not be found.")
-        return None
+    if project_id not in [cluster.id for cluster in cluster_list]:
+        console.info(f"The project cluster for '{project}' could not be found.", _exit=True)
 
     # initial warning
     console.warning("Deleting a project will remove the cluster including all of its data.")
@@ -475,13 +340,12 @@ def delete(ctx, project, **kwargs):
     # confirm question
     confirm = input("Do want to continue [N/y]: ")
     if confirm not in ["y", "Y", "yes", "Yes"]:
-        console.info("No action taken.")
-        return None
+        console.info("No action taken.", _exit=True)
 
     # get cluster
     cluster = None
     for cluster_data in cluster_list:
-        if cluster_data.id == project_instance.id:
+        if cluster_data.id == project_id:
             cluster = ctx.cluster_manager.select(
                 cluster_data=cluster_data,
             )
@@ -489,9 +353,8 @@ def delete(ctx, project, **kwargs):
 
     # delete cluster
     if not cluster.exists():
-        console.info(f"No Kubernetes cluster to delete for '{cluster.display_name}', nothing to do.")
         ctx.cluster_manager.delete(cluster.id)
-        return None
+        console.info(f"No Kubernetes cluster to delete for '{cluster.display_name}', nothing to do.", _exit=True)
 
     success = cluster.delete()
 

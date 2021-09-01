@@ -1,4 +1,4 @@
-.. _unikube_deck:
+.. _unikube_deck: 
 
 .. click:: unikube:deck
   :prog: unikube deck

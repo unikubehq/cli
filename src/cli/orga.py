@@ -2,9 +2,7 @@ import click
 
 import src.cli.console as console
 from src.graphql import GraphQL
-from src.helpers import select_entity
 from src.keycloak.permissions import KeycloakPermissions
-from src.storage.user import get_local_storage_user
 
 
 @click.command()
@@ -21,7 +19,6 @@ def list(ctx, **kwargs):
         keycloak_permissions = KeycloakPermissions(authentication=ctx.auth)
         permission_list = keycloak_permissions.get_permissions_by_scope("organization:*")
     except Exception as e:
-        permission_list = None
         console.debug(e)
         console.exit_generic_error()
 
@@ -56,48 +53,34 @@ def info(ctx, organization, **kwargs):
     Display further information of the selected organization.
     """
 
+    # context
+    organization_id, _, _ = ctx.context.get_context_ids_from_arguments(organization_argument=organization)
+
+    # argument
+    if not organization_id:
+        organization_id = console.organization_list(ctx)
+        if not organization_id:
+            return None
+
     # GraphQL
     try:
         graph_ql = GraphQL(authentication=ctx.auth)
         data = graph_ql.query(
             """
-            {
-                allOrganizations {
-                    results {
-                        id
-                        title
-                        description
-                    }
+            query($id: UUID!) {
+                organization(id: $id) {
+                    id
+                    title
+                    description
                 }
             }
-            """
+            """,
+            query_variables={"id": organization_id},
         )
+        organization_selected = data["organization"]
     except Exception as e:
-        data = None
         console.debug(e)
         console.exit_generic_error()
-
-    organization_list = data["allOrganizations"]["results"]
-
-    # argument
-    if not organization:
-        # argument from context
-        context = ctx.context.get()
-        if context.organization_id:
-            organization_instance = ctx.context.get_organization()
-            organization = organization_instance["title"] + f"({organization_instance['id']})"
-
-        # argument from console
-        else:
-            organization = console.list(
-                message="Please select an organization",
-                choices=[organization["title"] + f"({organization['id']})" for organization in organization_list],
-            )
-            if organization is None:
-                return None
-
-    # select
-    organization_selected = select_entity(organization_list, organization)
 
     # console
     if organization_selected:
@@ -110,70 +93,3 @@ def info(ctx, organization, **kwargs):
         )
     else:
         console.error("Organization does not exist.")
-
-
-@click.command()
-@click.argument("organization_id", required=False)
-@click.option("--remove", "-r", is_flag=True, default=False, help="Remove local organization context")
-@click.pass_obj
-def use(ctx, organization_id, remove, **kwargs):
-    """
-    Set local organization context.
-    """
-
-    # user_data / context
-    local_storage_user = get_local_storage_user()
-    user_data = local_storage_user.get()
-
-    # option: --remove
-    if remove:
-        user_data.context.deck_id = None
-        user_data.context.project_id = None
-        user_data.context.organization_id = None
-        local_storage_user.set(user_data)
-        console.success("Organization context removed.")
-        return None
-
-    # GraphQL
-    try:
-        graph_ql = GraphQL(authentication=ctx.auth)
-        data = graph_ql.query(
-            """
-            query {
-                allOrganizations {
-                    results {
-                        id
-                        title
-                    }
-                }
-            }
-            """
-        )
-    except Exception as e:
-        data = None
-        console.debug(e)
-        console.exit_generic_error()
-
-    organization_list = data["allOrganizations"]["results"]
-    organization_dict = {organization["id"]: organization["title"] for organization in organization_list}
-
-    # argument
-    if not organization_id:
-        organization_title = console.list(
-            message="Please select an organization",
-            choices=organization_dict.values(),
-        )
-        if organization_title is None:
-            return False
-
-        for id, title in organization_dict.items():
-            if title == organization_title:
-                organization_id = id
-
-    # set organization
-    user_data.context.deck_id = None
-    user_data.context.project_id = None
-    user_data.context.organization_id = organization_id
-    local_storage_user.set(user_data)
-
-    console.success(f"Organization context: {user_data.context}")

@@ -20,12 +20,10 @@ class DeckTestCase(LoginTestCase):
 
         result = self.runner.invoke(
             deck.info,
-            [
-                "not_existing_deck",
-            ],
+            ["not_existing_deck"],
             obj=ClickContext(),
         )
-        self.assertIn("[ERROR] Deck does not exist.", result.output)
+        self.assertIn("[ERROR] Deck name/slug does not exist.\n", result.output)
 
     def test_deck_list(self):
 
@@ -40,35 +38,6 @@ class DeckTestCase(LoginTestCase):
         self.assertIn("buzzword-counter", result.output)
         self.assertEqual(result.exit_code, 0)
 
-    def test_deck_use_failing(self):
-        result = self.runner.invoke(
-            deck.use,
-            obj=ClickContext(),
-        )
-
-        self.assertIn("\n[?] Please select a deck: buzzword-counter\n > buzzword-counter\n\n", result.output)
-        self.assertEqual(result.exit_code, 1)
-
-    def test_deck_use(self):
-        result = self.runner.invoke(
-            deck.use,
-            ["4634368f-1751-40ae-9cd7-738fcb656a0d"],
-            obj=ClickContext(),
-        )
-
-        self.assertIn("[SUCCESS] Deck context: organization_id=", result.output)
-        self.assertEqual(result.exit_code, 0)
-
-    def test_deck_use_remove(self):
-        result = self.runner.invoke(
-            deck.use,
-            ["-r"],
-            obj=ClickContext(),
-        )
-
-        self.assertIn("[SUCCESS] Deck context removed.\n", result.output)
-        self.assertEqual(result.exit_code, 0)
-
     def test_deck_ingress(self):
         result = self.runner.invoke(
             deck.ingress,
@@ -78,18 +47,6 @@ class DeckTestCase(LoginTestCase):
 
         self.assertIn(
             "[ERROR] The project cluster does not exist. Please be sure to run 'unikube project up' first.\n",
-            result.output,
-        )
-        self.assertEqual(result.exit_code, 1)
-
-    def test_deck_ingress_new(self):
-        result = self.runner.invoke(
-            deck.ingress,
-            obj=ClickContext(),
-        )
-
-        self.assertIn(
-            "\n[?] Please select a deck: buzzword-counter(4634368f-1751-40ae-9cd7-738fcb656a0d)\n > buzzword-counter(4634368f-1751-40ae-9cd7-738fcb656a0d)\n\n",
             result.output,
         )
         self.assertEqual(result.exit_code, 1)

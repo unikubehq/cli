@@ -1,6 +1,4 @@
 import os
-import re
-import signal
 import sys
 from collections import OrderedDict
 from typing import Tuple
@@ -18,95 +16,51 @@ from src.unikubefile.selector import unikube_file_selector
 
 
 def get_deck_from_arguments(ctx, organization_id: str, project_id: str, deck_id: str):
-
-    context = ctx.context.get(organization=organization_id, project=project_id, deck=deck_id)
-
-    ## project_id
-    cluster_list = ctx.cluster_manager.get_cluster_list(ready=True)
-    cluster_choices = [f"{item.name} ({item.id})" for item in cluster_list]
-    cluster_choices_ids = [item.id for item in cluster_list]
+    # context
+    organization_id, project_id, deck_id = ctx.context.get_context_ids_from_arguments(
+        organization_argument=organization_id, project_argument=project_id, deck_argument=deck_id
+    )
 
     # argument
-    if not context.project_id:
-        # argument from console
-        project_selected = console.list(
-            message="Please select a project",
-            message_no_choices="No project is running.",
-            choices=cluster_choices,
-        )
-        if project_selected is None:
+    if not deck_id:
+        deck_id = console.deck_list(ctx, organization_id=organization_id, project_id=project_id)
+        if not deck_id:
             exit(1)
 
-        project_id = re.search(r"\((.*?)\)", project_selected).group(1)
-    else:
-        project_id = context.project_id
-
-    # check if project is in local storage
-    if project_id not in cluster_choices_ids:
-        console.error("The project cluster could not be found or you have another project activated.", _exit=True)
-
-    cluster_data = ctx.cluster_manager.get(id=project_id)
-    if not cluster_data:
-        console.error("The cluster could not be found.", _exit=True)
-
-    ## deck_id
     # GraphQL
     try:
         graph_ql = GraphQL(authentication=ctx.auth)
         data = graph_ql.query(
             """
             query($id: UUID) {
-                allDecks(projectId: $id) {
-                    results {
+                deck(id: $id) {
+                    id
+                    title
+                    environment {
+                        namespace
+                    }
+                    project {
                         id
-                        title
-                        environment {
-                            namespace
-                        }
                     }
                 }
             }
             """,
-            query_variables={
-                "id": project_id,
-            },
+            query_variables={"id": deck_id},
         )
+        deck = data["deck"]
+        project_id = deck["project"]["id"]
     except Exception as e:
-        data = None
         console.debug(e)
         console.exit_generic_error()
 
-    deck_list = data["allDecks"]["results"]
-    deck_choices = [f'{item["title"]} ({item["id"]})' for item in deck_list]
-    deck_choices_ids = [item["id"] for item in deck_list]
+    # cluster data
+    cluster_list = ctx.cluster_manager.get_cluster_list(ready=True)
+    if project_id not in [cluster.id for cluster in cluster_list]:
+        console.info(f"The project cluster for '{project_id}' is not up or does not exist yet.", _exit=True)
 
-    # argument
-    if not context.deck_id:
-        # argument from console
-        deck_selected = console.list(
-            message="Please select a deck",
-            message_no_choices="No deck found.",
-            choices=deck_choices,
-        )
-        if deck_selected is None:
-            exit(1)
-
-        deck_id = re.search(r"\((.*?)\)", deck_selected).group(1)
-    else:
-        deck_id = context.deck_id
-
-    if deck_id is None:
-        console.exit_generic_error()
-
-    # check if deck exists
-    if deck_id not in deck_choices_ids:
-        console.error("The deck could not be found.", _exit=True)
-
-    # get deck
-    deck = None
-    for deck in deck_list:
-        if deck["id"] == deck_id:
-            break
+    cluster_data = ctx.cluster_manager.get(id=project_id)
+    if not cluster_data:
+        console.error("The cluster could not be found.", _exit=True)
 
     return cluster_data, deck
 
@@ -380,7 +334,6 @@ def switch(ctx, app, organization, project, deck, deployment, unikubefile, **kwa
             },
         )
     except Exception as e:
-        data = None
         console.debug(e)
         console.exit_generic_error()
 

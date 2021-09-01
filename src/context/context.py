@@ -1,15 +1,17 @@
 import os
 from abc import ABC, abstractmethod
-from typing import List, Union
-from uuid import UUID
+from typing import List, Tuple, Union
 
 from src import settings
-from src.cli import console
+from src.context.helper import convert_context_arguments, is_valid_uuid4
 from src.context.types import ContextData
-from src.graphql import GraphQL
 from src.storage.user import LocalStorageUser, get_local_storage_user
 from src.unikubefile.selector import unikube_file_selector
 from src.unikubefile.unikube_file import UnikubeFile
+
+
+class ContextError(Exception):
+    pass
 
 
 class IContext(ABC):
@@ -23,43 +25,22 @@ class ClickOptionContext(IContext):
         self.click_options = click_options
 
     def get(self, **kwargs) -> ContextData:
-        # uuid validation
-        def is_valid_uuid4(uuid):
-            try:
-                _ = UUID(uuid, version=4)
-                return True
-            except Exception:
-                return False
-
-        # organization
-        organization = self.click_options.get("organization", None)
-        if organization:
-            if is_valid_uuid4(organization):
-                organization_id = organization
+        def _get_and_validate_argument_id(argument_name: str):
+            argument = self.click_options.get(argument_name, None)
+            if argument:
+                if is_valid_uuid4(argument):
+                    argument_id = argument
+                else:
+                    raise ContextError(f"Invalid {argument_name} id.")
             else:
-                raise NotImplementedError
-        else:
-            organization_id = None
+                argument_id = None
 
-        # project
-        project = self.click_options.get("project", None)
-        if project:
-            if is_valid_uuid4(organization):
-                project_id = project
-            else:
-                raise NotImplementedError
-        else:
-            project_id = None
+            return argument_id
 
-        # deck
-        deck = self.click_options.get("deck", None)
-        if deck:
-            if is_valid_uuid4(deck):
-                deck_id = deck
-            else:
-                raise NotImplementedError
-        else:
-            deck_id = None
+        # arguments
+        organization_id = _get_and_validate_argument_id("organization")
+        project_id = _get_and_validate_argument_id("project")
+        deck_id = _get_and_validate_argument_id("deck")
 
         return ContextData(
             organization_id=organization_id,
@@ -90,13 +71,6 @@ class LocalContext(IContext):
 
         user_data = self.local_storage_user.get()
         return user_data.context
-
-
-class ImplizitContext(IContext):
-    """Implicit context, e.g.: user has only one organization"""
-
-    def get(self, **kwargs) -> ContextData:
-        return ContextData()
 
 
 class ContextLogic:
@@ -145,86 +119,29 @@ class Context:
                     )
                 ),
                 LocalContext(local_storage_user=local_storage_user),
-                ImplizitContext(),
             ]
         )
         context = context_logic.get()
 
         # show context
         if settings.CLI_ALWAYS_SHOW_CONTEXT:
-            console.info(f"context: {context}")
+            from src.cli.context import show_context
+
+            show_context(context)
 
         return context
 
-    def __graph_ql(self, query: str, query_variables: dict) -> Union[dict, None]:
-        graph_ql = GraphQL(authentication=self._auth)
-        result = graph_ql.query(
-            query,
-            query_variables=query_variables,
+    def get_context_ids_from_arguments(
+        self, organization_argument: str = None, project_argument: str = None, deck_argument: str = None
+    ) -> Tuple[str, str, str]:
+        # convert context argments into ids
+        organization_id, project_id, deck_id = convert_context_arguments(
+            auth=self._auth,
+            organization_argument=organization_argument,
+            project_argument=project_argument,
+            deck_argument=deck_argument,
         )
-        key = next(iter(result))
-        data = result[key]
-        return data
 
-    def get_organization(self) -> dict:
-        try:
-            organization = self.__graph_ql(
-                """
-                query($id: UUID!) {
-                    organization(id: $id) {
-                        title
-                        id
-                    }
-                }
-                """,
-                query_variables={
-                    "id": self.get().organization_id,
-                },
-            )
-            return organization
-        except Exception as e:
-            console.debug(e)
-            console.error("Invalid organization context. Please adjust or remove the current context.", _exit=True)
-
-    def get_project(self) -> dict:
-        try:
-            project = self.__graph_ql(
-                """
-                query($id: UUID) {
-                    project(id: $id) {
-                        title
-                        id
-                        organization {
-                            title
-                        }
-                    }
-                }
-                """,
-                query_variables={
-                    "id": self.get().project_id,
-                },
-            )
-            return project
-        except Exception as e:
-            console.debug(e)
-            console.error("Invalid project context. Please adjust or remove the current context.", _exit=True)
-
-    def get_deck(self) -> dict:
-        try:
-            deck = self.__graph_ql(
-                """
-                query($id: UUID) {
-                    deck(id: $id) {
-                        title
-                        id
-                    }
-                }
-                """,
-                query_variables={
-                    "id": self.get().deck_id,
-                },
-            )
-            return deck
-        except Exception as e:
-            console.debug(e)
-            console.error("Invalid deck context. Please adjust or remove the current context.", _exit=True)
+        # consider context
+        context = self.get(organization=organization_id, project=project_id, deck=deck_id)
+        return context.organization_id, context.project_id, context.deck_id

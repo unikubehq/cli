@@ -26,11 +26,11 @@ def list(
     allow_duplicates: bool = False,
     message_no_choices: str = "No choices available!",
 ):
-
     # choices exist
     if not len(choices) > 0:
         console.info(message_no_choices)
         return None
+
     # handle duplicates
     if not allow_duplicates:
         if identifiers:

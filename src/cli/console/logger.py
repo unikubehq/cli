@@ -54,7 +54,10 @@ def _click_secho(msg: str, silent: bool, log_level: str = None, _exit: bool = Fa
     fg = color_mapping.get(log_level, "")
 
     # console echo
-    click.secho(f"[{log_level.value.upper()}] {msg}", fg=fg, **kwargs)
+    if log_level:
+        click.secho(f"[{log_level.value.upper()}] {msg}", fg=fg, **kwargs)
+    else:
+        click.secho(msg, fg=fg, **kwargs)
 
     # exit
     if _exit:
@@ -64,6 +67,10 @@ def _click_secho(msg: str, silent: bool, log_level: str = None, _exit: bool = Fa
 # console output
 def debug(msg: str, silent: bool = False, **kwargs):
     _click_secho(msg, silent, log_level=LogLevel.DEBUG, **kwargs)
+
+
+def echo(msg: str, silent: bool = False, _exit: bool = False, _exit_code: int = 1, **kwargs):
+    _click_secho(msg=msg, silent=silent, log_level=None, _exit=_exit, _exit_code=_exit_code, **kwargs)
 
 
 def info(msg: str, silent: bool = False, _exit: bool = False, _exit_code: int = 1, **kwargs):
