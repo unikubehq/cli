@@ -46,7 +46,7 @@ class DeckTestCase(LoginTestCase):
         )
 
         self.assertIn(
-            "[ERROR] The project cluster does not exist. Please be sure to run 'unikube project up' first.\n",
+            "[ERROR] The project cluster for 'buzzword-counter' is not running.\n",
             result.output,
         )
         self.assertEqual(result.exit_code, 1)

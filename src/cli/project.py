@@ -261,9 +261,12 @@ def down(ctx, project=None, organization=None, **kwargs):
 
     # cluster
     cluster_list = ctx.cluster_manager.get_cluster_list(ready=True)
+    if len(cluster_list) == 1:
 
-    # argument
-    if not project_id:
+        project_id = cluster_list[0].id
+    elif len(cluster_list) == 0:
+        console.info("There are no running cluster", _exit=True)
+    else:
         project_id = console.project_list(
             ctx, organization_id=organization_id, filter=[cluster.id for cluster in cluster_list]
         )
