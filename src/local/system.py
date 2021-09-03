@@ -277,7 +277,10 @@ class Telepresence(KubeCtl):
         arguments = ["connect", "--no-report"]
         process = self._execute(arguments)
         if process.returncode and process.returncode != 0:
-            console.error(f"Could not start Telepresence daemon: {process.stdout.readlines()}", _exit=False)
+            # this is a retry
+            process = self._execute(arguments)
+            if process.returncode and process.returncode != 0:
+                console.error(f"Could not start Telepresence daemon: {process.stdout.readlines()}", _exit=False)
 
     def stop(self) -> None:
         arguments = ["quit", "--no-report"]
@@ -315,10 +318,13 @@ class Telepresence(KubeCtl):
 
 
 class KubeAPI(object):
-    def __init__(self, provider_data, deck):
+    def __init__(self, provider_data, deck=None):
         self._provider_data = provider_data
         self._deck = deck
-        self._namespace = self._deck["environment"][0]["namespace"] or "default"
+        if self._deck:
+            self._namespace = self._deck["environment"][0]["namespace"] or "default"
+        else:
+            self._namespace = "default"
         self._api_client = config.new_client_from_config(provider_data.kubeconfig_path)
         self._core_api = client.CoreV1Api(self._api_client)
         self._networking_api = client.NetworkingV1beta1Api(self._api_client)

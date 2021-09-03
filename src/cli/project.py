@@ -1,5 +1,5 @@
 import sys
-from time import sleep
+from time import sleep, time
 
 import click
 import click_spinner
@@ -9,7 +9,7 @@ from src import settings
 from src.graphql import GraphQL
 from src.helpers import check_running_cluster
 from src.local.providers.types import K8sProviderType
-from src.local.system import Telepresence
+from src.local.system import KubeAPI, Telepresence
 
 
 @click.command()
@@ -238,7 +238,17 @@ def up(ctx, project=None, organization=None, ingress=None, provider=None, worker
     # console
     if success:
         console.info("Now connecting Telepresence daemon. You probably have to enter your 'sudo' password.")
-        sleep(5)  # TODO: busywait for the cluster to become actually available
+        provider_data = cluster.storage.get()
+        k8s = KubeAPI(provider_data)
+        timeout = time() + 60  # wait one minute
+        while not k8s.is_available or time() > timeout:
+            sleep(1)
+        if not k8s.is_available:
+            console.error(
+                "There was an error bringing up the project cluster. The API was not available within the"
+                "expiration period.",
+                _exit=True,
+            )
         Telepresence(cluster.storage.get()).start()
         console.success("The project cluster is up.")
     else:
