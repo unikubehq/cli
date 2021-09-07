@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.0 (2021-09-07)
+
+#### Others
+
+* add changelog
+
+Full set of changes: [`0.10.0-dev4...1.0.0`](https://github.com/unikubehq/cli/compare/0.10.0-dev4...1.0.0)
+
 ## 0.10.0-dev4 (2021-09-03)
 
 
