@@ -1,4 +1,4 @@
-import inquirer
+from InquirerPy import inquirer
 
 import src.cli.console as console
 
@@ -42,15 +42,11 @@ def list(
         choices_display = choices
 
     # prompt
-    questions = [
-        inquirer.List(
-            "select",
-            message=message,
-            choices=choices_display,
-        ),
-    ]
-    answers = inquirer.prompt(questions)
-    if not answers:
+    answer = inquirer.fuzzy(
+        message=message,
+        choices=choices_display,
+    ).execute()
+    if not answer:
         return None
 
-    return answers.get("select", None)
+    return answer
