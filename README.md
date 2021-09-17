@@ -17,6 +17,25 @@ This is the command line interface for [unikube][link_unikube].
 
 The unikube [cli documentation][link_unikube_cli_documentation] is automatically built.
 
+### Installation
+
+#### General
+
+The unikube cli can be installed via `pip`. Please make sure you are using Python 3.
+
+```shell
+pip install unikube
+```
+
+#### MacOS
+
+The unikube cli is also installable via brew:
+
+```shell
+brew tap unikubehq/tooling
+brew install unikubehq/tooling/unikube
+```
+
 ### Make Local
 
 ```bash
