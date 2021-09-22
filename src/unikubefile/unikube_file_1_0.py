@@ -69,6 +69,14 @@ class UnikubeFile_1_0(UnikubeFile):
         else:
             return None
 
+    def get_port(self) -> Optional[str]:
+        app = self._data["apps"][self._app]
+        port = app.get("port")
+        if port:
+            return str(port)
+        else:
+            return None
+
     def get_deployment(self) -> Optional[str]:
         app = self._data["apps"][self._app]
         deployment = app.get("deployment")

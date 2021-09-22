@@ -88,6 +88,7 @@ The `unikube.yaml` schema look like this:
           dockerfile: <Path to Dockerfile>
           target: <Dockerfile build target>
         deployment: <Name of the Deployment in the cluster>
+        port: <Number of the container port to be switched> (optional)
         command: <Starting command> # overwrite the run command of the services during development
         volumes:
           - <Path to the volume mounts> # overwrite the container's source directory with your working tree
@@ -107,6 +108,9 @@ Docker documentation for more details.
 
 **deployment**: This is the target Kubernetes deployment for the `switch operation`_. This must exactly match the
 name of the deployment running in the cluster.
+
+**port**: In case there are multiple containers in a Kubernetes deployment specified (because there are multiple
+containers) this sets the correct target port. It defaults to the first if not specified.
 
 **command**: If your container does not specify a run command or you want to overwrite it, that's the place for it. Write
 it as a single string.
