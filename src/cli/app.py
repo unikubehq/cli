@@ -1,4 +1,5 @@
 import os
+import socket
 import sys
 from collections import OrderedDict
 from typing import Tuple
@@ -13,6 +14,14 @@ from src.local.providers.helper import get_cluster_or_exit
 from src.local.system import Docker, KubeAPI, KubeCtl, Telepresence
 from src.settings import UNIKUBE_FILE
 from src.unikubefile.selector import unikube_file_selector
+
+
+def _is_local_port_free(port):
+    a_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    if a_socket.connect_ex(("127.0.0.1", int(port))) == 0:
+        return False
+    else:
+        return True
 
 
 def get_deck_from_arguments(ctx, organization_id: str, project_id: str, deck_id: str):
@@ -418,6 +427,11 @@ def switch(ctx, app, organization, project, deck, deployment, unikubefile, **kwa
         )
     if port not in ports:
         console.error(f"The specified port {port} is not in the rage of available options: {ports}", _exit=True)
+    if not _is_local_port_free(port):
+        console.error(
+            f"The local port {port} is busy. Please stop the application running on " f"this port and try again.",
+            _exit=True,
+        )
 
     # 4.2 See if there are volume mounts
     mounts = unikube_file.get_mounts()
