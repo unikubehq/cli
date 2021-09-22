@@ -67,7 +67,11 @@ def get_deck_from_arguments(ctx, organization_id: str, project_id: str, deck_id:
 
 def argument_app(k8s, app: str):
     if not app:
-        app_choices = [pod.metadata.name for pod in k8s.get_pods().items]
+        app_choices = [
+            pod.metadata.name
+            for pod in k8s.get_pods().items
+            if pod.status.phase not in ["Terminating", "Evicted", "Pending"]
+        ]
         app = console.list(
             message="Please select an app",
             choices=app_choices,
@@ -107,6 +111,8 @@ def list(ctx, organization, project, deck, **kwargs):
         return container_count == ready_count, f"{ready_count}/{container_count}"
 
     for pod in k8s.get_pods().items:
+        if pod.status.phase in ["Terminating", "Evicted", "Pending"]:
+            continue
         all_ready, count = _ready_ind(pod.status.container_statuses)
         pod_table.append(
             OrderedDict({"name": pod.metadata.name, "ready": count, "state": "Ok" if all_ready else "Not Ok"})
