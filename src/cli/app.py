@@ -402,21 +402,32 @@ def switch(ctx, app, organization, project, deck, deployment, unikubefile, **kwa
     console.info(f"Docker image successfully built: {image_name}")
 
     # 4. Start the Telepresence session
-    # 4.1 See if there are volume mounts
+    # 4.1 Set the right intercept port
+    port = unikube_file.get_port()
+    if port is None:
+        port = str(ports[0])
+        console.warning(
+            f"No port specified although there are multiple ports available: {ports}. "
+            f"Defaulting to port {port} which might not be correct."
+        )
+    if port not in ports:
+        console.error(f"The specified port {port} is not in the rage of available options: {ports}", _exit=True)
+
+    # 4.2 See if there are volume mounts
     mounts = unikube_file.get_mounts()
     console.debug(f"Volumes requested: {mounts}")
 
-    # 4.2 See if there special env variables
+    # 4.3 See if there special env variables
     envs = unikube_file.get_environment()
     console.debug(f"Envs requested: {envs}")
 
-    # 4.3 See if there is a run command to be executed
-    command = unikube_file.get_command(port=ports[0])
+    # 4.4 See if there is a run command to be executed
+    command = unikube_file.get_command(port=port)
     console.debug(f"Run command: {command}")
 
     console.info("Starting your container, this may take a while to become effective")
 
-    telepresence.swap(deployment, image_name, command, namespace, envs, mounts, ports[0])
+    telepresence.swap(deployment, image_name, command, namespace, envs, mounts, port)
     if docker.check_running(image_name):
         docker.kill(name=image_name)
 

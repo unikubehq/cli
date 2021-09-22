@@ -258,10 +258,9 @@ class Telepresence(KubeCtl):
 
     def uninstall(self, deployment, namespace=None, silent=False):
         arguments = ["uninstall", "--agent", deployment]
+        arguments.append(deployment)
         if namespace:
-            arguments.append(f"{deployment}-{namespace}")
-        else:
-            arguments.append(deployment)
+            arguments += ["-n", namespace]
         console.debug(arguments)
         process = self._execute(arguments)
         if not silent and process.returncode and process.returncode != 0:
