@@ -1,19 +1,18 @@
-![Unikube Logo](https://raw.githubusercontent.com/unikubehq/cli/main/docs/_static/img/Unikube-Logo-H-NoShadow.svg)
+<p align="center">
+  <img src="https://raw.githubusercontent.com/unikubehq/cli/main/logo_cli.png" width="400">
+</p>
+<p align="center">
+    <img alt="Build Status" src="https://github.com/unikubehq/cli/actions/workflows/python-app.yaml/badge.svg">
+    <a href="https://sonarcloud.io/dashboard?id=unikubehq_cli"><img alt="Quality Gate Status" src="https://sonarcloud.io/api/project_badges/measure?project=unikubehq_cli&metric=alert_status"></a>
+    <a href="https://coveralls.io/github/unikubehq/cli?branch=main"><img alt="Coverage Status" src="https://coveralls.io/repos/github/unikubehq/cli/badge.svg?branch=main"></a>
+    <a href="https://github.com/psf/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a>
+</p>
 
 # The Unikube CLI
 
 This is the command line interface for [unikube][link_unikube].
 
----
-
-![Build Status](https://github.com/unikubehq/cli/actions/workflows/python-app.yaml/badge.svg)
-[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=unikubehq_cli&metric=alert_status)](https://sonarcloud.io/dashboard?id=unikubehq_cli)
-[![Coverage Status](https://coveralls.io/repos/github/unikubehq/cli/badge.svg?branch=main)](https://coveralls.io/github/unikubehq/cli?branch=main)
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-
 ## Documentation
-
----
 
 The unikube [cli documentation][link_unikube_cli_documentation] is automatically built.
 
