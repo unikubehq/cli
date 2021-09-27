@@ -152,6 +152,7 @@ app.add_command(app_cmd.switch)
 app.add_command(app_cmd.logs)
 app.add_command(app_cmd.env)
 app.add_command(app_cmd.exec)
+app.add_command(app_cmd.update)
 
 
 # authentication

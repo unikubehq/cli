@@ -336,6 +336,13 @@ class KubeAPI(object):
         except ApiException:
             return False
 
+    def delete_pod(self, pod_name):
+        delete_options = client.V1DeleteOptions()
+        try:
+            return self._core_api.delete_namespaced_pod(name=pod_name, namespace=self._namespace, body=delete_options)
+        except MaxRetryError:
+            raise UnikubeClusterUnavailableError
+
     def get_pods(self):
         try:
             return self._core_api.list_namespaced_pod(self._namespace, watch=False)

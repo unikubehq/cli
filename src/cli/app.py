@@ -572,3 +572,28 @@ def env(ctx, app, init, organization, project, deck, **kwargs):
             )
     else:
         console.info("No container running")
+
+
+@click.command()
+@click.argument("app", required=False)
+@click.option("--organization", "-o", help="Select an organization")
+@click.option("--project", "-p", help="Select a project")
+@click.option("--deck", "-d", help="Select a deck")
+@click.pass_obj
+def update(ctx, app, organization, project, deck, **kwargs):
+    """
+    Trigger a forced update of the given app. This command creates a new app instance.
+    """
+
+    ctx.auth.check()
+    cluster_data, deck = get_deck_from_arguments(ctx, organization, project, deck)
+
+    # get cluster
+    cluster = get_cluster_or_exit(ctx, cluster_data.id)
+    provider_data = cluster.storage.get()
+
+    # delete pod
+    k8s = KubeAPI(provider_data, deck)
+    app = argument_app(k8s, app)
+    k8s.delete_pod(app)
+    console.info(f"The app {app} is currently updating and does not exist anymore.")
