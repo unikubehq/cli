@@ -7,7 +7,7 @@ from src.graphql import GraphQL
 
 
 def project_list(
-    ctx, organization_id: str = None, filter: List[str] = None, exclude: List[str] = None
+    ctx, organization_id: str = None, filter: List[str] = None, excludes: List[str] = None
 ) -> Union[None, str]:
     # GraphQL
     try:
@@ -41,7 +41,7 @@ def project_list(
     identifiers = [project["id"] for project in project_list]
 
     # filter
-    if filter:
+    if filter is not None:
         choices_filtered = []
         identifiers_filtered = []
         for project in project_list:
@@ -52,24 +52,12 @@ def project_list(
         choices = choices_filtered
         identifiers = identifiers_filtered
 
-    # exclude
-    if exclude:
-        choices_filtered = []
-        identifiers_filtered = []
-        for project in project_list:
-            if project["id"] in exclude:
-                continue
-
-            choices_filtered.append(project["title"])
-            identifiers_filtered.append(project["id"])
-
-        choices = choices_filtered
-        identifiers = identifiers_filtered
-
+    # console list
     selection = console.list(
         message="Please select a project",
         choices=choices,
         identifiers=identifiers,
+        excludes=excludes,
         message_no_choices="No projects available!",
     )
     if selection is None:

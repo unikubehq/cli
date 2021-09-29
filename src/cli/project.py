@@ -155,7 +155,7 @@ def up(ctx, project=None, organization=None, ingress=None, provider=None, worker
 
     # argument
     if not project_id:
-        project_id = console.project_list(ctx, organization_id=organization_id, exclude=cluster_id_list)
+        project_id = console.project_list(ctx, organization_id=organization_id, excludes=cluster_id_list)
         if not project_id:
             return None
 

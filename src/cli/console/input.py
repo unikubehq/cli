@@ -1,3 +1,5 @@
+from typing import List
+
 from InquirerPy import inquirer
 
 import src.cli.console as console
@@ -18,11 +20,24 @@ def resolve_duplicates(choices: list, identifiers: list):
     return choices_resolved
 
 
+def exclude_by_identifier(choices_display: List[str], identifiers: List[str], excludes: List[str]) -> List[str]:
+    if not excludes:
+        return choices_display
+
+    choices_excluded = []
+    for choice, identifier in zip(choices_display, identifiers):
+        if any(exclude in choice for exclude in excludes) or identifier in excludes:
+            continue
+        choices_excluded.append(choice)
+    return choices_excluded
+
+
 # input
 def list(
     message: str,
     choices: list,
     identifiers: list = None,
+    excludes: list = None,
     allow_duplicates: bool = False,
     message_no_choices: str = "No choices available!",
 ):
@@ -41,10 +56,15 @@ def list(
     else:
         choices_display = choices
 
+    # exclude
+    choices_excluded = exclude_by_identifier(
+        choices_display=choices_display, identifiers=identifiers, excludes=excludes
+    )
+
     # prompt
     answer = inquirer.fuzzy(
         message=message,
-        choices=choices_display,
+        choices=choices_excluded,
     ).execute()
     if not answer:
         return None
