@@ -160,7 +160,7 @@ def up(ctx, project=None, organization=None, ingress=None, provider=None, worker
             return None
 
     if project_id in cluster_id_list:
-        console.info(f"Project '{project}' is already up.", _exit=True)
+        console.info(f"Project '{project_id}' is already up.", _exit=True)
 
     # GraphQL
     try:
