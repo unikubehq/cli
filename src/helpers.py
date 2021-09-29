@@ -101,8 +101,8 @@ def check_running_cluster(ctx: ClickContext, cluster_provider_type: K8sProviderT
                 console.info(f"Kubernetes cluster for '{cluster.display_name}' is already running.", _exit=True)
             else:
                 console.error(
-                    f"You cannot start multiple projects at the same time. Project {cluster.name}({cluster.id}) is "
-                    f"currently running. Please run 'unikube project down \"{cluster.name}({cluster.id})\"' first and "
+                    f"You cannot start multiple projects at the same time. Project {cluster.name} ({cluster.id}) is "
+                    f"currently running. Please run 'unikube project down {cluster.id}' first and "
                     f"try again.",
                     _exit=True,
                 )
