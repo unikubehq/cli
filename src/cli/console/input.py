@@ -1,8 +1,22 @@
+import re
 from typing import List
 
 from InquirerPy import inquirer
 
 import src.cli.console as console
+
+
+def get_identifier_or_pass(selection: str) -> str:
+    # get identifier if available
+    # example: "PROJECT_NAME (IDENTIFIER)"
+
+    identifier_search = re.search("(?<=\\()[^)]*(?=\\))", selection)
+    try:
+        project_argument = identifier_search.group(0)
+    except Exception:
+        project_argument = selection
+
+    return project_argument
 
 
 def resolve_duplicates(choices: list, identifiers: list):

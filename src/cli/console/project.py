@@ -1,7 +1,7 @@
-import re
 from typing import List, Union
 
 import src.cli.console as console
+from src.cli.console.input import get_identifier_or_pass
 from src.context.helper import convert_project_argument_to_uuid
 from src.graphql import GraphQL
 
@@ -53,11 +53,7 @@ def project_list(
         return None
 
     # get identifier if available
-    identifier_search = re.search("(?<=\\()[^)]*(?=\\))", selection)
-    try:
-        project_argument = identifier_search.group(0)
-    except Exception:
-        project_argument = selection
+    project_argument = get_identifier_or_pass(selection)
 
     project_id = convert_project_argument_to_uuid(ctx.auth, argument_value=project_argument)
     return project_id

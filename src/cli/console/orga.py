@@ -1,7 +1,7 @@
-import re
 from typing import Union
 
 import src.cli.console as console
+from src.cli.console.input import get_identifier_or_pass
 from src.context.helper import convert_organization_argument_to_uuid
 from src.graphql import GraphQL
 
@@ -37,11 +37,7 @@ def organization_list(ctx) -> Union[None, str]:
         return None
 
     # get identifier if available
-    identifier_search = re.search("(?<=\\()[^)]*(?=\\))", selection)
-    try:
-        organization_argument = identifier_search.group(0)
-    except Exception:
-        organization_argument = selection
+    organization_argument = get_identifier_or_pass(selection)
 
     organization_id = convert_organization_argument_to_uuid(ctx.auth, argument_value=organization_argument)
     return organization_id

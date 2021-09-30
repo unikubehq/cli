@@ -1,4 +1,21 @@
-from src.cli.console.input import exclude_by_identifiers, filter_by_identifiers, resolve_duplicates
+from src.cli.console.input import (
+    exclude_by_identifiers,
+    filter_by_identifiers,
+    get_identifier_or_pass,
+    resolve_duplicates,
+)
+
+
+class TestGetIdentifierOrPass:
+    def test_with_identifier(self):
+        selection = "NAME (IDENTIFIER)"
+        selection = get_identifier_or_pass(selection=selection)
+        assert selection == "IDENTIFIER"
+
+    def test_without_identifier(self):
+        selection = "NAME"
+        selection = get_identifier_or_pass(selection=selection)
+        assert selection == "NAME"
 
 
 class TestResolveDuplicates:
