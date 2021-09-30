@@ -1,5 +1,5 @@
 import re
-from typing import List
+from typing import List, Union
 
 from InquirerPy import inquirer
 
@@ -34,7 +34,7 @@ def resolve_duplicates(choices: list, identifiers: list):
     return choices_resolved
 
 
-def filter_by_identifiers(choices: List[str], identifiers: List[str], filter: List[str]) -> List[str]:
+def filter_by_identifiers(choices: List[str], identifiers: List[str], filter: Union[List[str], None]) -> List[str]:
     if filter is None:
         return choices
 
@@ -45,7 +45,7 @@ def filter_by_identifiers(choices: List[str], identifiers: List[str], filter: Li
     return choices_filtered
 
 
-def exclude_by_identifiers(choices: List[str], identifiers: List[str], excludes: List[str]) -> List[str]:
+def exclude_by_identifiers(choices: List[str], identifiers: List[str], excludes: Union[List[str], None]) -> List[str]:
     if not excludes:
         return choices
 
