@@ -1,6 +1,22 @@
+import re
+from typing import List, Union
+
 from InquirerPy import inquirer
 
 import src.cli.console as console
+
+
+def get_identifier_or_pass(selection: str) -> str:
+    # get identifier if available
+    # example: "PROJECT_NAME (IDENTIFIER)"
+
+    identifier_search = re.search("(?<=\\()[^)]*(?=\\))", selection)
+    try:
+        project_argument = identifier_search.group(0)
+    except Exception:
+        project_argument = selection
+
+    return project_argument
 
 
 def resolve_duplicates(choices: list, identifiers: list):
@@ -18,11 +34,36 @@ def resolve_duplicates(choices: list, identifiers: list):
     return choices_resolved
 
 
+def filter_by_identifiers(choices: List[str], identifiers: List[str], filter: Union[List[str], None]) -> List[str]:
+    if filter is None:
+        return choices
+
+    choices_filtered = []
+    for choice, identifier in zip(choices, identifiers):
+        if any(f in choice for f in filter) or identifier in filter:
+            choices_filtered.append(choice)
+    return choices_filtered
+
+
+def exclude_by_identifiers(choices: List[str], identifiers: List[str], excludes: Union[List[str], None]) -> List[str]:
+    if not excludes:
+        return choices
+
+    choices_excluded = []
+    for choice, identifier in zip(choices, identifiers):
+        if any(exclude in choice for exclude in excludes) or identifier in excludes:
+            continue
+        choices_excluded.append(choice)
+    return choices_excluded
+
+
 # input
 def list(
     message: str,
     choices: list,
     identifiers: list = None,
+    filter: list = None,
+    excludes: list = None,
     allow_duplicates: bool = False,
     message_no_choices: str = "No choices available!",
 ):
@@ -34,17 +75,22 @@ def list(
     # handle duplicates
     if not allow_duplicates:
         if identifiers:
-            choices_display = resolve_duplicates(choices=choices, identifiers=identifiers)
+            choices_duplicates = resolve_duplicates(choices=choices, identifiers=identifiers)
         else:
-            choices_display = set(choices)
-
+            choices_duplicates = set(choices)
     else:
-        choices_display = choices
+        choices_duplicates = choices
+
+    # filter
+    choices_filtered = filter_by_identifiers(choices=choices_duplicates, identifiers=identifiers, filter=filter)
+
+    # exclude
+    choices_excluded = exclude_by_identifiers(choices=choices_filtered, identifiers=identifiers, excludes=excludes)
 
     # prompt
     answer = inquirer.fuzzy(
         message=message,
-        choices=choices_display,
+        choices=choices_excluded,
     ).execute()
     if not answer:
         return None

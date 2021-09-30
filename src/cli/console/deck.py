@@ -1,7 +1,7 @@
-import re
 from typing import Union
 
 import src.cli.console as console
+from src.cli.console.input import get_identifier_or_pass
 from src.context.helper import convert_deck_argument_to_uuid
 from src.graphql import GraphQL
 
@@ -47,11 +47,7 @@ def deck_list(ctx, organization_id: str = None, project_id: str = None) -> Union
         return None
 
     # get identifier if available
-    identifier_search = re.search("(?<=\\()[^)]*(?=\\))", selection)
-    try:
-        deck_argument = identifier_search.group(0)
-    except Exception:
-        deck_argument = selection
+    deck_argument = get_identifier_or_pass(selection)
 
     deck_id = convert_deck_argument_to_uuid(
         ctx.auth, argument_value=deck_argument, organization_id=organization_id, project_id=project_id
