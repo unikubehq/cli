@@ -312,7 +312,7 @@ def switch(ctx, app, organization, project, deck, deployment, unikubefile, **kwa
         # 1.1.b check the unikubefile
         deployment = unikube_file.get_deployment()
         if not deployment:
-            console.error("Please specify the 'deployment' ke of your app in your unikube.yaml.", _exit=True)
+            console.error("Please specify the 'deployment' key of your app in your unikube.yaml.", _exit=True)
     else:
         console.error(
             "Please specify the deployment either using the '--deployment' option or in the unikube.yaml. "
@@ -407,7 +407,6 @@ def switch(ctx, app, organization, project, deck, deployment, unikubefile, **kwa
             sys.exit(0)
 
     # 3.3 Build image
-
     with click_spinner.spinner(beep=False, disable=False, force=False, stream=sys.stdout):
         status, msg = docker.build(image_name, context, dockerfile, target)
     if not status:
