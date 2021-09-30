@@ -19,7 +19,12 @@ def get_identifier_or_pass(selection: str) -> str:
     return project_argument
 
 
-def resolve_duplicates(choices: list, identifiers: list):
+def resolve_duplicates(
+    choices: List[str],
+    identifiers: List[str],
+    help_texts: Union[List[str], None] = None,
+    help_texts_always: bool = False,
+) -> List[str]:
     # detect duplicates
     duplicates_mask = [True if choices.count(choice) > 1 else False for choice in choices]
 
@@ -30,6 +35,26 @@ def resolve_duplicates(choices: list, identifiers: list):
             choices_resolved.append(f"{choice} ({identifier})")
         else:
             choices_resolved.append(choice)
+
+    # help texts
+    def add_help_text(choice, help_text):
+        return f"{choice} - {help_text}"
+
+    choices_resolved_with_help_text = []
+    if help_texts:
+        for choice, help_text, duplicate in zip(choices_resolved, help_texts, duplicates_mask):
+            # add help_text always
+            if help_texts_always and help_text:
+                choices_resolved_with_help_text.append(add_help_text(choice, help_text))
+                continue
+
+            # add help_text for duplicates only
+            if duplicate and help_text:
+                choices_resolved_with_help_text.append(add_help_text(choice, help_text))
+            else:
+                choices_resolved_with_help_text.append(choice)
+
+        choices_resolved = choices_resolved_with_help_text
 
     return choices_resolved
 
@@ -60,13 +85,14 @@ def exclude_by_identifiers(choices: List[str], identifiers: List[str], excludes:
 # input
 def list(
     message: str,
-    choices: list,
-    identifiers: list = None,
-    filter: list = None,
-    excludes: list = None,
+    choices: List[str],
+    identifiers: Union[List[str], None] = None,
+    filter: Union[List[str], None] = None,
+    excludes: Union[List[str], None] = None,
+    help_texts: Union[List[str], None] = None,
     allow_duplicates: bool = False,
     message_no_choices: str = "No choices available!",
-):
+) -> Union[str, None]:
     # choices exist
     if not len(choices) > 0:
         console.info(message_no_choices)
@@ -75,7 +101,7 @@ def list(
     # handle duplicates
     if not allow_duplicates:
         if identifiers:
-            choices_duplicates = resolve_duplicates(choices=choices, identifiers=identifiers)
+            choices_duplicates = resolve_duplicates(choices=choices, identifiers=identifiers, help_texts=help_texts)
         else:
             choices_duplicates = set(choices)
     else:

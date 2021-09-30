@@ -19,6 +19,7 @@ def deck_list(ctx, organization_id: str = None, project_id: str = None) -> Union
                         id
                         project {
                             id
+                            title
                             organization {
                                 id
                             }
@@ -41,6 +42,7 @@ def deck_list(ctx, organization_id: str = None, project_id: str = None) -> Union
         message="Please select a deck",
         choices=[deck["title"] for deck in deck_list],
         identifiers=[deck["id"] for deck in deck_list],
+        help_texts=[deck["project"]["title"] for deck in deck_list],
         message_no_choices="No decks available!",
     )
     if selection is None:

@@ -36,17 +36,13 @@ def project_list(
         console.debug(e)
         console.exit_generic_error()
 
-    # options
-    choices = [project["title"] for project in project_list]
-    identifiers = [project["id"] for project in project_list]
-
-    # console list
     selection = console.list(
         message="Please select a project",
-        choices=choices,
-        identifiers=identifiers,
+        choices=[project["title"] for project in project_list],
+        identifiers=[project["id"] for project in project_list],
         filter=filter,
         excludes=excludes,
+        help_texts=[project["organization"]["title"] for project in project_list],
         message_no_choices="No projects available!",
     )
     if selection is None:
