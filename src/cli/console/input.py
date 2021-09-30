@@ -20,12 +20,23 @@ def resolve_duplicates(choices: list, identifiers: list):
     return choices_resolved
 
 
-def exclude_by_identifier(choices_display: List[str], identifiers: List[str], excludes: List[str]) -> List[str]:
+def filter_by_identifiers(choices: List[str], identifiers: List[str], filter: List[str]) -> List[str]:
+    if filter is None:
+        return choices
+
+    choices_filtered = []
+    for choice, identifier in zip(choices, identifiers):
+        if any(f in choice for f in filter) or identifier in filter:
+            choices_filtered.append(choice)
+    return choices_filtered
+
+
+def exclude_by_identifiers(choices: List[str], identifiers: List[str], excludes: List[str]) -> List[str]:
     if not excludes:
-        return choices_display
+        return choices
 
     choices_excluded = []
-    for choice, identifier in zip(choices_display, identifiers):
+    for choice, identifier in zip(choices, identifiers):
         if any(exclude in choice for exclude in excludes) or identifier in excludes:
             continue
         choices_excluded.append(choice)
@@ -37,6 +48,7 @@ def list(
     message: str,
     choices: list,
     identifiers: list = None,
+    filter: list = None,
     excludes: list = None,
     allow_duplicates: bool = False,
     message_no_choices: str = "No choices available!",
@@ -49,17 +61,17 @@ def list(
     # handle duplicates
     if not allow_duplicates:
         if identifiers:
-            choices_display = resolve_duplicates(choices=choices, identifiers=identifiers)
+            choices_duplicates = resolve_duplicates(choices=choices, identifiers=identifiers)
         else:
-            choices_display = set(choices)
-
+            choices_duplicates = set(choices)
     else:
-        choices_display = choices
+        choices_duplicates = choices
+
+    # filter
+    choices_filtered = filter_by_identifiers(choices=choices_duplicates, identifiers=identifiers, filter=filter)
 
     # exclude
-    choices_excluded = exclude_by_identifier(
-        choices_display=choices_display, identifiers=identifiers, excludes=excludes
-    )
+    choices_excluded = exclude_by_identifiers(choices=choices_filtered, identifiers=identifiers, excludes=excludes)
 
     # prompt
     answer = inquirer.fuzzy(

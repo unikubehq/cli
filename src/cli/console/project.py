@@ -40,23 +40,12 @@ def project_list(
     choices = [project["title"] for project in project_list]
     identifiers = [project["id"] for project in project_list]
 
-    # filter
-    if filter is not None:
-        choices_filtered = []
-        identifiers_filtered = []
-        for project in project_list:
-            if project["id"] in filter:
-                choices_filtered.append(project["title"])
-                identifiers_filtered.append(project["id"])
-
-        choices = choices_filtered
-        identifiers = identifiers_filtered
-
     # console list
     selection = console.list(
         message="Please select a project",
         choices=choices,
         identifiers=identifiers,
+        filter=filter,
         excludes=excludes,
         message_no_choices="No projects available!",
     )
