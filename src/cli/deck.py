@@ -252,9 +252,11 @@ def install(ctx, organization=None, project=None, deck=None, **kwargs):
         for file in files:
             kubectl.apply_str(namespace, file["content"])
 
+    # ingress
     ingress_data = get_ingress_data(deck, provider_data)
+    if not ingress_data:
+        console.info("No ingress configuration available.", _exit=True)
 
-    # console
     console.table(
         ingress_data,
         headers={"name": "Name", "url": "URLs", "paths": "Paths"},
