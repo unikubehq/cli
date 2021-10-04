@@ -1,3 +1,4 @@
+import os
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from socket import AF_INET, SOCK_STREAM, gethostbyname, socket
 from threading import Thread
@@ -38,7 +39,7 @@ def run_callback_server(state: str, nonce: str, client: Client, ctx: ClickContex
 
         def send_text_response(self, response_body):
             self.send_response(200)
-            self.send_header("Content-Type", "text/plain")
+            self.send_header("Content-Type", "text/html")
             self.send_header("Content-Length", str(len(response_body)))
             self.end_headers()
             self.wfile.write(response_body)
@@ -50,6 +51,10 @@ def run_callback_server(state: str, nonce: str, client: Client, ctx: ClickContex
                 raise Exception(f"Invalid state: {POST['state']}")
 
             response = ctx.auth._get_requesting_party_token(POST["access_token"])
+
+            login_file = open(os.path.join(os.path.dirname(os.path.realpath(__file__)), "login.html"))
+            text = login_file.read()
+            login_file.close()
 
             # select response
             if not response["success"]:
@@ -74,12 +79,30 @@ def run_callback_server(state: str, nonce: str, client: Client, ctx: ClickContex
                         requesting_party_token=True,
                     )
                     ctx.auth.local_storage_general.set(ctx.auth.general_data)
+
                     if given_name := token.get("given_name", ""):
-                        text = f"Hello {given_name}! "
+                        greeting = f"Hello {given_name}!"
                     else:
-                        text = "Hello! "
-                    console.success(f"{text} You are now logged in!")
-                    text += "You have successfully logged in. You can close this browser tab and return to the shell."
+                        greeting = "Hello!"
+
+                    html_close = "<a href='javascript:window.close();'>close</a>"
+
+                    text_html = (
+                        f"You have successfully logged in. You can {html_close} this browser tab and return "
+                        f"to the shell."
+                    )
+
+                    text_plain = (
+                        "You have successfully logged in. You can close this browser tab and return to the shell."
+                    )
+
+                    greeting_text = "{greeting} {text}".format(greeting=greeting, text=text_plain)
+
+                    greeting_html = "{greeting} {text}".format(greeting=greeting, text=text_html)
+
+                    text = text.replace("##text_placeholder##", greeting_html)
+                    text = text.replace("##headline##", "Login Successful")
+                    console.success(f"{greeting_text} You are now logged in!")
             response_body = text.encode("utf-8")
             self.send_text_response(response_body)
             Thread(target=server.shutdown).start()
