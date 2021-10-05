@@ -11,6 +11,7 @@ from kubernetes.stream import stream
 from urllib3.exceptions import MaxRetryError
 
 import src.cli.console as console
+from src import settings
 from src.local.exceptions import UnikubeClusterUnavailableError
 
 
@@ -387,8 +388,8 @@ class KubeAPI(object):
 
     def get_serviceaccount_tokens(self, app_name):
         cmd = [
-            "cat /var/run/secrets/kubernetes.io/serviceaccount/token",
-            "cat /var/run/secrets/kubernetes.io/serviceaccount/ca.crt",
+            f"cat {settings.SERVICE_TOKEN_FILENAME}",
+            f"cat {settings.SERVICE_CERT_FILENAME}",
         ]
 
         pods = self.get_pods()

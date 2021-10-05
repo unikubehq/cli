@@ -449,8 +449,8 @@ def switch(ctx, app, organization, project, deck, deployment, unikubefile, **kwa
         tmp_sa_cert.write(service_account_tokens[1].encode())
         tmp_sa_token.flush()
         tmp_sa_cert.flush()
-        mounts.append((tmp_sa_token.name, "/var/run/secrets/kubernetes.io/serviceaccount/token"))
-        mounts.append((tmp_sa_cert.name, "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"))
+        mounts.append((tmp_sa_token.name, settings.SERVICE_TOKEN_FILENAME))
+        mounts.append((tmp_sa_cert.name, settings.SERVICE_CERT_FILENAME))
     else:
         tmp_sa_token = None
         tmp_sa_cert = None
