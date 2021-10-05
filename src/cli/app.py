@@ -1,6 +1,7 @@
 import os
 import socket
 import sys
+import tempfile
 from collections import OrderedDict
 from typing import Tuple
 
@@ -384,6 +385,10 @@ def switch(ctx, app, organization, project, deck, deployment, unikubefile, **kwa
 
         is_swapped = telepresence.is_swapped(deployment, namespace)
 
+        k8s = KubeAPI(provider_data, deck)
+        # service account token, service cert
+        service_account_tokens = k8s.get_serviceaccount_tokens(deployment)
+
     # 3: Build an new Docker image
     # 3.1 Grab the docker file
     context, dockerfile, target = unikube_file.get_docker_build()
@@ -436,6 +441,19 @@ def switch(ctx, app, organization, project, deck, deployment, unikubefile, **kwa
     # 4.2 See if there are volume mounts
     mounts = unikube_file.get_mounts()
     console.debug(f"Volumes requested: {mounts}")
+    # mount service tokens
+    if service_account_tokens:
+        tmp_sa_token = tempfile.NamedTemporaryFile(delete=True)
+        tmp_sa_cert = tempfile.NamedTemporaryFile(delete=True)
+        tmp_sa_token.write(service_account_tokens[0].encode())
+        tmp_sa_cert.write(service_account_tokens[1].encode())
+        tmp_sa_token.flush()
+        tmp_sa_cert.flush()
+        mounts.append((tmp_sa_token.name, "/var/run/secrets/kubernetes.io/serviceaccount/token"))
+        mounts.append((tmp_sa_cert.name, "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"))
+    else:
+        tmp_sa_token = None
+        tmp_sa_cert = None
 
     # 4.3 See if there special env variables
     envs = unikube_file.get_environment()
@@ -450,6 +468,9 @@ def switch(ctx, app, organization, project, deck, deployment, unikubefile, **kwa
     telepresence.swap(deployment, image_name, command, namespace, envs, mounts, port)
     if docker.check_running(image_name):
         docker.kill(name=image_name)
+    if tmp_sa_token:
+        tmp_sa_token.close()
+        tmp_sa_cert.close()
 
 
 @click.command()
