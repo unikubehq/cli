@@ -285,8 +285,11 @@ def exec(ctx, **kwargs):
 @click.option("--deck", "-d", help="Select a deck")
 @click.option("--deployment", help="Specify the deployment if not set in the Unikubefile")
 @click.option("--unikubefile", help="Specify the path to the Unikubefile", type=str)
+@click.option(
+    "--no-build", "-n", is_flag=True, help="Do not build a new container image for the switch operation", default=False
+)
 @click.pass_obj
-def switch(ctx, app, organization, project, deck, deployment, unikubefile, **kwargs):
+def switch(ctx, app, organization, project, deck, deployment, unikubefile, no_build, **kwargs):
     """
     Switch a running deployment with a local Docker container. For further information please refer to
     :ref:`the documentation about the switch operation <development:Switch Operation>`.
@@ -388,7 +391,6 @@ def switch(ctx, app, organization, project, deck, deployment, unikubefile, **kwa
     # 3.1 Grab the docker file
     context, dockerfile, target = unikube_file.get_docker_build()
     console.debug(f"{context}, {dockerfile}, {target}")
-    console.info(f"Building a Docker image for {dockerfile} with context {context}")
 
     # 3.2 Set an image name
     image_name = settings.TELEPRESENCE_DOCKER_IMAGE_FORMAT.format(
@@ -407,14 +409,17 @@ def switch(ctx, app, organization, project, deck, deployment, unikubefile, **kwa
             sys.exit(0)
 
     # 3.3 Build image
+    if not docker.image_exists(image_name) or not no_build:
+        if no_build:
+            console.warning(f"Ignoring --no-build since the required image '{image_name}' does not exist")
+        console.info(f"Building a Docker image for {dockerfile} with context {context}")
+        with click_spinner.spinner(beep=False, disable=False, force=False, stream=sys.stdout):
+            status, msg = docker.build(image_name, context, dockerfile, target)
+        if not status:
+            console.debug(msg)
+            console.error("Failed to build Docker image.", _exit=True)
 
-    with click_spinner.spinner(beep=False, disable=False, force=False, stream=sys.stdout):
-        status, msg = docker.build(image_name, context, dockerfile, target)
-    if not status:
-        console.debug(msg)
-        console.error("Failed to build Docker image.", _exit=True)
-
-    console.info(f"Docker image successfully built: {image_name}")
+        console.info(f"Docker image successfully built: {image_name}")
 
     # 4. Start the Telepresence session
     # 4.1 Set the right intercept port

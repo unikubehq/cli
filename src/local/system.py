@@ -195,6 +195,15 @@ class Docker(CMDWrapper):
         output = process.stdout.read()
         return output.strip()
 
+    def image_exists(self, name):
+        arguments = ["images", "-q", name]
+        process = self._execute(arguments)
+        output = process.stdout.read()
+        if output.strip():
+            return True
+        else:
+            return False
+
 
 class Telepresence(KubeCtl):
     base_command = "telepresence"
