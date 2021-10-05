@@ -7,9 +7,11 @@ from typing import List, Tuple
 import click
 from kubernetes import client, config, watch
 from kubernetes.client.rest import ApiException
+from kubernetes.stream import stream
 from urllib3.exceptions import MaxRetryError
 
 import src.cli.console as console
+from src import settings
 from src.local.exceptions import UnikubeClusterUnavailableError
 
 
@@ -392,3 +394,49 @@ class KubeAPI(object):
         if name:
             ret = next(filter(lambda x: x.metadata.name == name, ret.items))
         return ret
+
+    def get_serviceaccount_tokens(self, app_name):
+        cmd = [
+            f"cat {settings.SERVICE_TOKEN_FILENAME}",
+            f"cat {settings.SERVICE_CERT_FILENAME}",
+        ]
+
+        pods = self.get_pods()
+        target = None
+        for pod in pods.items:
+            # match the first pod from this app
+            if pod.metadata.name.startswith(app_name):
+                target = pod
+                break
+        if target is None:
+            print(app_name)
+            return None
+        # select the first container
+        container_name = target.spec.containers[0].name
+        response = stream(
+            self._core_api.connect_get_namespaced_pod_exec,
+            target.metadata.name,
+            self._namespace,
+            container=container_name,
+            command="/bin/sh",
+            stderr=True,
+            stdin=True,
+            stdout=True,
+            tty=False,
+            _preload_content=False,
+        )
+        std_out = []
+        std_err = []
+        while response.is_open():
+            response.update(timeout=1)
+            if response.peek_stdout():
+                std_out.append(response.read_stdout())
+            if response.peek_stderr():
+                std_err.append(response.read_stderr())
+            if cmd:
+                c = cmd.pop(0)
+                response.write_stdin(c + "\n")
+            else:
+                break
+        if std_out:
+            return std_out
