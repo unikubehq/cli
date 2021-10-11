@@ -31,7 +31,7 @@ setup(
         "tinydb~=3.15.2",
         "requests~=2.25.1",
         "pyjwt[crypto]~=2.0.1",
-        "gql~=0.4.0",
+        "gql~=2.0.0",
         "semantic-version~=2.8.4",
         "kubernetes>=11.0.0",
         "retrying~=1.3.3",

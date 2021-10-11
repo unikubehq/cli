@@ -15,7 +15,7 @@ exist_or_create(CLI_CONFIG_FILE)
 CLI_KUBECONFIG_DIRECTORY = os.path.expanduser("~/.unikube/")
 CLI_TABLEFMT = "psql"
 
-CLI_LOG_LEVEL = "DEBUG"  # DEBUG, INFO, WARNING, ERROR/SUCCESS
+CLI_LOG_LEVEL = "INFO"  # DEBUG, INFO, WARNING, ERROR/SUCCESS
 CLI_ALWAYS_SHOW_CONTEXT = False
 
 # authentication
@@ -65,3 +65,7 @@ HOMEBREW_CLI_MIN_VERSION = "3.2.0"
 HOMEBREW_WEBSITE = "https://brew.sh/"
 
 KUBECTL_MIN_CLI_VERSION = "1.18.0"
+
+# Kubernetes
+SERVICE_TOKEN_FILENAME = "/var/run/secrets/kubernetes.io/serviceaccount/token"
+SERVICE_CERT_FILENAME = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
