@@ -33,7 +33,9 @@ color_mapping = {
 
 
 # helper
-def _click_secho(msg: str, silent: bool, log_level: str = None, _exit: bool = False, _exit_code: int = 1, **kwargs):
+def _click_secho(
+    msg: str, silent: bool, log_level: str = None, _exit: bool = False, _exit_code: int = 1, color=None, **kwargs
+):
     # get log level settings and console mapping
     setting_log_level = LogLevel(settings.CLI_LOG_LEVEL.lower())
     console_log_level = log_level_mapping.get(log_level, None)
@@ -51,7 +53,10 @@ def _click_secho(msg: str, silent: bool, log_level: str = None, _exit: bool = Fa
         return None
 
     # color
-    fg = color_mapping.get(log_level, "")
+    if color:
+        fg = color
+    else:
+        fg = color_mapping.get(log_level, "")
 
     # console echo
     if log_level:
@@ -87,3 +92,7 @@ def error(msg: str, _exit: bool = False, _exit_code: int = 1, **kwargs):
 
 def success(msg: str, silent: bool = False, **kwargs):
     _click_secho(msg=msg, silent=silent, log_level=LogLevel.SUCCESS, **kwargs)
+
+
+def link(msg: str, silent: bool = False, _exit: bool = False, _exit_code: int = 1, **kwargs):
+    _click_secho(msg=msg, silent=silent, log_level=None, _exit=_exit, _exit_code=_exit_code, color="cyan", **kwargs)
