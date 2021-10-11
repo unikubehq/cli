@@ -51,5 +51,7 @@ def project_list(
     # get identifier if available
     project_argument = get_identifier_or_pass(selection)
 
-    project_id = convert_project_argument_to_uuid(ctx.auth, argument_value=project_argument)
+    project_id = convert_project_argument_to_uuid(
+        ctx.auth, argument_value=project_argument, organization_id=organization_id
+    )
     return project_id

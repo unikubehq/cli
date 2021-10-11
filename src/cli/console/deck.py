@@ -51,5 +51,7 @@ def deck_list(ctx, organization_id: str = None, project_id: str = None) -> Union
     # get identifier if available
     deck_argument = get_identifier_or_pass(selection)
 
-    deck_id = convert_deck_argument_to_uuid(ctx.auth, argument_value=deck_argument)
+    deck_id = convert_deck_argument_to_uuid(
+        ctx.auth, argument_value=deck_argument, organization_id=organization_id, project_id=project_id
+    )
     return deck_id
