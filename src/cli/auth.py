@@ -80,7 +80,8 @@ def web_flow(ctx):
 
     auth_req = client.construct_AuthorizationRequest(request_args=args)
     login_url = auth_req.request(client.authorization_endpoint)
-    click.echo(f"If your Browser does not open automatically, go to the following URL and login:\n{login_url}")
+    console.info("If your Browser does not open automatically, go to the following URL and login:")
+    console.link(login_url)
     click.launch(login_url)
     return True
 

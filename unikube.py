@@ -69,8 +69,6 @@ def system(ctx):
 
 
 # system
-
-
 system.add_command(system_cmd.install)
 system.add_command(system_cmd.verify)
 
