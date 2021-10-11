@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 import os
 import platform
+import re
 import subprocess
-from typing import List, Tuple
+from typing import List, Tuple, Union
 
 import click
 from kubernetes import client, config, watch
@@ -314,6 +315,21 @@ class Telepresence(KubeCtl):
         deployments = self.list(namespace)
         swapped = any(filter(lambda x: x[0] == deployment and x[1] == "intercepted", deployments))
         return swapped
+
+    def intercept_count(self) -> Union[int, None]:
+        arguments = ["status"]
+        process = self._execute(arguments)
+        status = process.stdout.readlines()
+
+        # parse intercept count
+        intercept_line = status[15]
+        match = re.findall("[ ]{1,}Intercepts[ ]{1,}:(.*)[ ]{1,}total", intercept_line)
+        try:
+            intercept_count = int(match[0])
+        except Exception:
+            intercept_count = None
+
+        return intercept_count
 
 
 class KubeAPI(object):
