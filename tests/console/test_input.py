@@ -36,6 +36,32 @@ class TestResolveDuplicates:
         choices_resolved = resolve_duplicates(choices=choices, identifiers=identifiers)
         assert choices_resolved == ["01", "02"]
 
+    def test_with_duplicates_and_help_text(self):
+        choices = ["choice", "choice"]
+        identifiers = ["1", "2"]
+        help_texts = ["help", "help"]
+
+        choices_resolved = resolve_duplicates(choices=choices, identifiers=identifiers, help_texts=help_texts)
+        assert choices_resolved == ["choice (1) - help", "choice (2) - help"]
+
+    def test_without_duplicates_and_help_text(self):
+        choices = ["01", "02"]
+        identifiers = ["1", "2"]
+        help_texts = ["help", "help"]
+
+        choices_resolved = resolve_duplicates(choices=choices, identifiers=identifiers, help_texts=help_texts)
+        assert choices_resolved == ["01", "02"]
+
+    def test_without_duplicates_and_help_text_always(self):
+        choices = ["01", "02"]
+        identifiers = ["1", "2"]
+        help_texts = ["help", "help"]
+
+        choices_resolved = resolve_duplicates(
+            choices=choices, identifiers=identifiers, help_texts=help_texts, help_texts_always=True
+        )
+        assert choices_resolved == ["01 - help", "02 - help"]
+
 
 class TestFilterByIdentifiers:
     def test_filter_none(self):
