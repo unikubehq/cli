@@ -1,4 +1,4 @@
-asset: True
+asset: true
 tap: unikubehq/homebrew-tooling/Formula/unikube.rb
 
 branches:
