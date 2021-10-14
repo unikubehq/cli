@@ -1,7 +1,6 @@
 asset: True
 tap: unikubehq/homebrew-tooling/Formula/unikube.rb
 
-
 branches:
   - brew-release-automation
 template: >
