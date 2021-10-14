@@ -1,0 +1,42 @@
+asset: True
+tap: unikubehq/homebrew-tooling/Formula/unikube.rb
+template: >
+  class Unikube < Formula
+    desc     "CLI to run local Kubernetes development with ease."
+    homepage "https://unikube.io/"
+    license "Apache-2.0"
+
+    depends_on "rust" => :build
+    depends_on "python@3.8"
+    depends_on "openssl@1.1"
+
+    stable do
+      url "$STABLE_URL"
+      version "$STABLE_VERSION_NUMBER"
+      sha256 "$STABLE_SHA256"
+      $STABLE_PYTHON_DEPS
+    end
+
+    devel do
+      url "$DEVEL_URL"
+      version "$DEVEL_VERSION_NUMBER"
+      sha256 "$DEVEL_SHA256"
+      $DEVEL_PYTHON_DEPS
+    end
+
+    def install
+      venv = virtualenv_create(libexec, "python3")
+      resources.each do |r|
+        if r.name == "unikube"
+          venv.pip_install_and_link r
+        else
+          venv.pip_install r
+        end
+      end
+      venv.pip_install_and_link buildpath
+    end
+
+    test do
+      assert_match "unikube, $STABLE_VERSION_NUMBER", shell_output("#{bin}/unikube version")
+    end
+  end
