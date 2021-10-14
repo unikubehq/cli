@@ -12,6 +12,7 @@ from src.cli import deck as deck_cmd
 from src.cli import orga as orga_cmd
 from src.cli import project as project_cmd
 from src.cli import system as system_cmd
+from src.cli import unikube as unikube_cmd
 from src.context import ClickContext
 from src.helpers import compare_current_and_latest_versions
 
@@ -56,6 +57,7 @@ def version():
 
 
 cli.add_command(version)
+cli.add_command(unikube_cmd.ps)
 
 
 @cli.group()
