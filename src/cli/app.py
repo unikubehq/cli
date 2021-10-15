@@ -116,7 +116,12 @@ def list(ctx, organization, project, deck, **kwargs):
     pod_table = []
 
     def _ready_ind(c) -> Tuple[bool, str]:
-        container_count = len(c)
+        # get container count
+        if not c:
+            container_count = 0
+        else:
+            container_count = len(c)
+
         ready_count = sum([val.ready for val in c])
         return container_count == ready_count, f"{ready_count}/{container_count}"
 
