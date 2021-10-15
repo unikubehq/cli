@@ -333,11 +333,12 @@ class Telepresence(KubeCtl):
         status = process.stdout.readlines()
 
         # parse intercept count
-        intercept_line = status[15]
-        match = re.findall("[ ]{1,}Intercepts[ ]{1,}:(.*)[ ]{1,}total", intercept_line)
         try:
+            intercept_line = status[15]
+            match = re.findall("[ ]{1,}Intercepts[ ]{1,}:(.*)[ ]{1,}total", intercept_line)
             intercept_count = int(match[0])
-        except Exception:
+        except Exception as e:
+            console.debug(e)
             intercept_count = None
 
         return intercept_count
