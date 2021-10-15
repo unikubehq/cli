@@ -57,11 +57,14 @@ def ps(ctx, **kwargs):
     console.echo("")
 
     # switch
-    cluster = get_cluster_or_exit(ctx, cluster_data[0]["id"])
-    provider_data = cluster.storage.get()
+    intercept_count = 0
+    if cluster_data:
+        cluster = get_cluster_or_exit(ctx, cluster_data[0]["id"])
+        provider_data = cluster.storage.get()
 
-    telepresence = Telepresence(provider_data)
-    intercept_count = telepresence.intercept_count()
+        telepresence = Telepresence(provider_data)
+        intercept_count = telepresence.intercept_count()
+
     if intercept_count == 0 or not intercept_count:
         console.info("No app switched!")
     else:
