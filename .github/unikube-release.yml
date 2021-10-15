@@ -19,7 +19,7 @@ template: >
       $STABLE_PYTHON_DEPS
     end
 
-    devel do
+    head do
       url "$DEVEL_URL"
       version "$DEVEL_VERSION_NUMBER"
       sha256 "$DEVEL_SHA256"
