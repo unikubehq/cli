@@ -1,7 +1,6 @@
 import sys
 
 import click
-from click._compat import iteritems
 from click.utils import echo
 
 import src.cli.console as console
@@ -48,12 +47,14 @@ def version():
         else:
             for dist in pkg_resources.working_set:
                 scripts = dist.get_entry_map().get("console_scripts") or {}
-                for _, entry_point in iteritems(scripts):
+                for _, _ in scripts.items():
                     version = dist.version
                     break
+
     if version is None:
-        raise RuntimeError("Could not determine version")
-    echo(f"unikube, version {version}")
+        console.error("Could not determine version.")
+
+    console.info(f"unikube, version {version}")
 
 
 cli.add_command(version)
