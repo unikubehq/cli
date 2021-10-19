@@ -374,3 +374,61 @@ def delete(ctx, project=None, organization=None, **kwargs):
         ctx.cluster_manager.delete(cluster.id)
     else:
         console.error("The cluster could not be deleted.")
+
+
+@click.command()
+@click.option("--organization", "-o", help="Select an organization")
+@click.pass_obj
+def prune(ctx, project=None, organization=None, **kwargs):
+    """
+    Remove unused clusters.
+    """
+
+    # context
+    organization_id, _, _ = ctx.context.get_context_ids_from_arguments(
+        organization_argument=organization, project_argument=project
+    )
+
+    # GraphQL
+    try:
+        graph_ql = GraphQL(authentication=ctx.auth)
+        data = graph_ql.query(
+            """
+            query($organization_id: UUID) {
+                allProjects(organizationId: $organization_id) {
+                    results {
+                        id
+                    }
+                }
+            }
+            """,
+            query_variables={
+                "organization_id": organization_id,
+            },
+        )
+        projects = data["allProjects"]["results"]
+    except Exception as e:
+        console.debug(e)
+        console.exit_generic_error()
+
+    # cluster
+    cluster_list = ctx.cluster_manager.get_cluster_list()
+    for cluster_data in cluster_list:
+        if cluster_data.id not in [project["id"] for project in projects]:
+            console.info(f"It seems like the project for cluster '{cluster_data.name}' has been deleted.")
+
+            # confirm question
+            confirm = input("Do want to remove the cluster [N/y]: ")
+            if confirm not in ["y", "Y", "yes", "Yes"]:
+                console.info("No action taken.")
+            else:
+                # delete
+                try:
+                    cluster = ctx.cluster_manager.select(cluster_data=cluster_data)
+                    success = cluster.delete()
+                    if success:
+                        console.success("The project was deleted successfully.")
+                        ctx.cluster_manager.delete(cluster.id)
+                except Exception as e:
+                    console.debug(e)
+                    console.error("The cluster could not be deleted.")
