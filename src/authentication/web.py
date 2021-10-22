@@ -4,24 +4,35 @@ from socket import AF_INET, SOCK_STREAM, gethostbyname, socket
 from threading import Thread
 from urllib.parse import parse_qs
 
-from oic.oic import AccessTokenResponse, AuthorizationResponse, Client
+from oic.oic import Client
 
 from src.authentication.types import AuthenticationData
 from src.cli import console
 from src.context import ClickContext
 
-CALLBACK_PORT_RANGE = range(44444, 44448)
+CALLBACK_PORT_RANGE_START = 44444
+CALLBACK_PORT_RANGE_END = 44448
 
 
-def get_callback_port() -> int:
-    t_IP = gethostbyname("localhost")
-    for port in CALLBACK_PORT_RANGE:
-        conn = (s := socket(AF_INET, SOCK_STREAM)).connect_ex((t_IP, port))
-        s.close()
-        if conn:
+def is_port_available(host: str, port: int) -> bool:
+    t_IP = gethostbyname(host)
+    conn = (s := socket(AF_INET, SOCK_STREAM)).connect_ex((t_IP, port))
+    s.close()
+    if conn:
+        return True
+    return False
+
+
+def get_callback_port(range_start: int = CALLBACK_PORT_RANGE_START, range_end: int = CALLBACK_PORT_RANGE_END) -> int:
+    # port range & host
+    callback_port_range = range(range_start, range_end)
+
+    for port in callback_port_range:
+        if is_port_available(host="localhost", port=port):
             break
     else:
-        raise Exception("No port in the range 44444-44447 is available.")
+        raise Exception(f"No port in the range {range_start}-{range_end} is available.")
+
     return port
 
 
