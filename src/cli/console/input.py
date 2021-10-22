@@ -122,3 +122,15 @@ def list(
         return None
 
     return answer
+
+
+def confirm(
+    question: str = "Do want to continue? [N/y]: ",
+    values: List[str] = ["y", "Y", "yes", "Yes"],
+) -> bool:
+    # confirm action by user input
+
+    confirm = input(question)
+    if confirm not in values:
+        return False
+    return True

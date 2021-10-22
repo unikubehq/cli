@@ -374,3 +374,59 @@ def delete(ctx, project=None, organization=None, **kwargs):
         ctx.cluster_manager.delete(cluster.id)
     else:
         console.error("The cluster could not be deleted.")
+
+
+@click.command()
+@click.pass_obj
+def prune(ctx, **kwargs):
+    """
+    Remove unused clusters.
+    """
+
+    # GraphQL
+    try:
+        graph_ql = GraphQL(authentication=ctx.auth)
+        data = graph_ql.query(
+            """
+            query {
+                allProjects {
+                    results {
+                        id
+                    }
+                }
+            }
+            """
+        )
+        projects = data["allProjects"]["results"]
+    except Exception as e:
+        console.debug(e)
+        console.exit_generic_error()
+
+    # cluster
+    cluster_list = ctx.cluster_manager.get_cluster_list()
+
+    # select clusters to prune
+    prune_clusters = []
+    for cluster_data in cluster_list:
+        if cluster_data.id not in [project["id"] for project in projects]:
+            prune_clusters.append(cluster_data)
+
+    for cluster_data in prune_clusters:
+        console.info(f"It seems like the project for cluster '{cluster_data.name}' has been deleted.")
+
+        # confirm question
+        confirmed = console.confirm(question="Do want to remove the cluster? [N/y]: ")
+        if not confirmed:
+            console.info("No action taken.")
+            continue
+
+        # delete
+        try:
+            cluster = ctx.cluster_manager.select(cluster_data=cluster_data)
+            success = cluster.delete()
+            if success:
+                console.success("The project was deleted successfully.")
+                ctx.cluster_manager.delete(cluster.id)
+        except Exception as e:
+            console.debug(e)
+            console.error("The cluster could not be deleted.")

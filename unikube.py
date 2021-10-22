@@ -118,6 +118,7 @@ project.add_command(project_cmd.info)
 project.add_command(project_cmd.up)
 project.add_command(project_cmd.down)
 project.add_command(project_cmd.delete)
+project.add_command(project_cmd.prune)
 
 
 # deck
