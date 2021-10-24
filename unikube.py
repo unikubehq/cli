@@ -1,7 +1,7 @@
 import sys
 
 import click
-from click.utils import echo
+from click_didyoumean import DYMGroup
 
 import src.cli.console as console
 from src.cli import app as app_cmd
@@ -20,7 +20,7 @@ if version.major == 2:
     console.error("Python 2 is not supported for Unikube. Please upgrade python.", _exit=True)
 
 
-@click.group()
+@click.group(cls=DYMGroup, max_suggestions=2, cutoff=0.5)
 @click.pass_context
 def cli(ctx, **kwargs):
     """
@@ -61,7 +61,7 @@ cli.add_command(version)
 cli.add_command(unikube_cmd.ps)
 
 
-@cli.group()
+@cli.group(cls=DYMGroup, max_suggestions=2, cutoff=0.5)
 @click.pass_obj
 def system(ctx):
     """
@@ -77,7 +77,7 @@ system.add_command(system_cmd.verify)
 
 
 # organization
-@cli.group()
+@cli.group(cls=DYMGroup, max_suggestions=2, cutoff=0.5)
 @click.pass_obj
 def orga(ctx):
     """
@@ -105,7 +105,7 @@ orga.add_command(orga_cmd.info)
 
 
 # project
-@cli.group()
+@cli.group(cls=DYMGroup, max_suggestions=2, cutoff=0.5)
 @click.pass_obj
 def project(ctx):
     """
@@ -122,7 +122,7 @@ project.add_command(project_cmd.prune)
 
 
 # deck
-@cli.group()
+@cli.group(cls=DYMGroup, max_suggestions=2, cutoff=0.5)
 @click.pass_obj
 def deck(ctx):
     """
@@ -139,7 +139,7 @@ deck.add_command(deck_cmd.ingress)
 
 
 # application
-@cli.group()
+@cli.group(cls=DYMGroup, max_suggestions=2, cutoff=0.5)
 @click.pass_obj
 def app(ctx):
     """
@@ -158,7 +158,7 @@ app.add_command(app_cmd.update)
 
 
 # authentication
-@cli.group()
+@cli.group(cls=DYMGroup, max_suggestions=2, cutoff=0.5)
 def auth():
     """
     The authentication command group unites all subcommands for managing Unikube's authentication process. Besides the
@@ -174,7 +174,7 @@ auth.add_command(auth_cmd.status)
 
 
 # context
-@cli.group()
+@cli.group(cls=DYMGroup, max_suggestions=2, cutoff=0.5)
 @click.pass_obj
 def context(ctx):
     """
