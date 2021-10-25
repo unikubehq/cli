@@ -28,7 +28,7 @@ setup(
         "tabulate~=0.8.9",
         "pydantic~=1.7.3",
         "pyyaml>=5.4",
-        "tinydb~=3.15.2",
+        "tinydb>=3.15.2,<4.6.0",
         "requests>=2.25.1,<2.27.0",
         "pyjwt[crypto]~=2.0.1",
         "gql~=2.0.0",
