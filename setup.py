@@ -24,7 +24,7 @@ setup(
         "click==8.0.3",
         "click-spinner==0.1.10",
         "colorama~=0.4.4",
-        "inquirerpy~=0.2.4",
+        "inquirerpy>=0.2.4,<0.4.0",
         "tabulate~=0.8.9",
         "pydantic~=1.7.3",
         "pyyaml>=5.4",
