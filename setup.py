@@ -25,7 +25,7 @@ setup(
         "click-spinner==0.1.10",
         "colorama~=0.4.4",
         "inquirerpy~=0.2.4",
-        "tabulate~=0.8.7",
+        "tabulate~=0.8.9",
         "pydantic~=1.7.3",
         "pyyaml>=5.4",
         "tinydb~=3.15.2",
