@@ -1,5 +1,7 @@
 name: Test and build
 
+concurrency: python-tests
+
 on:
   push:
     branches: [ main ]
