@@ -85,7 +85,7 @@ def run_callback_server(state: str, nonce: str, client: Client, ctx: ClickContex
                     else:
                         greeting = "Hello!"
 
-                    html_close = "<a href='javascript:window.close();'>close</a>"
+                    html_close = "close"
 
                     text_html = (
                         f"You have successfully logged in. You can {html_close} this browser tab and return "
