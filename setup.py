@@ -37,6 +37,7 @@ setup(
         "retrying~=1.3.3",
         "oic==1.2.1",
         "python-slugify~=5.0.2",
+        "click-didyoumean~=0.3.0",
     ],
     python_requires="~=3.7",
     packages=find_packages(),
