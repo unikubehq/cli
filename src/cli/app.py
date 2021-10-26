@@ -75,25 +75,35 @@ def get_deck_from_arguments(ctx, organization_id: str, project_id: str, deck_id:
     return cluster_data, deck
 
 
-def argument_app(k8s, app: str):
+def argument_app(k8s, app: str, multiselect: bool = False):
+    apps = None
     if not app:
         app_choices = [
             pod.metadata.name
             for pod in k8s.get_pods().items
             if pod.status.phase not in ["Terminating", "Evicted", "Pending"]
         ]
-        app = console.list(
-            message="Please select an app",
-            choices=app_choices,
-        )
+        kwargs = {
+            "message": "Please select an app",
+            "choices": app_choices,
+            "multiselect": multiselect,
+        }
+        if multiselect:
+            kwargs["transformer"] = lambda result: f"{', '.join(result)}"
+            apps = console.list(**kwargs)
+        else:
+            app = console.list(**kwargs)
 
-    if not app:
+    if not apps and not app:
         console.error("No apps available.", _exit=True)
 
-    if app not in [pod.metadata.name for pod in k8s.get_pods().items]:
+    if app and app not in [pod.metadata.name for pod in k8s.get_pods().items]:
         console.error("App does not exist.", _exit=True)
 
-    return app
+    if apps and any(c_app not in [pod.metadata.name for pod in k8s.get_pods().items] for c_app in apps):
+        console.error("Some apps does not exist.", _exit=True)
+
+    return app or apps
 
 
 @click.command()
@@ -625,6 +635,9 @@ def update(ctx, app, organization, project, deck, **kwargs):
 
     # delete pod
     k8s = KubeAPI(provider_data, deck)
-    app = argument_app(k8s, app)
-    k8s.delete_pod(app)
-    console.info(f"The app {app} is currently updating and does not exist anymore.")
+    apps = argument_app(k8s, app, multiselect=True)
+    [k8s.delete_pod(app) for app in apps]
+    if len(apps) == 1:
+        console.info(f"The app {apps[0]} is currently updating and does not exist anymore.")
+    elif len(apps) > 1:
+        console.info(f"The apps {', '.join(apps)} are currently updating and do not exist anymore.")

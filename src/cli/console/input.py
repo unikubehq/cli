@@ -1,5 +1,5 @@
 import re
-from typing import List, Union
+from typing import Any, Callable, List, Union
 
 from InquirerPy import inquirer
 
@@ -92,7 +92,9 @@ def list(
     help_texts: Union[List[str], None] = None,
     allow_duplicates: bool = False,
     message_no_choices: str = "No choices available!",
-) -> Union[str, None]:
+    multiselect: bool = False,
+    transformer: Callable[[Any], str] = None,
+) -> Union[None, List[str]]:
     # choices exist
     if not len(choices) > 0:
         console.info(message_no_choices)
@@ -115,8 +117,7 @@ def list(
 
     # prompt
     answer = inquirer.fuzzy(
-        message=message,
-        choices=choices_excluded,
+        message=message, choices=choices_excluded, multiselect=multiselect, transformer=transformer
     ).execute()
     if not answer:
         return None
