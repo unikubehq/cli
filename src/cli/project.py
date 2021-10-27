@@ -9,7 +9,7 @@ from src import settings
 from src.graphql import GraphQL
 from src.helpers import check_running_cluster
 from src.local.providers.types import K8sProviderType
-from src.local.system import KubeAPI, Telepresence
+from src.local.system import Docker, KubeAPI, Telepresence
 
 
 @click.command()
@@ -143,6 +143,9 @@ def up(ctx, project=None, organization=None, ingress=None, provider=None, worker
     * via ``-o`` or ``--organization`` option, specifying an organisation to which a project belongs
 
     """
+
+    if not Docker().daemon_active():
+        console.error("Docker is not running. Please start Docker before starting a project.", True)
 
     # context
     organization_id, project_id, _ = ctx.context.get_context_ids_from_arguments(

@@ -168,10 +168,21 @@ class Docker(CMDWrapper):
             )
 
     def check_running(self, name):
+        """Checks whether an image or a specific container is running."""
         arguments = ["ps"]
         process = self._execute(arguments)
         output = process.stdout.read()
         return name in output
+
+    def daemon_active(self):
+        """Checks whether docker daemon is running.
+
+        Based on docker documentation (https://docs.docker.com/config/daemon/#check-whether-docker-is-running).
+        `docker info` exists with non-zero exit code when docker is not running.
+        """
+        arguments = ["info"]
+        process = self._execute(arguments)
+        return process.returncode == 0
 
     def exec(self, container, command, interactive=False):
         arguments = ["exec", "-it", container, command]
