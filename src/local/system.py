@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import json
 import os
 import platform
 import re
@@ -172,6 +173,14 @@ class Docker(CMDWrapper):
         process = self._execute(arguments)
         output = process.stdout.read()
         return name in output
+
+    def info(self):
+        arguments = ["info", "--format", "'{{json .}}'"]
+        process = self._execute(arguments)
+        output = process.stdout.read()
+        info = json.loads(output)
+        result = {"cpu": info["NCPU"], "memory": info["MemTotal"]}
+        return result
 
     def exec(self, container, command, interactive=False):
         arguments = ["exec", "-it", container, command]
