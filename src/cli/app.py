@@ -436,10 +436,11 @@ def switch(ctx, app, organization, project, deck, deployment, unikubefile, no_bu
     port = unikube_file.get_port()
     if port is None:
         port = str(ports[0])
-        console.warning(
-            f"No port specified although there are multiple ports available: {ports}. "
-            f"Defaulting to port {port} which might not be correct."
-        )
+        if len(ports) > 1:
+            console.warning(
+                f"No port specified although there are multiple ports available: {ports}. "
+                f"Defaulting to port {port} which might not be correct."
+            )
     if port not in ports:
         console.error(f"The specified port {port} is not in the rage of available options: {ports}", _exit=True)
     if not _is_local_port_free(port):
