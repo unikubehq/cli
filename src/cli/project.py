@@ -145,7 +145,7 @@ def up(ctx, project=None, organization=None, ingress=None, provider=None, worker
     """
 
     if not Docker().daemon_active():
-        console.error("Docker is not running. Please start Docker before starting a project.", True)
+        console.error("Docker is not running. Please start Docker before starting a project.", _exit=True)
 
     # context
     organization_id, project_id, _ = ctx.context.get_context_ids_from_arguments(
