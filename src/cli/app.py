@@ -3,7 +3,7 @@ import socket
 import sys
 import tempfile
 from collections import OrderedDict
-from typing import Tuple
+from typing import List, Tuple
 
 import click
 import click_spinner
@@ -75,16 +75,16 @@ def get_deck_from_arguments(ctx, organization_id: str, project_id: str, deck_id:
     return cluster_data, deck
 
 
-def argument_app(k8s, app: str, multiselect: bool = False):
-    apps = None
-    if not app:
+def argument_apps(k8s, apps: List[str], multiselect: bool = False) -> List[str]:
+    if not apps:
         app_choices = [
             pod.metadata.name
             for pod in k8s.get_pods().items
             if pod.status.phase not in ["Terminating", "Evicted", "Pending"]
         ]
+        message = "Please select an app" if not multiselect else "Please select one or multiple apps"
         kwargs = {
-            "message": "Please select an app",
+            "message": message,
             "choices": app_choices,
             "multiselect": multiselect,
         }
@@ -92,18 +92,19 @@ def argument_app(k8s, app: str, multiselect: bool = False):
             kwargs["transformer"] = lambda result: f"{', '.join(result)}"
             apps = console.list(**kwargs)
         else:
-            app = console.list(**kwargs)
+            apps = [console.list(**kwargs)]
 
-    if not apps and not app:
+    if not apps:
         console.error("No apps available.", _exit=True)
 
-    if app and app not in [pod.metadata.name for pod in k8s.get_pods().items]:
-        console.error("App does not exist.", _exit=True)
-
     if apps and any(c_app not in [pod.metadata.name for pod in k8s.get_pods().items] for c_app in apps):
-        console.error("Some apps does not exist.", _exit=True)
+        console.error("Some apps do not exist.", _exit=True)
 
-    return app or apps
+    return apps
+
+
+def argument_app(k8s, app: str) -> str:
+    return argument_apps(k8s, [app] if app else [])[0]
 
 
 @click.command()
@@ -635,7 +636,7 @@ def update(ctx, app, organization, project, deck, **kwargs):
 
     # delete pod
     k8s = KubeAPI(provider_data, deck)
-    apps = argument_app(k8s, app, multiselect=True)
+    apps = argument_apps(k8s, [app] if app else [], multiselect=True)
     [k8s.delete_pod(app) for app in apps]
     if len(apps) == 1:
         console.info(f"The app {apps[0]} is currently updating and does not exist anymore.")
