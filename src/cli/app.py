@@ -638,7 +638,4 @@ def update(ctx, app, organization, project, deck, **kwargs):
     k8s = KubeAPI(provider_data, deck)
     apps = argument_apps(k8s, [app] if app else [], multiselect=True)
     [k8s.delete_pod(app) for app in apps]
-    if len(apps) == 1:
-        console.info(f"The app {apps[0]} is currently updating and does not exist anymore.")
-    elif len(apps) > 1:
-        console.info(f"The apps {', '.join(apps)} are currently updating and do not exist anymore.")
+    console.info(f"The app(s) {', '.join(apps)} are currently updating and do not exist anymore.")
