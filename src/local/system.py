@@ -388,7 +388,7 @@ class KubeAPI(object):
         except MaxRetryError:
             raise UnikubeClusterUnavailableError
 
-    def get_pod(self, pod_name):
+    def get_pod(self, pod_name: str):
         pods = self.get_pods()
         for pod in pods.items:
             if pod.metadata.name == pod_name:
