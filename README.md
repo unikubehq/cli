@@ -6,6 +6,7 @@
     <a href="https://sonarcloud.io/dashboard?id=unikubehq_cli"><img alt="Quality Gate Status" src="https://sonarcloud.io/api/project_badges/measure?project=unikubehq_cli&metric=alert_status"></a>
     <a href="https://coveralls.io/github/unikubehq/cli?branch=main"><img alt="Coverage Status" src="https://coveralls.io/repos/github/unikubehq/cli/badge.svg?branch=main"></a>
     <a href="https://github.com/psf/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a>
+    <a href="https://unikubeworkspace.slack.com"><img alt="Unikube Slack Community" src="https://raw.githubusercontent.com/unikubehq/frontend/main/.github/slack.svg"></a>
 </p>
 
 # The Unikube CLI
