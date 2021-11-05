@@ -100,13 +100,24 @@ def logout(ctx, **kwargs):
 
 
 @click.command()
+@click.option("--token", "-t", is_flag=True, default=False, help="Show token information.")
 @click.pass_obj
-def status(ctx, **kwargs):
+def status(ctx, token=False, **kwargs):
     """
     View authentication status.
     """
 
     response = ctx.auth.verify()
+
+    # show token information
+    if token:
+        console.info(f"access token: {ctx.auth.general_data.authentication.access_token}")
+        console.echo("---")
+        console.info(f"refresh token: {ctx.auth.general_data.authentication.refresh_token}")
+        console.echo("---")
+        console.info(f"requesting party token: {ctx.auth.general_data.authentication.requesting_party_token}")
+        console.echo("")
+
     if response["success"]:
         console.success("Authentication verified.")
     else:
