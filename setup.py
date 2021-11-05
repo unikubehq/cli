@@ -35,7 +35,7 @@ setup(
         "semantic-version~=2.8.4",
         "kubernetes>=11.0.0",
         "retrying~=1.3.3",
-        "oic==1.2.1",
+        "oic==1.3.0",
         "python-slugify~=5.0.2",
         "click-didyoumean~=0.3.0",
     ],
