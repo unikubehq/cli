@@ -26,7 +26,7 @@ setup(
         "colorama~=0.4.4",
         "inquirerpy>=0.2.4,<0.4.0",
         "tabulate~=0.8.9",
-        "pydantic~=1.7.3",
+        "pydantic>=1.7.3,<1.9.0",
         "pyyaml>=5.4",
         "tinydb~=3.15.2",
         "requests>=2.25.1,<2.27.0",
