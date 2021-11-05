@@ -12,6 +12,7 @@ def list(ctx, **kwargs):
     List all your organizations.
     """
 
+    _ = ctx.auth.refresh()
     context = ctx.context.get()
 
     # keycloak
@@ -52,6 +53,8 @@ def info(ctx, organization, **kwargs):
     """
     Display further information of the selected organization.
     """
+
+    _ = ctx.auth.refresh()
 
     # context
     organization_id, _, _ = ctx.context.get_context_ids_from_arguments(organization_argument=organization)

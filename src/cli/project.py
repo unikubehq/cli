@@ -20,6 +20,8 @@ def list(ctx, organization, **kwargs):
     Display a table of all available project names alongside with the ids.
     """
 
+    _ = ctx.auth.refresh()
+
     # context
     organization_id, _, _ = ctx.context.get_context_ids_from_arguments(organization_argument=organization)
 
@@ -67,6 +69,8 @@ def info(ctx, project=None, organization=None, **kwargs):
     """
     Displays the id, title and optional description of the selected project.
     """
+
+    _ = ctx.auth.refresh()
 
     # context
     organization_id, project_id, _ = ctx.context.get_context_ids_from_arguments(
@@ -143,6 +147,8 @@ def up(ctx, project=None, organization=None, ingress=None, provider=None, worker
     * via ``-o`` or ``--organization`` option, specifying an organisation to which a project belongs
 
     """
+
+    _ = ctx.auth.refresh()
 
     if not Docker().daemon_active():
         console.error("Docker is not running. Please start Docker before starting a project.", _exit=True)
