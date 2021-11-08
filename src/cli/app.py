@@ -264,7 +264,7 @@ def shell(ctx, app, organization=None, project=None, deck=None, **kwargs):
     deployment = "-".join(data.metadata.name.split("-")[0:-2])
     # 1. check if this pod is of a switched deployment (in case of an active Telepresence)
 
-    if telepresence.is_swapped(deployment):
+    if telepresence.is_swapped(deployment, namespace=data.metadata.namespace):
         # the container name generated in "app switch" for that pod
         container_name = settings.TELEPRESENCE_DOCKER_IMAGE_FORMAT.format(
             project=cluster_data.name.lower(), deck=deck["title"].lower(), name=deployment.lower()
