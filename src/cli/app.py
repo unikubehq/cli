@@ -589,21 +589,41 @@ def env(ctx, app, init, organization, project, deck, **kwargs):
                 elif s.secret_key_ref and s.secret_key_ref.name:
                     return "Secret", f"Secret: {s.secret_key_ref.name} Key: {s.secret_key_ref.key}"
 
-            for env in container.env:
-                if env.value_from:
-                    type, source = _value_from(env.value_from)
-                else:
-                    type, source = "Definition", "-"
-                env_vars.append(
-                    OrderedDict(
-                        {
-                            "name": env.name,
-                            "value": env.value,
-                            "source_type": type,
-                            "path": source,
-                        }
+            if container.env:
+                for env in container.env:
+                    if env.value_from:
+                        type, source = _value_from(env.value_from)
+                    else:
+                        type, source = "Definition", "-"
+                    env_vars.append(
+                        OrderedDict(
+                            {
+                                "name": env.name,
+                                "value": str(env.value[:50]) + "..."
+                                if env.value and len(env.value) > 50
+                                else env.value,
+                                "source_type": type,
+                                "path": source,
+                            }
+                        )
                     )
-                )
+            if container.env_from:
+                for env in container.env_from:
+                    if env.config_map_ref:
+                        _cm = k8s.get_configmap(env.config_map_ref.name)
+                        if _cm.data:
+                            for k, v in _cm.data.items():
+                                env_vars.append(
+                                    OrderedDict(
+                                        {
+                                            "name": k,
+                                            "value": str(v[:50]) + "..." if v and len(v) > 50 else v,
+                                            "source_type": "ConfigMap",
+                                            "path": _cm.metadata.name,
+                                        }
+                                    )
+                                )
+
             console.table(
                 env_vars,
                 headers={
