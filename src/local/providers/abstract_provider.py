@@ -1,4 +1,7 @@
 from abc import ABC, abstractmethod
+from typing import Any
+
+from semantic_version import Version
 
 from src.local.providers.types import K8sProviderData
 from src.local.system import Docker
@@ -62,6 +65,14 @@ class IK8sProvider(ABC):
 
     @abstractmethod
     def ready(self) -> bool:
+        raise NotImplementedError
+
+    @abstractmethod
+    def version(self) -> Version:
+        """
+        Best return a type that allows working comparisons between versions of the same provider.
+        E.g. (1, 10) > (1, 2), but "1.10" < "1.2"
+        """
         raise NotImplementedError
 
 

@@ -1,6 +1,10 @@
 import os
+import re
+import subprocess
 from time import sleep
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
+
+from semantic_version import Version
 
 import src.cli.console as console
 from src import settings
@@ -114,6 +118,7 @@ class K3d(AbstractK8sProvider, CMDWrapper):
         ingress_port=None,
         workers=settings.K3D_DEFAULT_WORKERS,
     ):
+        v5plus = self.version().major >= 5
         api_port = self._get_random_unused_port()
         if not ingress_port:
             publisher_port = self._get_random_unused_port()
@@ -128,7 +133,7 @@ class K3d(AbstractK8sProvider, CMDWrapper):
             "--api-port",
             str(api_port),
             "--port",
-            f"{publisher_port}:{settings.K3D_DEFAULT_INGRESS_PORT}@agent[0]",
+            f"{publisher_port}:{settings.K3D_DEFAULT_INGRESS_PORT}@agent{':0' if v5plus else '[0]'}",
             "--servers",
             str(1),
             "--wait",
@@ -149,11 +154,9 @@ class K3d(AbstractK8sProvider, CMDWrapper):
     def start(self):
         arguments = ["cluster", "start", self.k3d_cluster_name]
         self._execute(arguments)
-
         data = self.storage.get()
         data.kubeconfig_path = self.get_kubeconfig()
         self.storage.set(data)
-
         return True
 
     def stop(self):
@@ -164,10 +167,14 @@ class K3d(AbstractK8sProvider, CMDWrapper):
     def delete(self):
         arguments = ["cluster", "delete", self.k3d_cluster_name]
         self._execute(arguments)
-
         self.storage.delete()
-
         return True
+
+    def version(self) -> Version:
+        process = subprocess.run([self.base_command, "--version"], capture_output=True, text=True)
+        output = str(process.stdout).strip()
+        version_str = re.search(r"(\d+\.\d+\.\d+)", output).group(1)
+        return Version(version_str)
 
 
 class K3dBuilder:
