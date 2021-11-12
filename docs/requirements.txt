@@ -1,7 +1,7 @@
 # documentation
 Sphinx==4.3.0
 sphinx-click==3.0.2
-sphinx-rtd-theme==0.5.0
+sphinx-rtd-theme==1.0.0
 
 # cli
 -r ../requirements.txt
