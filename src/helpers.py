@@ -111,11 +111,11 @@ def check_running_cluster(ctx: ClickContext, cluster_provider_type: K8sProviderT
 def compare_current_and_latest_versions():
     try:
         current_version = pkg_resources.require("unikube")[0].version
-        all_releases = requests.get("https://api.github.com/repos/unikubehq/cli/releases")
-        if all_releases.status_code == 403:
+        release = requests.get("https://api.github.com/repos/unikubehq/cli/releases/latest")
+        if release.status_code == 403:
             console.info("Versions cannot be compared, as API rate limit was exceeded")
             return None
-        latest_release_version = all_releases.json()[0]["tag_name"].replace("-", ".")
+        latest_release_version = release.json()["tag_name"].replace("-", ".")
         if current_version != latest_release_version:
             console.info(
                 f"You are using unikube version {current_version}; however, version {latest_release_version} is available."
