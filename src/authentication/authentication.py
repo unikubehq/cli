@@ -1,5 +1,7 @@
+import sys
 from urllib.parse import urljoin
 
+import click_spinner
 import jwt
 import requests
 
@@ -88,8 +90,9 @@ class TokenAuthentication(IAuthentication):
 
     def check(self):
         # login required
-        if not self.verify_or_refresh():
-            console.exit_login_required()
+        with click_spinner.spinner(beep=False, disable=False, force=False, stream=sys.stdout):
+            if not self.verify_or_refresh():
+                console.exit_login_required()
 
     def login(
         self,
