@@ -117,7 +117,11 @@ def list(
 
     # prompt
     answer = inquirer.fuzzy(
-        message=message, choices=choices_excluded, multiselect=multiselect, transformer=transformer
+        message=message,
+        choices=choices_excluded,
+        multiselect=multiselect,
+        transformer=transformer,
+        keybindings={"toggle": [{"key": "space"}]},
     ).execute()
     if not answer:
         return None
