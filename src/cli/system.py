@@ -4,7 +4,6 @@ import sys
 import click
 
 import src.cli.console as console
-from src.completion.completion import render_completion_script
 from src.helpers import compare_current_and_latest_versions
 from src.local.dependency import install_dependency, probe_dependencies
 
@@ -111,15 +110,3 @@ def verify(verbose):
     console.success("Local dependencies verified.")
 
     return True
-
-
-@click.command()
-@click.argument("shell", required=True)
-def completion(shell):
-    """
-    Generate tab completion script for a given shell.
-    Supported shells: bash.
-    """
-    from unikube import cli
-
-    render_completion_script(cli, shell)

@@ -72,10 +72,21 @@ def system(ctx):
     """
 
 
+@click.command()
+@click.argument("shell", required=True)
+def completion(shell):
+    """
+    Generate tab completion script for a given shell.
+    Supported shells: bash.
+    """
+
+    render_completion_script(cli, shell)
+
+
 # system
 system.add_command(system_cmd.install)
 system.add_command(system_cmd.verify)
-system.add_command(system_cmd.completion)
+system.add_command(completion)
 
 
 # organization
