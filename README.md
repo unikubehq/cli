@@ -63,6 +63,16 @@ To install the latest (pre-)release of the Unikube CLI type
 sudo pip3 install unikube==<VERSION> --upgrade --pre
 ```
 
+#### Enable tab completion
+
+`unikube` support tab completion scripts for bash.
+
+```shell
+unikube system completion bash > /etc/bash_completion.d/unikube.bash-completion
+```
+
+You probably need to restart your shell in order for the completion script to do its work.
+
 ### Virtual Environment + Requirements
 
 Create virtual environment:
