@@ -10,6 +10,7 @@ import click_spinner
 
 from src import settings
 from src.cli import console
+from src.cli.helper import age_from_timestamp
 from src.graphql import GraphQL
 from src.local.providers.helper import get_cluster_or_exit
 from src.local.system import Docker, KubeAPI, KubeCtl, Telepresence
@@ -141,7 +142,14 @@ def list(ctx, organization, project, deck, **kwargs):
             continue
         all_ready, count = _ready_ind(pod.status.container_statuses)
         pod_table.append(
-            OrderedDict({"name": pod.metadata.name, "ready": count, "state": "Ok" if all_ready else "Not Ok"})
+            OrderedDict(
+                {
+                    "name": pod.metadata.name,
+                    "ready": count,
+                    "state": "Ok" if all_ready else "Not Ok",
+                    "age": age_from_timestamp(pod.metadata.creation_timestamp.timestamp()),
+                }
+            )
         )
     console.table(
         data=pod_table,
@@ -149,6 +157,7 @@ def list(ctx, organization, project, deck, **kwargs):
             "name": "Name",
             "ready": "Ready",
             "state": "State",
+            "age": "Age",
         },
     )
 
