@@ -2,10 +2,8 @@ import os
 import sys
 
 import click
-from tabulate import tabulate
 
 import src.cli.console as console
-from src import settings
 from src.helpers import compare_current_and_latest_versions
 from src.local.dependency import install_dependency, probe_dependencies
 

@@ -12,6 +12,7 @@ from src.cli import orga as orga_cmd
 from src.cli import project as project_cmd
 from src.cli import system as system_cmd
 from src.cli import unikube as unikube_cmd
+from src.completion.completion import render_completion_script
 from src.context import ClickContext
 from src.helpers import compare_current_and_latest_versions
 
@@ -71,9 +72,21 @@ def system(ctx):
     """
 
 
+@click.command()
+@click.argument("shell", required=True)
+def completion(shell):
+    """
+    Generate tab completion script for a given shell.
+    Supported shells: bash.
+    """
+
+    render_completion_script(cli, shell)
+
+
 # system
 system.add_command(system_cmd.install)
 system.add_command(system_cmd.verify)
+system.add_command(completion)
 
 
 # organization
