@@ -22,7 +22,7 @@ def check_ports(port_list: List[int]):
 
     Returns a list of ports which are busy.
     """
-    return list(filter(lambda port: port_in_use(port), port_list))
+    return list(filter(port_in_use, port_list))
 
 
 def exist_or_create(folder):
