@@ -131,10 +131,15 @@ class KubeCtl(CMDWrapper):
         output = process.stdout.read()
         return output
 
-    def exec_pod(self, pod, namespace, command, interactive=False):
+    def exec_pod(self, pod, namespace, command, interactive=False, container=None):
         arguments = ["exec", "-it", pod]
+
         if namespace:
             arguments += ["--namespace", namespace]
+
+        if container:
+            arguments += ["--container", container]
+
         arguments += ["--", command]
         if interactive:
             console.info(f"Running '{command}' (interactively) on: {pod}. Please press Ctrl+D to exit.")

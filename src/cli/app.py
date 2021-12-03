@@ -239,8 +239,9 @@ def info(ctx, app, organization, project, deck, **kwargs):
 @click.option("--organization", "-o", help="Select an organization")
 @click.option("--project", "-p", help="Select a project")
 @click.option("--deck", "-d", help="Select a deck")
+@click.option("--container", "-c", help="Specify the container in this app")
 @click.pass_obj
-def shell(ctx, app, organization=None, project=None, deck=None, **kwargs):
+def shell(ctx, app, organization=None, project=None, deck=None, container=None, **kwargs):
     """
     Drop into an interactive shell. For further information please refer to
     :ref:`the documentation about the shell <development:Get an Interactive Shell>`.
@@ -260,10 +261,11 @@ def shell(ctx, app, organization=None, project=None, deck=None, **kwargs):
     # get the data of the selected pod
     data = k8s.get_pod(app)
     telepresence = Telepresence(provider_data)
+
     # the corresponding deployment by getting rid of the pod name suffix
     deployment = "-".join(data.metadata.name.split("-")[0:-2])
-    # 1. check if this pod is of a switched deployment (in case of an active Telepresence)
 
+    # 1. check if this pod is of a switched deployment (in case of an active Telepresence)
     if telepresence.is_swapped(deployment, namespace=data.metadata.namespace):
         # the container name generated in "app switch" for that pod
         container_name = settings.TELEPRESENCE_DOCKER_IMAGE_FORMAT.format(
@@ -281,8 +283,15 @@ def shell(ctx, app, organization=None, project=None, deck=None, **kwargs):
             )
 
     else:
+        if not container and len(data.spec.containers) > 1:
+            container = console.container_list(data=data)
+            if not container:
+                return None
+
         # 2.b connect using kubernetes
-        KubeCtl(provider_data).exec_pod(app, deck["environment"][0]["namespace"], "/bin/sh", interactive=True)
+        KubeCtl(provider_data).exec_pod(
+            app, deck["environment"][0]["namespace"], "/bin/sh", interactive=True, container=container
+        )
 
 
 @click.command()
@@ -520,18 +529,14 @@ def logs(ctx, app, container=None, organization=None, project=None, deck=None, f
     # log
     k8s = KubeAPI(provider_data, deck)
     app = argument_app(k8s, app)
-    # get the data of the selected pod
 
+    # get the data of the selected pod
     if not container:
         data = k8s.get_pod(app)
         if len(data.spec.containers) > 1:
-            container = console.list(
-                message="Please select a container",
-                message_no_choices="No container is running.",
-                choices=[c.name for c in data.spec.containers],
-            )
-            if container is None:
-                exit(1)
+            container = console.container_list(data=data)
+            if not container:
+                return None
 
     logs = k8s.get_logs(app, follow, container=container)
 
