@@ -139,8 +139,7 @@ project.add_command(project_cmd.prune)
 @click.pass_obj
 def deck(ctx):
     """
-    Manage all decks you have access to. For further information please refer to
-    :ref:`the documentation about decks <provision:What is a Deck?>`.
+    Manage all decks you have access to.
     """
 
 
