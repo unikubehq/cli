@@ -6,6 +6,7 @@ import click_spinner
 
 import src.cli.console as console
 from src import settings
+from src.cli.helper import check_ports
 from src.graphql import GraphQL
 from src.helpers import check_running_cluster
 from src.local.providers.types import K8sProviderType
@@ -219,6 +220,14 @@ def up(ctx, project=None, organization=None, ingress=None, provider=None, worker
     # get project id
     if ingress is None:
         ingress = project_selected["clusterSettings"]["port"]
+
+    if not_available_ports := check_ports([ingress]):
+        console.error(
+            "Following ports are currently busy, however needed to spin up the cluster: {}".format(
+                ", ".join([str(port) for port in not_available_ports])
+            ),
+            _exit=True,
+        )
 
     # cluster up
     cluster_data = ctx.cluster_manager.get(id=project_selected["id"])
