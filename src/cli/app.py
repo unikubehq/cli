@@ -243,8 +243,7 @@ def info(ctx, app, organization, project, deck, **kwargs):
 @click.pass_obj
 def shell(ctx, app, organization=None, project=None, deck=None, container=None, **kwargs):
     """
-    Drop into an interactive shell. For further information please refer to
-    :ref:`the documentation about the shell <development:Get an Interactive Shell>`.
+    Drop into an interactive shell.
     """
 
     ctx.auth.check()
@@ -317,8 +316,7 @@ def exec(ctx, **kwargs):
 @click.pass_obj
 def switch(ctx, app, organization, project, deck, deployment, unikubefile, no_build, **kwargs):
     """
-    Switch a running deployment with a local Docker container. For further information please refer to
-    :ref:`the documentation about the switch operation <development:Switch Operation>`.
+    Switch a running deployment with a local Docker container.
     """
 
     ctx.auth.check()

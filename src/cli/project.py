@@ -330,8 +330,7 @@ def down(ctx, project=None, organization=None, **kwargs):
 @click.pass_obj
 def delete(ctx, project=None, organization=None, **kwargs):
     """
-    Delete the current project and all related data. For further information please refer to
-    :ref:`the documentation about project deletion <provision:Delete a Project>`.
+    Delete the current project and all related data.
     """
 
     # context

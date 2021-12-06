@@ -21,7 +21,7 @@ def show_context(context):
 @click.pass_obj
 def set(ctx, organization=None, project=None, deck=None, **kwargs):
     """
-    Set the local context. For more information please refer to :ref:`reference/overview:context management`.
+    Set the local context.
     """
 
     organization_id, project_id, deck_id = convert_context_arguments(

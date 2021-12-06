@@ -270,8 +270,7 @@ def install(ctx, organization=None, project=None, deck=None, **kwargs):
 @click.pass_obj
 def uninstall(ctx, organization=None, project=None, deck=None, **kwargs):
     """
-    Uninstall a deck. For further information please refer to
-    :ref:`the documentation about deck uninstallation <provision:Deck Uninstallation>`.
+    Uninstall a deck.
     """
 
     # context
