@@ -29,7 +29,7 @@ setup(
         "pydantic>=1.7.3,<1.9.0",
         "pyyaml>=5.4",
         "tinydb>=3.15.2,<4.6.0",
-        "requests>=2.25.1,<2.27.0",
+        "requests>=2.25.1,<2.28.0",
         "pyjwt[crypto]>=2.0.1,<2.4.0",
         "gql~=2.0.0",
         "semantic-version~=2.8.4",
