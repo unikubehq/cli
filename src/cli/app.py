@@ -115,7 +115,6 @@ def argument_app(k8s, app: str) -> str:
 def list(ctx, organization, project, deck, **kwargs):
     """List all apps."""
 
-    ctx.auth.check()
     cluster_data, deck = get_deck_from_arguments(ctx, organization, project, deck)
 
     # get cluster
@@ -162,7 +161,6 @@ def list(ctx, organization, project, deck, **kwargs):
 def info(ctx, app, organization, project, deck, **kwargs):
     """Display the status for the given app name."""
 
-    ctx.auth.check()
     cluster_data, deck = get_deck_from_arguments(ctx, organization, project, deck)
 
     # get cluster
@@ -246,7 +244,6 @@ def shell(ctx, app, organization=None, project=None, deck=None, container=None, 
     Drop into an interactive shell.
     """
 
-    ctx.auth.check()
     cluster_data, deck = get_deck_from_arguments(ctx, organization, project, deck)
 
     # get cluster
@@ -319,7 +316,6 @@ def switch(ctx, app, organization, project, deck, deployment, unikubefile, no_bu
     Switch a running deployment with a local Docker container.
     """
 
-    ctx.auth.check()
     cluster_data, deck = get_deck_from_arguments(ctx, organization, project, deck)
 
     # get cluster
@@ -517,7 +513,6 @@ def logs(ctx, app, container=None, organization=None, project=None, deck=None, f
     ``-f`` flag.
     """
 
-    ctx.auth.check()
     cluster_data, deck = get_deck_from_arguments(ctx, organization, project, deck)
 
     # get cluster
@@ -555,7 +550,6 @@ def env(ctx, app, init, organization, project, deck, **kwargs):
     can print the environment variables for all init containers with the ``-i`` flag.
     """
 
-    ctx.auth.check()
     cluster_data, deck = get_deck_from_arguments(ctx, organization, project, deck)
 
     # get cluster
@@ -651,7 +645,6 @@ def update(ctx, app, organization, project, deck, **kwargs):
     Trigger a forced update of the given app. This command creates a new app instance.
     """
 
-    ctx.auth.check()
     cluster_data, deck = get_deck_from_arguments(ctx, organization, project, deck)
 
     # get cluster
