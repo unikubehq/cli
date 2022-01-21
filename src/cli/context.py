@@ -1,16 +1,21 @@
 import click
 
 import src.cli.console as console
+from src.cli.console.helpers import deck_id_2_display_name, organization_id_2_display_name, project_id_2_display_name
 from src.context.helper import convert_context_arguments
 from src.graphql import GraphQL
 from src.storage.user import get_local_storage_user
 
 
-def show_context(context):
+def show_context(ctx, context):
+    organization = organization_id_2_display_name(ctx=ctx, id=context.organization_id)
+    project = project_id_2_display_name(ctx=ctx, id=context.project_id)
+    deck = deck_id_2_display_name(ctx=ctx, id=context.deck_id)
+
     console.info("Context:")
-    console.echo(f"- organization: {context.organization_id}")
-    console.echo(f"- project: {context.project_id}")
-    console.echo(f"- deck: {context.deck_id}")
+    console.echo(f"- organization: {organization}")
+    console.echo(f"- project: {project}")
+    console.echo(f"- deck: {deck}")
     console.echo("")
 
 
@@ -107,7 +112,7 @@ def set(ctx, organization=None, project=None, deck=None, **kwargs):
         user_data.context.organization_id = organization_id
         local_storage_user.set(user_data)
 
-    show_context(user_data.context)
+    show_context(ctx=ctx, context=user_data.context)
 
 
 @click.command()
@@ -161,4 +166,4 @@ def show(ctx, **kwargs):
     local_storage_user = get_local_storage_user()
     user_data = local_storage_user.get()
 
-    show_context(user_data.context)
+    show_context(ctx=ctx, context=user_data.context)
