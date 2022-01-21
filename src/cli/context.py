@@ -154,11 +154,8 @@ def remove(ctx, organization=None, project=None, deck=None, **kwargs):
 @click.pass_obj
 def show(ctx, **kwargs):
     """
-    Show the local context.
+    Show the context.
     """
 
-    # user_data / context
-    local_storage_user = get_local_storage_user()
-    user_data = local_storage_user.get()
-
-    show_context(user_data.context)
+    context = ctx.context.get()
+    show_context(context)
