@@ -6,6 +6,7 @@ import click_spinner
 
 import src.cli.console as console
 from src import settings
+from src.cli.console.helpers import project_id_2_display_name
 from src.cli.helper import check_ports
 from src.graphql import GraphQL
 from src.helpers import check_running_cluster
@@ -170,7 +171,7 @@ def up(ctx, project=None, organization=None, ingress=None, provider=None, worker
             return None
 
     if project_id in cluster_id_list:
-        console.info(f"Project '{project_id}' is already up.", _exit=True)
+        console.info(f"Project '{project_id_2_display_name(ctx=ctx, id=project_id)}' is already up.", _exit=True)
 
     # GraphQL
     try:
@@ -204,7 +205,9 @@ def up(ctx, project=None, organization=None, ingress=None, provider=None, worker
         console.exit_generic_error()
 
     if not project_selected:
-        console.info(f"The project '{project}' could not be found.", _exit=True)
+        console.info(
+            f"The project '{project_id_2_display_name(ctx=ctx, id=project_id)}' could not be found.", _exit=True
+        )
 
     try:
         cluster_provider_type = K8sProviderType[provider]
@@ -300,7 +303,10 @@ def down(ctx, project=None, organization=None, **kwargs):
 
     # check if project is in local storage
     if project_id not in [cluster.id for cluster in cluster_list]:
-        console.info(f"The project cluster for '{project_id}' is not up or does not exist yet.", _exit=True)
+        console.info(
+            f"The project cluster for '{project_id_2_display_name(ctx=ctx, id=project_id)}' is not up or does not exist yet.",
+            _exit=True,
+        )
 
     # get cluster
     cluster = None
@@ -359,7 +365,10 @@ def delete(ctx, project=None, organization=None, **kwargs):
             return None
 
     if project_id not in [cluster.id for cluster in cluster_list]:
-        console.info(f"The project cluster for '{project}' could not be found.", _exit=True)
+        console.info(
+            f"The project cluster for '{project_id_2_display_name(ctx=ctx, id=project_id)}' could not be found.",
+            _exit=True,
+        )
 
     # initial warning
     console.warning("Deleting a project will remove the cluster including all of its data.")

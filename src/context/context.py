@@ -127,7 +127,7 @@ class Context:
         if settings.CLI_ALWAYS_SHOW_CONTEXT:
             from src.cli.context import show_context
 
-            show_context(context)
+            show_context(ctx=None, context=context)
 
         return context
 

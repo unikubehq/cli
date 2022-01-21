@@ -74,4 +74,4 @@ def ps(ctx, **kwargs):
     # context
     local_storage_user = get_local_storage_user()
     user_data = local_storage_user.get()
-    show_context(user_data.context)
+    show_context(ctx=ctx, context=user_data.context)
