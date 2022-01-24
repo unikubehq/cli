@@ -3,6 +3,10 @@ from abc import ABC, abstractmethod
 from src.context.types import ContextData
 
 
+class UnikubeFileNotFoundError(Exception):
+    pass
+
+
 class UnikubeFileVersionError(Exception):
     pass
 

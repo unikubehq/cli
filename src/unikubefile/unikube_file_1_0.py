@@ -24,9 +24,9 @@ class UnikubeFile_1_0(UnikubeFile):
             return ContextData()
 
         return ContextData(
-            organization=context.get("organization", None),
-            project=context.get("project", None),
-            deck=context.get("deck", None),
+            organization_id=context.get("organization", None),
+            project_id=context.get("project", None),
+            deck_id=context.get("deck", None),
         )
 
     def _verify(self):
@@ -40,10 +40,6 @@ class UnikubeFile_1_0(UnikubeFile):
         else:
             if _keys not in node:
                 raise UnikubeFileError(f"Unikubefile not valid, missing key {_keys} not in {node_title}")
-
-    # def set_app(self, app):
-    #     if app not in self.get_apps():
-    #         raise UnikubeFileError(f"the app '{app}' is not part of this Unikubefile")
 
     def get_apps(self):
         apps = list(self._data["apps"].keys())
