@@ -13,6 +13,7 @@ tinydb~=4.6.1
 python-slugify~=5.0.2
 
 requests~=2.27.1
+requests-toolbelt~=0.9.1
 pyjwt[crypto]~=2.3.0
 
 gql~=3.0.0
