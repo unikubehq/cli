@@ -101,8 +101,8 @@ class UnikubeFile_1_0(UnikubeFile, BaseModel):
         for app in self.apps:
             if app.name == name:
                 return app
-        else:
-            if name != "default":
-                raise Exception("Invalid name.")
 
-            return self.apps[0]
+        if name != "default":
+            raise ValueError("Invalid name.")
+
+        return self.apps[0]
