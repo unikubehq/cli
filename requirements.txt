@@ -3,7 +3,7 @@ click==8.0.3
 click-didyoumean~=0.3.0
 click-spinner==0.1.10
 colorama~=0.4.4  # color logging windows
-inquirerpy~=0.3.1
+inquirerpy~=0.3.2
 tabulate~=0.8.9
 
 # libraries
