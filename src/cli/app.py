@@ -311,7 +311,9 @@ def exec(ctx, **kwargs):
     "--no-build", "-n", is_flag=True, help="Do not build a new container image for the switch operation", default=False
 )
 @click.pass_obj
-def switch(ctx, app, organization, project, deck, deployment, unikubefile, no_build, **kwargs):
+def switch(
+    ctx, app, organization, project, deck, deployment, unikubefile: str = None, no_build: bool = False, **kwargs
+):
     """
     Switch a running deployment with a local Docker container.
     """
@@ -322,18 +324,18 @@ def switch(ctx, app, organization, project, deck, deployment, unikubefile, no_bu
     cluster = get_cluster_or_exit(ctx, cluster_data.id)
 
     # unikube file input
-    if unikubefile:
-        path_unikube_file = unikubefile
-    else:
-        path_unikube_file = os.path.join(os.getcwd(), UNIKUBE_FILE)
-
-    unikube_file = unikube_file_selector.get(path_unikube_file=path_unikube_file)
+    try:
+        unikube_file = unikube_file_selector.get(path_unikube_file=unikubefile)
+        unikube_file_app = unikube_file.get_app(name=app)
+    except Exception as e:
+        console.debug(e)
+        console.error("Invalid 'app' argument.", _exit=True)
 
     # 2: Get a deployment
     # 2.1.a Check the deployment identifier
-    if not deployment and unikube_file:
+    if not deployment and unikube_file_app:
         # 1.1.b check the unikubefile
-        deployment = unikube_file.get_deployment()
+        deployment = unikube_file_app.get_deployment()
         if not deployment:
             console.error("Please specify the 'deployment' key of your app in your unikube.yaml.", _exit=True)
     else:
@@ -376,7 +378,6 @@ def switch(ctx, app, organization, project, deck, deployment, unikubefile, no_bu
         console.exit_generic_error()
 
     target_deployment = None
-
     for _deployment in data["deck"]["deployments"]:
         if _deployment["title"] == deployment:
             target_deployment = _deployment
@@ -413,7 +414,9 @@ def switch(ctx, app, organization, project, deck, deployment, unikubefile, no_bu
 
     # 3: Build an new Docker image
     # 3.1 Grab the docker file
-    context, dockerfile, target = unikube_file.get_docker_build()
+    context, dockerfile, target = unikube_file_app.get_docker_build()
+    if not target:
+        target = ""
     console.debug(f"{context}, {dockerfile}, {target}")
 
     # 3.2 Set an image name
@@ -447,7 +450,7 @@ def switch(ctx, app, organization, project, deck, deployment, unikubefile, no_bu
 
     # 4. Start the Telepresence session
     # 4.1 Set the right intercept port
-    port = unikube_file.get_port()
+    port = unikube_file_app.get_port()
     if port is None:
         port = str(ports[0])
         if len(ports) > 1:
@@ -464,7 +467,7 @@ def switch(ctx, app, organization, project, deck, deployment, unikubefile, no_bu
         )
 
     # 4.2 See if there are volume mounts
-    mounts = unikube_file.get_mounts()
+    mounts = unikube_file_app.get_mounts()
     console.debug(f"Volumes requested: {mounts}")
     # mount service tokens
     if service_account_tokens:
@@ -481,11 +484,11 @@ def switch(ctx, app, organization, project, deck, deployment, unikubefile, no_bu
         tmp_sa_cert = None
 
     # 4.3 See if there special env variables
-    envs = unikube_file.get_environment()
+    envs = unikube_file_app.get_environment()
     console.debug(f"Envs requested: {envs}")
 
     # 4.4 See if there is a run command to be executed
-    command = unikube_file.get_command(port=port)
+    command = unikube_file_app.get_command(port=port)
     console.debug(f"Run command: {command}")
 
     console.info("Starting your container, this may take a while to become effective")

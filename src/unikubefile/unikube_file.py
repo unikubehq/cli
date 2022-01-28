@@ -16,9 +16,6 @@ class UnikubeFileError(Exception):
 
 
 class UnikubeFile(ABC):
-    def __init__(self, path: str, data: dict):
-        pass
-
     @abstractmethod
     def get_context(self) -> ContextData:
         raise NotImplementedError

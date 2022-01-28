@@ -2,92 +2,68 @@
 import os
 from typing import List, Optional, Tuple
 
+from pydantic import BaseModel
+
 from src.context.types import ContextData
-from src.unikubefile.unikube_file import UnikubeFile, UnikubeFileError
+from src.unikubefile.unikube_file import UnikubeFile
 
 
-class UnikubeFile_1_0(UnikubeFile):
-    def __init__(self, path: str, data: dict):
-        super().__init__(path=path, data=data)
-        self.path = path
+class UnikubeFileContext(BaseModel):
+    organization: Optional[str] = None
+    project: Optional[str] = None
+    deck: Optional[str] = None
 
-        self._data = data
-        self._verify()
 
-        # set the first app active for all query methods
-        self._app = self.get_apps()[0]
-        self._path = os.path.dirname(path)
+class UnikubeFileBuild(BaseModel):
+    context: str
+    dockerfile: Optional[str] = "Dockerfile"
+    target: Optional[str] = None
 
-    def get_context(self):
-        context = self._data.get("context", None)
-        if not context:
-            return ContextData()
 
-        return ContextData(
-            organization_id=context.get("organization", None),
-            project_id=context.get("project", None),
-            deck_id=context.get("deck", None),
-        )
-
-    def _verify(self):
-        self._check_required("apps", self._data, "root")
-
-    def _check_required(self, _keys, node, node_title):
-        if type(_keys) == list:
-            for _key in _keys:
-                if _key not in node:
-                    raise UnikubeFileError(f"Unikubefile not valid, missing key {_key} not in {node_title}")
-        else:
-            if _keys not in node:
-                raise UnikubeFileError(f"Unikubefile not valid, missing key {_keys} not in {node_title}")
-
-    def get_apps(self):
-        apps = list(self._data["apps"].keys())
-        return apps
+class UnikubeFileApp(BaseModel):
+    unikube_file: str
+    name: str
+    build: UnikubeFileBuild
+    deployment: str
+    port: Optional[int] = None
+    command: str
+    volumes: Optional[List[str]] = None
+    env: Optional[List[dict]] = None
 
     def get_docker_build(self) -> Tuple[str, str, str]:
-        app = self._data["apps"][self._app]
-        build = app.get("build")
-        if build:
-            base_path = os.path.dirname(self.path)
-            path = os.path.abspath(os.path.join(base_path, build["context"]))
-            dockerfile = os.path.join(base_path, build.get("dockerfile", "Dockerfile"))
-            return path, dockerfile, build.get("target", "")
+        if self.build:
+            base_path = os.path.dirname(self.unikube_file)
+            path = os.path.abspath(os.path.join(base_path, self.build.context))
+            dockerfile = os.path.join(base_path, self.build.dockerfile)
+            target = self.build.target
+            return path, dockerfile, target
         else:
             return os.path.abspath("."), "Dockerfile", ""
 
     def get_command(self, **format) -> Optional[str]:
-        app = self._data["apps"][self._app]
-        command = app.get("command")
-        if command:
-            command = command.format(**format)
-            return command.split(" ")
-        else:
+        if not self.command:
             return None
 
+        command = self.command.format(**format)
+        return command.split(" ")
+
     def get_port(self) -> Optional[str]:
-        app = self._data["apps"][self._app]
-        port = app.get("port")
-        if port:
-            return str(port)
+        if self.port:
+            return str(self.port)
         else:
             return None
 
     def get_deployment(self) -> Optional[str]:
-        app = self._data["apps"][self._app]
-        deployment = app.get("deployment")
-        if deployment:
-            return str(deployment)
+        if self.deployment:
+            return str(self.deployment)
         else:
             return None
 
     def get_mounts(self) -> List[Tuple[str, str]]:
-        app = self._data["apps"][self._app]
-        volumes = app.get("volumes")
         mounts = []
-        if volumes:
-            base_path = os.path.dirname(self.path)
-            for mount in volumes:
+        if self.volumes:
+            base_path = os.path.dirname(self.unikube_file)
+            for mount in self.volumes:
                 mount = mount.split(":")
                 source = os.path.abspath(os.path.join(base_path, mount[0]))
                 target = mount[1]
@@ -95,13 +71,38 @@ class UnikubeFile_1_0(UnikubeFile):
         return mounts
 
     def get_environment(self) -> List[Tuple[str, str]]:
-        app = self._data["apps"][self._app]
-        variables = app.get("environment")
-        if variables is None:
-            # fallback to the env keyword
-            variables = app.get("env")
         envs = []
-        if variables:
-            for env in variables:
+        if self.env:
+            for env in self.env:
                 envs.append(list(env.items())[0])
         return envs
+
+
+class UnikubeFile_1_0(UnikubeFile, BaseModel):
+    version: Optional[str]
+    context: Optional[UnikubeFileContext] = None
+    apps: List[UnikubeFileApp]
+
+    def get_context(self) -> ContextData:
+        if not self.context:
+            return ContextData()
+
+        return ContextData(
+            organization_id=self.context.organization,
+            project_id=self.context.project,
+            deck_id=self.context.deck,
+        )
+
+    def get_app(self, name: str = None) -> UnikubeFileApp:
+        # default name
+        if not name:
+            name = "default"
+
+        for app in self.apps:
+            if app.name == name:
+                return app
+        else:
+            if name != "default":
+                raise Exception("Invalid name.")
+
+            return self.apps[0]
