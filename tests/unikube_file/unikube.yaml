@@ -1,0 +1,13 @@
+apps:
+  your-app-01:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: target
+    deployment: deployment
+    port: 8000
+    command: bash
+    volumes:
+      - ./src:/app
+    env:
+      - VARIABLE-01: "variable-01"

@@ -1,0 +1,16 @@
+apps:
+  your-app-01:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    deployment: test
+    command: bash
+
+  default:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    deployment: test
+    command: bash
