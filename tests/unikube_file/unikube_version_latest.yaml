@@ -1,0 +1,8 @@
+apps:
+  projects:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    deployment: test
+    command: bash

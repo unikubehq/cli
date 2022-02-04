@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 from typing import List, Tuple, Union
 
 from src import settings
+from src.cli import console
 from src.context.helper import convert_context_arguments, is_valid_uuid4
 from src.context.types import ContextData
 from src.storage.user import LocalStorageUser, get_local_storage_user
@@ -50,15 +51,18 @@ class ClickOptionContext(IContext):
 
 
 class UnikubeFileContext(IContext):
-    def __init__(self, unikube_file: Union[UnikubeFile, None]):
-        self.unikube_file = unikube_file
+    def __init__(self, path_unikube_file: Union[UnikubeFile, None]):
+        self.path_unikube_file = path_unikube_file
 
     def get(self, **kwargs) -> ContextData:
+        # get unikube file
+        unikube_file = unikube_file_selector.get(path_unikube_file=self.path_unikube_file)
+
         # check if unikube file was loaded
-        if not self.unikube_file:
+        if not unikube_file:
             return ContextData()
 
-        return self.unikube_file.get_context()
+        return unikube_file.get_context()
 
 
 class LocalContext(IContext):
@@ -82,7 +86,11 @@ class ContextLogic:
 
         for context_object in self.context_order:
             # get context variables from current context
-            context_current = context_object.get(current_context=context)
+            try:
+                context_current = context_object.get(current_context=context)
+            except Exception as e:
+                console.debug(e)
+                context_current = ContextData()
 
             # update context
             context_dict = context.dict()
@@ -110,14 +118,7 @@ class Context:
                 ClickOptionContext(
                     click_options={key: kwargs[key] for key in ("organization", "project", "deck") if key in kwargs}
                 ),
-                UnikubeFileContext(
-                    unikube_file=unikube_file_selector.get(
-                        path_unikube_file=os.path.join(
-                            os.getcwd(),
-                            "unikube.yaml",
-                        )
-                    )
-                ),
+                UnikubeFileContext(path_unikube_file="unikube.yaml"),
                 LocalContext(local_storage_user=local_storage_user),
             ]
         )
