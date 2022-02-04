@@ -3,7 +3,7 @@ import click
 import src.cli.console as console
 from src.graphql import GraphQL
 from src.helpers import check_environment_type_local_or_exit, download_manifest
-from src.local.system import KubeAPI, KubeCtl
+from src.local.system import KubeAPI, KubeCtl, Telepresence
 
 
 def get_deck(ctx, deck_id: str):
@@ -233,6 +233,12 @@ def install(ctx, organization=None, project=None, deck=None, **kwargs):
 
     # check environment type
     check_environment_type_local_or_exit(deck=deck)
+
+    # check for switched app
+    provider_data = cluster.storage.get()
+    telepresence = Telepresence(provider_data)
+    if telepresence.intercept_count() > 0:
+        console.error("It is not possible to install a deck while having an active switch.", _exit=True)
 
     # download manifest
     general_data = ctx.storage_general.get()
