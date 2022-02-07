@@ -64,16 +64,3 @@ class Spinner(object):
                 self._clear_line()
                 sys.stdout.flush()
             self.stop_event.wait(interval)
-
-# with Spinner("Downloading Image 1") as s:
-#     time.sleep(2)
-#     s.success("Image 1 downloaded!")
-#     s.change_spinner_text("Downloading image 2")
-#     time.sleep(2)
-#     s.error("Image 2 download failed!")
-#     s.change_spinner_text("Downloading image 3")
-#     time.sleep(2)
-#     s.info("Image 3 downloaded!")
-#     s.change_spinner_text("Finishing stuff...")
-#     time.sleep(2)
-#     s.message("Exiting")
