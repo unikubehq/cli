@@ -32,7 +32,7 @@ setup(
         "requests>=2.25.1,<2.28.0",
         "pyjwt[crypto]>=2.0.1,<2.4.0",
         "gql>=2.0,<3.1",
-        "semantic-version~=2.8.4",
+        "semantic-version>=2.8.4,<2.10.0",
         "kubernetes>=11.0.0",
         "retrying~=1.3.3",
         "oic==1.3.0",
