@@ -237,7 +237,7 @@ def install(ctx, organization=None, project=None, deck=None, **kwargs):
     # check for switched app
     provider_data = cluster.storage.get()
     telepresence = Telepresence(provider_data)
-    if telepresence.intercept_count() > 0:
+    if telepresence.intercept_count():
         console.error("It is not possible to install a deck while having an active switch.", _exit=True)
 
     # download manifest
