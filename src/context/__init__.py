@@ -1,11 +1,16 @@
 class ClickContext(object):
     def __init__(self):
-        from src.authentication.authentication import get_authentication
+        from src.authentication.authentication import TokenAuthentication
+        from src.cache.cache import Cache
         from src.context.context import Context
         from src.local.providers.manager import K8sClusterManager
-        from src.storage.general import LocalStorageGeneral
 
-        self.auth = get_authentication()
-        self.storage_general = LocalStorageGeneral()
-        self.context: Context = Context(auth=self.auth)
+        cache = Cache()
+        self.user_id = cache.userId
+
+        self.auth = TokenAuthentication(cache=cache)
+        self.context: Context = Context(user_id=self.user_id, auth=self.auth)
         self.cluster_manager = K8sClusterManager()
+
+
+1

@@ -1,10 +1,10 @@
 import click
 
 import src.cli.console as console
+from src.cache.user_cache_context import UserContext
 from src.cli.console.helpers import deck_id_2_display_name, organization_id_2_display_name, project_id_2_display_name
 from src.context.helper import convert_context_arguments
 from src.graphql import GraphQL
-from src.storage.user import get_local_storage_user
 
 
 def show_context(ctx, context):
@@ -40,15 +40,14 @@ def set(ctx, organization=None, project=None, deck=None, **kwargs):
         console.echo("")
 
     # user_data / context
-    local_storage_user = get_local_storage_user()
-    user_data = local_storage_user.get()
+    user_context = UserContext(id=ctx.user_id)
 
     if organization_id:
         # set organization
-        user_data.context.deck_id = None
-        user_data.context.project_id = None
-        user_data.context.organization_id = organization_id
-        local_storage_user.set(user_data)
+        user_context.deck_id = None
+        user_context.project_id = None
+        user_context.organization_id = organization_id
+        user_context.save()
 
     if project_id:
         if not organization_id:
@@ -74,10 +73,10 @@ def set(ctx, organization=None, project=None, deck=None, **kwargs):
                 console.exit_generic_error()
 
         # set project
-        user_data.context.deck_id = None
-        user_data.context.project_id = project_id
-        user_data.context.organization_id = organization_id
-        local_storage_user.set(user_data)
+        user_context.deck_id = None
+        user_context.project_id = project_id
+        user_context.organization_id = organization_id
+        user_context.save()
 
     if deck_id:
         if not organization_id or not project_id:
@@ -107,12 +106,12 @@ def set(ctx, organization=None, project=None, deck=None, **kwargs):
                 console.exit_generic_error()
 
         # set deck
-        user_data.context.deck_id = deck_id
-        user_data.context.project_id = project_id
-        user_data.context.organization_id = organization_id
-        local_storage_user.set(user_data)
+        user_context.deck_id = deck_id
+        user_context.project_id = project_id
+        user_context.organization_id = organization_id
+        user_context.save()
 
-    show_context(ctx=ctx, context=user_data.context)
+    show_context(ctx=ctx, context=user_context)
 
 
 @click.command()
@@ -126,32 +125,31 @@ def remove(ctx, organization=None, project=None, deck=None, **kwargs):
     """
 
     # user_data / context
-    local_storage_user = get_local_storage_user()
-    user_data = local_storage_user.get()
+    user_context = UserContext(id=ctx.user_id)
 
     if organization:
-        user_data.context.deck_id = None
-        user_data.context.project_id = None
-        user_data.context.organization_id = None
-        local_storage_user.set(user_data)
+        user_context.deck_id = None
+        user_context.project_id = None
+        user_context.organization_id = None
+        user_context.save()
         console.success("Organization context removed.", _exit=True)
 
     if project:
-        user_data.context.deck_id = None
-        user_data.context.project_id = None
-        local_storage_user.set(user_data)
+        user_context.deck_id = None
+        user_context.project_id = None
+        user_context.save()
         console.success("Project context removed.", _exit=True)
 
     if deck:
-        user_data.context.deck_id = None
-        local_storage_user.set(user_data)
+        user_context.deck_id = None
+        user_context.save()
         console.success("Deck context removed.", _exit=True)
 
     # remove complete context
-    user_data.context.deck_id = None
-    user_data.context.project_id = None
-    user_data.context.organization_id = None
-    local_storage_user.set(user_data)
+    user_context.deck_id = None
+    user_context.project_id = None
+    user_context.organization_id = None
+    user_context.save()
     console.success("Context removed.", _exit=True)
 
 
@@ -163,7 +161,5 @@ def show(ctx, **kwargs):
     """
 
     # user_data / context
-    local_storage_user = get_local_storage_user()
-    user_data = local_storage_user.get()
-
-    show_context(ctx=ctx, context=user_data.context)
+    user_context = UserContext(id=ctx.user_id)
+    show_context(ctx=ctx, context=user_context)

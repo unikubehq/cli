@@ -4,9 +4,10 @@ from socket import AF_INET, SOCK_STREAM, gethostbyname, socket
 from threading import Thread
 from urllib.parse import parse_qs
 
-from oic.oic import AccessTokenResponse, AuthorizationResponse, Client
+from oic.oic import Client
 
 from src.authentication.types import AuthenticationData
+from src.cache.cache import Cache
 from src.cli import console
 from src.context import ClickContext
 
@@ -72,13 +73,14 @@ def run_callback_server(state: str, nonce: str, client: Client, ctx: ClickContex
                     console.error("Login failed!")
                     text = "Login failed! Your token does not match."
                 else:
-                    ctx.auth.general_data.authentication = AuthenticationData(
+                    cache = Cache()
+                    cache.auth = AuthenticationData(
                         email=token["email"],
                         access_token=response["response"]["access_token"],
                         refresh_token=response["response"]["refresh_token"],
                         requesting_party_token=True,
                     )
-                    ctx.auth.local_storage_general.set(ctx.auth.general_data)
+                    cache.save()
 
                     if given_name := token.get("given_name", ""):
                         greeting = f"Hello {given_name}!"

@@ -1,5 +1,7 @@
 import sys
+from typing import Optional
 from urllib.parse import urljoin
+from uuid import UUID
 
 import click_spinner
 import jwt
@@ -8,8 +10,8 @@ import requests
 import src.cli.console as console
 from src import settings
 from src.authentication.types import AuthenticationData
-from src.storage.general import LocalStorageGeneral
-from src.storage.user import LocalStorageUser
+from src.cache.cache import Cache
+from src.cache.user_settings import UserSettings
 
 
 class IAuthentication:
@@ -35,12 +37,15 @@ class IAuthentication:
 class TokenAuthentication(IAuthentication):
     def __init__(
         self,
-        local_storage_general: LocalStorageGeneral,
+        cache: Cache,
         timeout=settings.TOKEN_TIMEOUT,
     ):
-        self.local_storage_general = local_storage_general
+        self.cache: Cache = cache
+        try:
+            self.user_id = cache.userId
+        except Exception:
+            self.user_id = None
 
-        self.general_data = self.local_storage_general.get()
         self.timeout = timeout
 
         self.url_public_key = urljoin(self.__get_host(), settings.TOKEN_PUBLIC_KEY)
@@ -55,9 +60,8 @@ class TokenAuthentication(IAuthentication):
 
     def __get_host(self) -> str:
         try:
-            local_storage_user = LocalStorageUser(user_email=self.general_data.authentication.email)
-            user_data = local_storage_user.get()
-            auth_host = user_data.config.auth_host
+            user_settings = UserSettings(id=self.user_id)
+            auth_host = user_settings.auth_host
 
             if not auth_host:
                 raise Exception("User data config does not specify an authentication host.")
@@ -100,10 +104,9 @@ class TokenAuthentication(IAuthentication):
         password: str,
     ) -> dict:
         # set/update user config
-        local_storage_user = LocalStorageUser(user_email=email)
-        user_data = local_storage_user.get()
-        user_data.config.auth_host = settings.AUTH_DEFAULT_HOST
-        local_storage_user.set(user_data)
+        user_settings = UserSettings(id=self.user_id)
+        user_settings.auth_host = settings.AUTH_DEFAULT_HOST
+        user_settings.save()
 
         # access token + refresh token
         response_token = self.__request(
@@ -135,24 +138,23 @@ class TokenAuthentication(IAuthentication):
             requesting_party_token = False
 
         # set authentication data
-        self.general_data.authentication = AuthenticationData(
+        self.cache.auth = AuthenticationData(
             email=email,
             access_token=response["response"]["access_token"],
             refresh_token=response["response"]["refresh_token"],
             requesting_party_token=requesting_party_token,
         )
-
-        self.local_storage_general.set(self.general_data)
+        self.cache.save()
 
         return response
 
     def logout(self):
-        self.general_data.authentication = AuthenticationData()
-        self.local_storage_general.set(self.general_data)
+        self.cache.auth = AuthenticationData()
+        self.cache.save()
 
     def verify(self) -> dict:
         # keycloak
-        access_token = self.general_data.authentication.access_token
+        access_token = self.cache.auth.access_token
         response = self.__request(
             url=self.url_verify,
             data={},
@@ -166,7 +168,7 @@ class TokenAuthentication(IAuthentication):
 
     def refresh(self) -> dict:
         # request
-        refresh_token = self.general_data.authentication.refresh_token
+        refresh_token = self.cache.auth.refresh_token
         response_token = self.__request(
             url=self.url_refresh,
             data={
@@ -196,11 +198,10 @@ class TokenAuthentication(IAuthentication):
 
         # update token
         if response["success"]:
-            self.general_data = self.local_storage_general.get()
-            self.general_data.authentication.access_token = response["response"]["access_token"]
-            self.general_data.authentication.refresh_token = response["response"]["refresh_token"]
-            self.general_data.authentication.requesting_party_token = requesting_party_token
-            self.local_storage_general.set(self.general_data)
+            self.cache.auth.access_token = response["response"]["access_token"]
+            self.cache.auth.refresh_token = response["response"]["refresh_token"]
+            self.cache.auth.requesting_party_token = requesting_party_token
+            self.cache.save()
 
         return response
 
@@ -283,8 +284,3 @@ class TokenAuthentication(IAuthentication):
             options={"verify_signature": False},
         )
         return token
-
-
-def get_authentication():
-    token_authentication = TokenAuthentication(local_storage_general=LocalStorageGeneral())
-    return token_authentication
