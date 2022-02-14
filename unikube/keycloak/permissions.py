@@ -1,16 +1,14 @@
 import fnmatch
-import uuid
 from functools import lru_cache
-from typing import KeysView, List, Optional, Union
+from typing import List, Optional
 
 import jwt
 from pydantic import BaseModel
-from retrying import retry
 
 from unikube import settings
 from unikube.authentication.authentication import IAuthentication
-from unikube.authentication.types import AuthenticationData
 from unikube.cli import console
+from unikube.cache.cache import Cache
 
 
 class KeycloakPermissionData(BaseModel):
@@ -30,16 +28,14 @@ class KeycloakPermissions:
             console.exit_login_required()
 
         # get authentication_data
-        authentication_data = self.authentication.general_data.authentication
+        cache = Cache()
 
         # check for requesting_party_token
-        if not authentication_data.requesting_party_token:
+        if not cache.auth.requesting_party_token:
             raise Exception("Requesting Party Token (RPT) required.")
 
         # decode requesting_party_token
-        requesting_party_token = self._decode_requesting_party_token(
-            requesting_party_token=authentication_data.access_token
-        )
+        requesting_party_token = self._decode_requesting_party_token(requesting_party_token=cache.auth.access_token)
 
         # convert
         permission_data = KeycloakPermissions._convert(requesting_party_token["authorization"]["permissions"])

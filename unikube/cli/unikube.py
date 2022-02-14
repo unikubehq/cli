@@ -5,7 +5,8 @@ from unikube.cli.context import show_context
 from unikube.graphql_utils import GraphQL
 from unikube.local.providers.helper import get_cluster_or_exit
 from unikube.local.system import Telepresence
-from unikube.storage.user import get_local_storage_user
+import unikube.cli.console as console
+from unikube.cache.user_cache_context import UserContext
 
 
 @click.command()
@@ -72,6 +73,5 @@ def ps(ctx, **kwargs):
     console.echo("")
 
     # context
-    local_storage_user = get_local_storage_user()
-    user_data = local_storage_user.get()
-    show_context(ctx=ctx, context=user_data.context)
+    user_context = UserContext(id=ctx.user_id)
+    show_context(ctx=ctx, context=user_context)

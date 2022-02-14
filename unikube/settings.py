@@ -12,6 +12,7 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 CLI_CONFIG_FILE = os.path.expanduser("~/.unikube/config_dev")
 exist_or_create(CLI_CONFIG_FILE)
 
+CLI_UNIKUBE_DIRECTORY = os.path.expanduser("~/.unikube/")
 CLI_KUBECONFIG_DIRECTORY = os.path.expanduser("~/.unikube/")
 CLI_TABLEFMT = "psql"
 

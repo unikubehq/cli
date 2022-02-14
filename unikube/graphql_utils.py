@@ -10,6 +10,7 @@ from retrying import retry
 
 import unikube.cli.console as console
 from unikube import settings
+from unikube.cache import Cache
 
 
 # EnvironmentType
@@ -39,7 +40,9 @@ class GraphQL:
 
         # automatic token refresh
         self.authentication = authentication
-        self.access_token = str(authentication.general_data.authentication.access_token)
+
+        cache = Cache()
+        self.access_token = str(cache.auth.access_token)
 
         # client
         self.client = self._client()

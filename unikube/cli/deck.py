@@ -4,6 +4,7 @@ import unikube.cli.console as console
 from unikube.graphql_utils import GraphQL
 from unikube.helpers import check_environment_type_local_or_exit, download_manifest
 from unikube.local.system import KubeAPI, KubeCtl, Telepresence
+from unikube.cache import Cache
 
 
 def get_deck(ctx, deck_id: str):
@@ -241,10 +242,8 @@ def install(ctx, organization=None, project=None, deck=None, **kwargs):
         console.error("It is not possible to install a deck while having an active switch.", _exit=True)
 
     # download manifest
-    general_data = ctx.storage_general.get()
-    manifest = download_manifest(
-        deck=deck, authentication=ctx.auth, access_token=general_data.authentication.access_token
-    )
+    cache = Cache()
+    manifest = download_manifest(deck=deck, authentication=ctx.auth, access_token=cache.auth.access_token)
 
     # KubeCtl
     provider_data = cluster.storage.get()
@@ -299,10 +298,8 @@ def uninstall(ctx, organization=None, project=None, deck=None, **kwargs):
     check_environment_type_local_or_exit(deck=deck)
 
     # download manifest
-    general_data = ctx.storage_general.get()
-    manifest = download_manifest(
-        deck=deck, authentication=ctx.auth, access_token=general_data.authentication.access_token
-    )
+    cache = Cache()
+    manifest = download_manifest(deck=deck, authentication=ctx.auth, access_token=cache.auth.access_token)
 
     # KubeCtl
     provider_data = cluster.storage.get()

@@ -1,13 +1,13 @@
 from getpass import getpass
 
 import click
-from oic import rndstr
-from oic.oic import Client
-from oic.utils.authn.client import CLIENT_AUTHN_METHOD
 
 import unikube.cli.console as console
-from unikube import settings
 from unikube.helpers import compare_current_and_latest_versions
+from unikube.authentication.flow import password_flow, web_flow
+from unikube.cache.cache import Cache
+from unikube.cache.user_info import UserInfo
+from unikube.graphql_utils import GraphQL
 
 
 @click.command()
@@ -21,68 +21,62 @@ def login(ctx, email, password, **kwargs):
     ``-e`` for email and enable the direct login method. For a non-interactive login, you can provide
     ``-p`` along with the password.
     """
+
     compare_current_and_latest_versions()
+
+    # select login flow
     if email or password:
         if not email:
             email = click.prompt("email", type=str)
         if not password:
             password = getpass("password:")
-        return password_flow(ctx, email, password)
-    return web_flow(ctx)
 
-
-def password_flow(ctx, email, password):
-    response = ctx.auth.login(
-        email,
-        password,
-    )
-    if response["success"]:
-        try:
-            token = ctx.auth.token_from_response(response)
-        except Exception as e:
-            console.debug(e)
-            console.debug(response)
-            console.error("Login failed. Your token does not match.")
-            return False
-
-        if token["given_name"]:
-            console.success(f'Login successful. Hello {token["given_name"]}!')
-        else:
-            console.success("Login successful.")
+        success = password_flow(ctx, email, password)
     else:
-        console.error("Login failed. Please check email and password.")
-    return True
+        success = web_flow(ctx)
 
+    # error
+    if not success:
+        console.error("Login failed. Please check email and password.", _exit=True)
 
-def web_flow(ctx):
-    client = Client(client_authn_method=CLIENT_AUTHN_METHOD)
-    issuer = f"{settings.AUTH_DEFAULT_HOST}/auth/realms/unikube"
-    client.provider_config(issuer)
+    # GraphQL
+    try:
+        graph_ql = GraphQL(authentication=ctx.auth)
+        data = graph_ql.query(
+            """
+            query {
+                user {
+                    id
+                    email
+                    name
+                    familyName
+                    givenName
+                    avatarImage
+                }
+            }
+            """,
+        )
+        user = data["user"]
+    except Exception as e:
+        console.debug(e)
+        console.exit_generic_error()
 
-    state = rndstr()
-    nonce = rndstr()
+    # cache user_id
+    try:
+        cache = Cache()
+        cache.userId = user["id"]
+        cache.save()
+    except Exception as e:
+        console.debug(e)
 
-    # 1. run callback server
-    from unikube.authentication.web import run_callback_server
+    # cache user information
+    try:
+        user_info = UserInfo(**user)
+        user_info.save()
+    except Exception as e:
+        console.debug(e)
 
-    port = run_callback_server(state, nonce, client, ctx)
-
-    # 2. send to login with redirect url.
-    args = {
-        "client_id": "cli",
-        "response_type": ["token"],
-        "response_mode": "form_post",
-        "scope": ["openid"],
-        "nonce": nonce,
-        "state": state,
-        "redirect_uri": f"http://localhost:{port}",
-    }
-
-    auth_req = client.construct_AuthorizationRequest(request_args=args)
-    login_url = auth_req.request(client.authorization_endpoint)
-    console.info("If your Browser does not open automatically, go to the following URL and login:")
-    console.link(login_url)
-    click.launch(login_url)
+    console.success("Login successful.")
     return True
 
 
@@ -110,12 +104,13 @@ def status(ctx, token=False, **kwargs):
     response = ctx.auth.verify()
 
     # show token information
+    cache = Cache()
     if token:
-        console.info(f"access token: {ctx.auth.general_data.authentication.access_token}")
+        console.info(f"access token: {cache.auth.access_token}")
         console.echo("---")
-        console.info(f"refresh token: {ctx.auth.general_data.authentication.refresh_token}")
+        console.info(f"refresh token: {cache.auth.refresh_token}")
         console.echo("---")
-        console.info(f"requesting party token: {ctx.auth.general_data.authentication.requesting_party_token}")
+        console.info(f"requesting party token: {cache.auth.requesting_party_token}")
         console.echo("")
 
     if response["success"]:
