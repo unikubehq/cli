@@ -9,7 +9,7 @@ def organization_id_2_display_name(ctx, id: str = None) -> str:
         return "-"
 
     try:
-        graph_ql = GraphQL(authentication=ctx.auth)
+        graph_ql = GraphQL(cache=ctx.cache)
         data = graph_ql.query(
             """
             query($id: UUID!) {
@@ -35,7 +35,7 @@ def project_id_2_display_name(ctx, id: str = None) -> Optional[str]:
         return "-"
 
     try:
-        graph_ql = GraphQL(authentication=ctx.auth)
+        graph_ql = GraphQL(cache=ctx.cache)
         data = graph_ql.query(
             """
             query($id: UUID!) {
@@ -61,7 +61,7 @@ def deck_id_2_display_name(ctx, id: str = None) -> Optional[str]:
         return "-"
 
     try:
-        graph_ql = GraphQL(authentication=ctx.auth)
+        graph_ql = GraphQL(cache=ctx.cache)
         data = graph_ql.query(
             """
             query($id: UUID!) {

@@ -8,8 +8,7 @@ import requests
 import unikube.cli.console as console
 from unikube import settings
 from unikube.authentication.types import AuthenticationData
-from unikube.cache import Cache
-from unikube.cache.user_settings import UserSettings
+from unikube.cache import Cache, UserSettings
 
 
 class IAuthentication:

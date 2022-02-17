@@ -9,7 +9,7 @@ from unikube.graphql_utils import GraphQL
 def organization_list(ctx) -> Union[None, str]:
     # GraphQL
     try:
-        graph_ql = GraphQL(authentication=ctx.auth)
+        graph_ql = GraphQL(cache=ctx.cache)
         data = graph_ql.query(
             """
             query {
@@ -39,5 +39,5 @@ def organization_list(ctx) -> Union[None, str]:
     # get identifier if available
     organization_argument = get_identifier_or_pass(selection)
 
-    organization_id = convert_organization_argument_to_uuid(ctx.auth, argument_value=organization_argument)
+    organization_id = convert_organization_argument_to_uuid(ctx.cache, argument_value=organization_argument)
     return organization_id

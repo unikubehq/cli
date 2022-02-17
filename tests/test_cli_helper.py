@@ -1,6 +1,7 @@
 import pytest
 from requests import HTTPError, Session
 
+from unikube.cache import Cache
 from unikube.helpers import (
     check_environment_type_local_or_exit,
     download_manifest,
@@ -40,15 +41,13 @@ def test_download_manifest():
         },
     }
 
-    class Authentication:
-        def refresh(self):
-            return {"success": True, "response": {"access_token": ""}}
+    # class Authentication:
+    #     def refresh(self):
+    #         return {"success": True, "response": {"access_token": ""}}
 
-    access_token = ""
-    authentication = Authentication()
-
+    cache = Cache()
     with pytest.raises(SystemExit) as pytest_wrapped_e:
-        _ = download_manifest(deck=deck, authentication=authentication, access_token=access_token)
+        _ = download_manifest(deck=deck, cache=cache)
 
     assert pytest_wrapped_e.type == SystemExit
     assert pytest_wrapped_e.value.code == 1

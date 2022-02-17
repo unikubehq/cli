@@ -1,4 +1,3 @@
-import re
 import sys
 from pathlib import Path
 from urllib.parse import urljoin
@@ -15,6 +14,7 @@ from unikube.context import ClickContext
 from unikube.graphql_utils import EnvironmentType
 from unikube.local.providers.types import K8sProviderType
 from unikube.local.system import Telepresence
+from unikube.cache import Cache
 
 
 def get_requests_session(access_token) -> Session:
@@ -35,12 +35,12 @@ def download_specs(access_token: str, environment_id: str):
     return manifest
 
 
-def download_manifest(deck: dict, authentication: TokenAuthentication, access_token: str, environment_index: int = 0):
+def download_manifest(deck: dict, cache: Cache, environment_index: int = 0):
     try:
         environment_id = deck["environment"][environment_index]["id"]
         console.info("Requesting manifests. This process may take a few seconds.")
         manifest = download_specs(
-            access_token=access_token,
+            access_token=cache.auth.access_token,
             environment_id=environment_id,
         )
     except HTTPError as e:
@@ -55,7 +55,9 @@ def download_manifest(deck: dict, authentication: TokenAuthentication, access_to
         elif e.response.status_code == 403:
             console.warning("Refreshing access token")
             environment_id = deck["environment"][environment_index]["id"]
-            response = authentication.refresh()
+
+            auth = TokenAuthentication(cache=cache)
+            response = auth.refresh()
             if not response["success"]:
                 console.exit_login_required()
 

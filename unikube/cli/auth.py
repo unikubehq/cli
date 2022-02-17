@@ -5,9 +5,9 @@ import click
 import unikube.cli.console as console
 from unikube.helpers import compare_current_and_latest_versions
 from unikube.authentication.flow import password_flow, web_flow
-from unikube.cache.cache import Cache
-from unikube.cache.user_info import UserInfo
 from unikube.graphql_utils import GraphQL
+from unikube.authentication.authentication import TokenAuthentication
+from unikube.cache import Cache, UserInfo
 
 
 @click.command()
@@ -41,7 +41,7 @@ def login(ctx, email, password, **kwargs):
 
     # GraphQL
     try:
-        graph_ql = GraphQL(authentication=ctx.auth)
+        graph_ql = GraphQL(cache=ctx.cache)
         data = graph_ql.query(
             """
             query {
@@ -87,9 +87,10 @@ def logout(ctx, **kwargs):
     Log out of a Unikube host.
     """
 
-    ctx.auth.logout()
-    console.info("Logout completed.")
+    auth = TokenAuthentication(cache=ctx.cache)
+    auth.logout()
 
+    console.info("Logout completed.")
     return True
 
 
@@ -101,17 +102,18 @@ def status(ctx, token=False, **kwargs):
     View authentication status.
     """
 
-    response = ctx.auth.verify()
-
     # show token information
-    cache = Cache()
     if token:
-        console.info(f"access token: {cache.auth.access_token}")
+        console.info(f"access token: {ctx.cache.auth.access_token}")
         console.echo("---")
-        console.info(f"refresh token: {cache.auth.refresh_token}")
+        console.info(f"refresh token: {ctx.cache.auth.refresh_token}")
         console.echo("---")
-        console.info(f"requesting party token: {cache.auth.requesting_party_token}")
+        console.info(f"requesting party token: {ctx.cache.auth.requesting_party_token}")
         console.echo("")
+
+    # verify
+    auth = TokenAuthentication(cache=ctx.cache)
+    response = auth.verify()
 
     if response["success"]:
         console.success("Authentication verified.")

@@ -1,49 +1,49 @@
-import json
 import os
-from pathlib import Path
 from typing import Optional
 from uuid import UUID
 
-from pydantic import BaseModel
-
 from src import settings
 from src.authentication.types import AuthenticationData
+from src.cache.base_file_cache import BaseFileCache
 
 
-class Cache(BaseModel):
+class Cache(BaseFileCache):
     userId: UUID = UUID("00000000-0000-0000-0000-000000000000")
     auth: AuthenticationData = AuthenticationData()
 
-    def __init__(self, **data):
-        if not bool(data):
-            data = self.load()
+    def __init__(self, file_path: str = settings.CLI_UNIKUBE_DIRECTORY, file_name: str = "cache.json", **data):
+        super().__init__(file_path=file_path, file_name=file_name, **data)
 
-        if data:
-            super().__init__(**data)
-        else:
-            super().__init__()
 
-    def save(self):
-        # create file if not exists
-        file_path = os.path.join(settings.CLI_UNIKUBE_DIRECTORY)
-        Path(file_path).mkdir(parents=True, exist_ok=True)
+class UserInfo(BaseFileCache):
+    email: str
+    name: Optional[str]
+    familyName: Optional[str]
+    givenName: Optional[str]
+    avatarImage: Optional[str]
 
-        # save user information
-        file_name = os.path.join(file_path, "cache.json")
-        with open(file_name, "w") as f:
-            json.dump(json.loads(self.json()), f, ensure_ascii=False, indent=4)
+    def __init__(self, id: UUID, file_path: str = settings.CLI_UNIKUBE_DIRECTORY, file_name: str = "info.json", **data):
+        file_path = os.path.join(settings.CLI_UNIKUBE_DIRECTORY, "user", str(id))
+        super().__init__(id=id, file_path=file_path, file_name=file_name, **data)
 
-    @classmethod
-    def load(cls) -> Optional[dict]:
-        file_name = os.path.join(settings.CLI_UNIKUBE_DIRECTORY, "cache.json")
-        try:
-            with open(file_name, "r") as f:
-                data = json.load(f)
-            return data
-        except FileNotFoundError:
-            return None
-        except Exception:
-            # TODO
-            # file_to_rem = pathlib.Path("/tmp/<file_name>.txt")
-            # file_to_rem.unlink()
-            pass
+
+class UserSettings(BaseFileCache):
+    auth_host: str = settings.AUTH_DEFAULT_HOST
+
+    def __init__(
+        self, id: UUID, file_path: str = settings.CLI_UNIKUBE_DIRECTORY, file_name: str = "settings.json", **data
+    ):
+        file_path = os.path.join(settings.CLI_UNIKUBE_DIRECTORY, "user", str(id))
+        super().__init__(file_path=file_path, file_name=file_name, **data)
+
+
+class UserContext(BaseFileCache):
+    organization_id: Optional[str] = None
+    project_id: Optional[str] = None
+    deck_id: Optional[str] = None
+
+    def __init__(
+        self, id: UUID, file_path: str = settings.CLI_UNIKUBE_DIRECTORY, file_name: str = "context.json", **data
+    ):
+        file_path = os.path.join(settings.CLI_UNIKUBE_DIRECTORY, "user", str(id), "cache")
+        super().__init__(file_path=file_path, file_name=file_name, **data)

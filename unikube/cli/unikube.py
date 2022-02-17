@@ -5,8 +5,7 @@ from unikube.cli.context import show_context
 from unikube.graphql_utils import GraphQL
 from unikube.local.providers.helper import get_cluster_or_exit
 from unikube.local.system import Telepresence
-import unikube.cli.console as console
-from unikube.cache.user_cache_context import UserContext
+from unikube.cache import UserContext
 
 
 @click.command()
@@ -22,7 +21,7 @@ def ps(ctx, **kwargs):
 
     # GraphQL
     try:
-        graph_ql = GraphQL(authentication=ctx.auth)
+        graph_ql = GraphQL(cache=ctx.cache)
         data = graph_ql.query(
             """
             query {

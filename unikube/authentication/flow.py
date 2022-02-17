@@ -5,10 +5,12 @@ from oic.utils.authn.client import CLIENT_AUTHN_METHOD
 
 import unikube.cli.console as console
 from unikube import settings
+from unikube.authentication.authentication import TokenAuthentication
 
 
 def password_flow(ctx, email: str, password: str) -> bool:
-    response = ctx.auth.login(
+    auth = TokenAuthentication(cache=ctx.cache)
+    response = auth.login(
         email,
         password,
     )
@@ -16,7 +18,7 @@ def password_flow(ctx, email: str, password: str) -> bool:
         return False
 
     try:
-        _ = ctx.auth.token_from_response(response)
+        _ = auth.token_from_response(response)
     except Exception as e:
         console.debug(e)
         console.debug(response)

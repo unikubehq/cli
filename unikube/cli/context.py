@@ -8,8 +8,7 @@ from unikube.cli.console.helpers import (
 )
 from unikube.context.helper import convert_context_arguments
 from unikube.graphql_utils import GraphQL
-import unikube.cli.console as console
-from unikube.cache.user_cache_context import UserContext
+from unikube.cache import UserContext
 
 
 def show_context(ctx, context):
@@ -35,7 +34,7 @@ def set(ctx, organization=None, project=None, deck=None, **kwargs):
     """
 
     organization_id, project_id, deck_id = convert_context_arguments(
-        auth=ctx.auth, organization_argument=organization, project_argument=project, deck_argument=deck
+        cache=ctx.cache, organization_argument=organization, project_argument=project, deck_argument=deck
     )
 
     if not (organization or project or deck):
@@ -57,7 +56,7 @@ def set(ctx, organization=None, project=None, deck=None, **kwargs):
     if project_id:
         if not organization_id:
             try:
-                graph_ql = GraphQL(authentication=ctx.auth)
+                graph_ql = GraphQL(cache=ctx.cache)
                 data = graph_ql.query(
                     """
                     query($id: UUID) {
@@ -86,7 +85,7 @@ def set(ctx, organization=None, project=None, deck=None, **kwargs):
     if deck_id:
         if not organization_id or not project_id:
             try:
-                graph_ql = GraphQL(authentication=ctx.auth)
+                graph_ql = GraphQL(cache=ctx.cache)
                 data = graph_ql.query(
                     """
                     query($id: UUID) {

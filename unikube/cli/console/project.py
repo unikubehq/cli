@@ -11,7 +11,7 @@ def project_list(
 ) -> Union[None, str]:
     # GraphQL
     try:
-        graph_ql = GraphQL(authentication=ctx.auth)
+        graph_ql = GraphQL(cache=ctx.cache)
         data = graph_ql.query(
             """
             query($organization_id: UUID) {
@@ -52,6 +52,6 @@ def project_list(
     project_argument = get_identifier_or_pass(selection)
 
     project_id = convert_project_argument_to_uuid(
-        ctx.auth, argument_value=project_argument, organization_id=organization_id
+        ctx.cache, argument_value=project_argument, organization_id=organization_id
     )
     return project_id

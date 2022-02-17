@@ -46,13 +46,13 @@ def __select_result(argument_value: str, results: list, exception_message: str =
     return results[index]["id"]
 
 
-def convert_organization_argument_to_uuid(auth, argument_value: str) -> str:
+def convert_organization_argument_to_uuid(cache, argument_value: str) -> str:
     # uuid provided (no conversion required)
     if is_valid_uuid4(argument_value):
         return argument_value
 
     # get available context options or use provided data (e.g. from previous query)
-    graph_ql = GraphQL(authentication=auth)
+    graph_ql = GraphQL(cache=cache)
     data = graph_ql.query(
         """
         query {
@@ -70,13 +70,13 @@ def convert_organization_argument_to_uuid(auth, argument_value: str) -> str:
     return __select_result(argument_value, results, exception_message="organization")
 
 
-def convert_project_argument_to_uuid(auth, argument_value: str, organization_id: str = None) -> str:
+def convert_project_argument_to_uuid(cache, argument_value: str, organization_id: str = None) -> str:
     # uuid provided (no conversion required)
     if is_valid_uuid4(argument_value):
         return argument_value
 
     # get available context options or use provided data (e.g. from previous query)
-    graph_ql = GraphQL(authentication=auth)
+    graph_ql = GraphQL(cache=cache)
     data = graph_ql.query(
         """
         query($organization_id: UUID) {
@@ -98,14 +98,14 @@ def convert_project_argument_to_uuid(auth, argument_value: str, organization_id:
 
 
 def convert_deck_argument_to_uuid(
-    auth, argument_value: str, organization_id: str = None, project_id: str = None
+    cache, argument_value: str, organization_id: str = None, project_id: str = None
 ) -> str:
     # uuid provided (no conversion required)
     if is_valid_uuid4(argument_value):
         return argument_value
 
     # get available context options or use provided data (e.g. from previous query)
-    graph_ql = GraphQL(authentication=auth)
+    graph_ql = GraphQL(cache=cache)
     data = graph_ql.query(
         """
         query($organization_id: UUID, $project_id: UUID) {
@@ -128,25 +128,25 @@ def convert_deck_argument_to_uuid(
 
 
 def convert_context_arguments(
-    auth, organization_argument: str = None, project_argument: str = None, deck_argument: str = None
+    cache, organization_argument: str = None, project_argument: str = None, deck_argument: str = None
 ) -> Tuple[str, str, str]:
     try:
         # organization
         if organization_argument:
-            organization_id = convert_organization_argument_to_uuid(auth, organization_argument)
+            organization_id = convert_organization_argument_to_uuid(cache, organization_argument)
         else:
             organization_id = None
 
         # project
         if project_argument:
-            project_id = convert_project_argument_to_uuid(auth, project_argument, organization_id=organization_id)
+            project_id = convert_project_argument_to_uuid(cache, project_argument, organization_id=organization_id)
         else:
             project_id = None
 
         # deck
         if deck_argument:
             deck_id = convert_deck_argument_to_uuid(
-                auth, deck_argument, organization_id=organization_id, project_id=project_id
+                cache, deck_argument, organization_id=organization_id, project_id=project_id
             )
         else:
             deck_id = None

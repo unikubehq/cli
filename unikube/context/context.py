@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 from typing import List, Tuple, Union
-from uuid import UUID
 
 from unikube import settings
 from unikube.cli import console
@@ -8,7 +7,7 @@ from unikube.context.helper import convert_context_arguments, is_valid_uuid4
 from unikube.context.types import ContextData
 from unikube.unikubefile.selector import unikube_file_selector
 from unikube.unikubefile.unikube_file import UnikubeFile
-from unikube.cache.user_cache_context import UserContext
+from unikube.cache import Cache, UserContext
 
 
 class ContextError(Exception):
@@ -111,12 +110,11 @@ class ContextLogic:
 
 
 class Context:
-    def __init__(self, user_id: UUID, auth):
-        self.user_id = user_id
-        self._auth = auth
+    def __init__(self, cache: Cache):
+        self.cache = cache
 
     def get(self, **kwargs) -> ContextData:
-        user_context = UserContext(id=self.user_id)
+        user_context = UserContext(id=self.cache.userId)
 
         context_logic = ContextLogic(
             [
@@ -142,7 +140,7 @@ class Context:
     ) -> Tuple[str, str, str]:
         # convert context argments into ids
         organization_id, project_id, deck_id = convert_context_arguments(
-            auth=self._auth,
+            cache=self.cache,
             organization_argument=organization_argument,
             project_argument=project_argument,
             deck_argument=deck_argument,

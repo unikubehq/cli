@@ -12,6 +12,7 @@ from unikube.graphql_utils import GraphQL
 from unikube.helpers import check_running_cluster
 from unikube.local.providers.types import K8sProviderType
 from unikube.local.system import Docker, KubeAPI, Telepresence
+from unikube.authentication.authentication import TokenAuthentication
 
 
 @click.command()
@@ -22,14 +23,16 @@ def list(ctx, organization, **kwargs):
     Display a table of all available project names alongside with the ids.
     """
 
-    _ = ctx.auth.refresh()
+    auth = TokenAuthentication(cache=ctx.cache)
+    _ = auth.refresh()
+    ctx.cache = auth.cache
 
     # context
     organization_id, _, _ = ctx.context.get_context_ids_from_arguments(organization_argument=organization)
 
     # GraphQL
     try:
-        graph_ql = GraphQL(authentication=ctx.auth)
+        graph_ql = GraphQL(cache=ctx.cache)
         data = graph_ql.query(
             """
             query($organization_id: UUID) {
@@ -72,7 +75,9 @@ def info(ctx, project=None, organization=None, **kwargs):
     Displays the id, title and optional description of the selected project.
     """
 
-    _ = ctx.auth.refresh()
+    auth = TokenAuthentication(cache=ctx.cache)
+    _ = auth.refresh()
+    ctx.cache = auth.cache
 
     # context
     organization_id, project_id, _ = ctx.context.get_context_ids_from_arguments(
@@ -87,7 +92,7 @@ def info(ctx, project=None, organization=None, **kwargs):
 
     # GraphQL
     try:
-        graph_ql = GraphQL(authentication=ctx.auth)
+        graph_ql = GraphQL(cache=ctx.cache)
         data = graph_ql.query(
             """
             query($id: UUID!) {
@@ -150,7 +155,9 @@ def up(ctx, project=None, organization=None, ingress=None, provider=None, worker
 
     """
 
-    _ = ctx.auth.refresh()
+    auth = TokenAuthentication(cache=ctx.cache)
+    _ = auth.refresh()
+    ctx.cache = auth.cache
 
     if not Docker().daemon_active():
         console.error("Docker is not running. Please start Docker before starting a project.", _exit=True)
@@ -175,7 +182,7 @@ def up(ctx, project=None, organization=None, ingress=None, provider=None, worker
 
     # GraphQL
     try:
-        graph_ql = GraphQL(authentication=ctx.auth)
+        graph_ql = GraphQL(cache=ctx.cache)
         data = graph_ql.query(
             """
             query($id: UUID) {
@@ -411,7 +418,7 @@ def prune(ctx, **kwargs):
 
     # GraphQL
     try:
-        graph_ql = GraphQL(authentication=ctx.auth)
+        graph_ql = GraphQL(cache=ctx.cache)
         data = graph_ql.query(
             """
             query {
