@@ -1,16 +1,13 @@
 class ClickContext(object):
     def __init__(self):
-        from src.authentication.authentication import TokenAuthentication
         from src.cache.cache import Cache
         from src.context.context import Context
         from src.local.providers.manager import K8sClusterManager
 
+        # add cache to the context (loading the cache is required to identify the user)
         cache = Cache()
+        self.cache = cache
         self.user_id = cache.userId
 
-        self.auth = TokenAuthentication(cache=cache)
-        self.context: Context = Context(user_id=self.user_id, auth=self.auth)
+        self.context = Context(cache=self.cache)
         self.cluster_manager = K8sClusterManager()
-
-
-1

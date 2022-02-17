@@ -1,7 +1,7 @@
 import click
 
 import src.cli.console as console
-from src.cache.user_cache_context import UserContext
+from src.cache import UserContext
 from src.cli.console.helpers import deck_id_2_display_name, organization_id_2_display_name, project_id_2_display_name
 from src.context.helper import convert_context_arguments
 from src.graphql import GraphQL
@@ -30,7 +30,7 @@ def set(ctx, organization=None, project=None, deck=None, **kwargs):
     """
 
     organization_id, project_id, deck_id = convert_context_arguments(
-        auth=ctx.auth, organization_argument=organization, project_argument=project, deck_argument=deck
+        cache=ctx.cache, organization_argument=organization, project_argument=project, deck_argument=deck
     )
 
     if not (organization or project or deck):
@@ -52,7 +52,7 @@ def set(ctx, organization=None, project=None, deck=None, **kwargs):
     if project_id:
         if not organization_id:
             try:
-                graph_ql = GraphQL(authentication=ctx.auth)
+                graph_ql = GraphQL(cache=ctx.cache)
                 data = graph_ql.query(
                     """
                     query($id: UUID) {
@@ -81,7 +81,7 @@ def set(ctx, organization=None, project=None, deck=None, **kwargs):
     if deck_id:
         if not organization_id or not project_id:
             try:
-                graph_ql = GraphQL(authentication=ctx.auth)
+                graph_ql = GraphQL(cache=ctx.cache)
                 data = graph_ql.query(
                     """
                     query($id: UUID) {

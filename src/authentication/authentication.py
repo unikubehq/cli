@@ -1,7 +1,5 @@
 import sys
-from typing import Optional
 from urllib.parse import urljoin
-from uuid import UUID
 
 import click_spinner
 import jwt
@@ -10,8 +8,7 @@ import requests
 import src.cli.console as console
 from src import settings
 from src.authentication.types import AuthenticationData
-from src.cache.cache import Cache
-from src.cache.user_settings import UserSettings
+from src.cache import Cache, UserSettings
 
 
 class IAuthentication:

@@ -6,6 +6,7 @@ from urllib.parse import parse_qs
 
 from oic.oic import Client
 
+from src.authentication.authentication import TokenAuthentication
 from src.authentication.types import AuthenticationData
 from src.cache.cache import Cache
 from src.cli import console
@@ -51,7 +52,8 @@ def run_callback_server(state: str, nonce: str, client: Client, ctx: ClickContex
             if POST["state"] != state:
                 raise Exception(f"Invalid state: {POST['state']}")
 
-            response = ctx.auth._get_requesting_party_token(POST["access_token"])
+            auth = TokenAuthentication(cache=ctx.cache)
+            response = auth._get_requesting_party_token(POST["access_token"])
 
             login_file = open(os.path.join(os.path.dirname(os.path.realpath(__file__)), "login.html"))
             text = login_file.read()
@@ -66,7 +68,7 @@ def run_callback_server(state: str, nonce: str, client: Client, ctx: ClickContex
                 )
             else:
                 try:
-                    token = ctx.auth.token_from_response(response)
+                    token = auth.token_from_response(response)
                 except Exception as e:
                     console.debug(e)
                     console.debug(response)

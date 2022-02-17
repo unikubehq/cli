@@ -1,4 +1,3 @@
-import os
 import socket
 import sys
 import tempfile
@@ -13,7 +12,6 @@ from src.cli import console
 from src.graphql import GraphQL
 from src.local.providers.helper import get_cluster_or_exit
 from src.local.system import Docker, KubeAPI, KubeCtl, Telepresence
-from src.settings import UNIKUBE_FILE
 from src.unikubefile.selector import unikube_file_selector
 
 
@@ -39,7 +37,7 @@ def get_deck_from_arguments(ctx, organization_id: str, project_id: str, deck_id:
 
     # GraphQL
     try:
-        graph_ql = GraphQL(authentication=ctx.auth)
+        graph_ql = GraphQL(cache=ctx.cache)
         data = graph_ql.query(
             """
             query($id: UUID) {
@@ -348,7 +346,7 @@ def switch(
     # 2.2 Fetch available "deployment:", deployments
     # GraphQL
     try:
-        graph_ql = GraphQL(authentication=ctx.auth)
+        graph_ql = GraphQL(cache=ctx.cache)
         data = graph_ql.query(
             """
             query($id: UUID) {

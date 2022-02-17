@@ -10,7 +10,8 @@ from retrying import retry
 
 import src.cli.console as console
 from src import settings
-from src.cache.cache import Cache
+from src.authentication.authentication import TokenAuthentication
+from src.cache import Cache
 
 
 # EnvironmentType
@@ -31,17 +32,15 @@ def retry_exception(exception):
 class GraphQL:
     def __init__(
         self,
-        authentication,
+        cache: Cache,
         url=settings.GRAPHQL_URL,
         timeout=settings.GRAPHQL_TIMEOUT,
     ):
         self.url = url
         self.timeout = timeout
 
-        # automatic token refresh
-        self.authentication = authentication
-
-        cache = Cache()
+        # cache / access token
+        self.cache = cache
         self.access_token = str(cache.auth.access_token)
 
         # client
@@ -85,7 +84,8 @@ class GraphQL:
 
             except requests.exceptions.HTTPError:
                 # refresh token
-                response = self.authentication.refresh()
+                auth = TokenAuthentication(cache=self.cache)
+                response = auth.refresh()
                 if not response["success"]:
                     console.exit_login_required()
 

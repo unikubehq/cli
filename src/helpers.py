@@ -1,4 +1,3 @@
-import re
 import sys
 from urllib.parse import urljoin
 
@@ -10,6 +9,7 @@ from requests import HTTPError, Session
 import src.cli.console as console
 from src import settings
 from src.authentication.authentication import TokenAuthentication
+from src.cache import Cache
 from src.context import ClickContext
 from src.graphql import EnvironmentType
 from src.local.providers.types import K8sProviderType
@@ -34,12 +34,12 @@ def download_specs(access_token: str, environment_id: str):
     return manifest
 
 
-def download_manifest(deck: dict, authentication: TokenAuthentication, access_token: str, environment_index: int = 0):
+def download_manifest(deck: dict, cache: Cache, environment_index: int = 0):
     try:
         environment_id = deck["environment"][environment_index]["id"]
         console.info("Requesting manifests. This process may take a few seconds.")
         manifest = download_specs(
-            access_token=access_token,
+            access_token=cache.auth.access_token,
             environment_id=environment_id,
         )
     except HTTPError as e:
@@ -54,7 +54,9 @@ def download_manifest(deck: dict, authentication: TokenAuthentication, access_to
         elif e.response.status_code == 403:
             console.warning("Refreshing access token")
             environment_id = deck["environment"][environment_index]["id"]
-            response = authentication.refresh()
+
+            auth = TokenAuthentication(cache=cache)
+            response = auth.refresh()
             if not response["success"]:
                 console.exit_login_required()
 

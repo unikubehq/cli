@@ -1,7 +1,7 @@
 import click
 
 import src.cli.console as console
-from src.cache.user_cache_context import UserContext
+from src.cache import UserContext
 from src.cli.context import show_context
 from src.graphql import GraphQL
 from src.local.providers.helper import get_cluster_or_exit
@@ -21,7 +21,7 @@ def ps(ctx, **kwargs):
 
     # GraphQL
     try:
-        graph_ql = GraphQL(authentication=ctx.auth)
+        graph_ql = GraphQL(cache=ctx.cache)
         data = graph_ql.query(
             """
             query {
