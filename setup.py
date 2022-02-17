@@ -36,7 +36,7 @@ setup(
         "kubernetes>=11.0.0",
         "retrying~=1.3.3",
         "oic==1.3.0",
-        "python-slugify~=5.0.2",
+        "python-slugify>=5.0.2,<6.1.0",
         "click-didyoumean~=0.3.0",
     ],
     python_requires="~=3.7",
