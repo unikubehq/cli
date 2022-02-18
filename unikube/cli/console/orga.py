@@ -3,34 +3,19 @@ from typing import Union
 import unikube.cli.console as console
 from unikube.cli.console.input import get_identifier_or_pass
 from unikube.context.helper import convert_organization_argument_to_uuid
-from unikube.graphql_utils import GraphQL
+from unikube.cache import UserIDs
 
 
 def organization_list(ctx) -> Union[None, str]:
-    # GraphQL
-    try:
-        graph_ql = GraphQL(cache=ctx.cache)
-        data = graph_ql.query(
-            """
-            query {
-                allOrganizations {
-                    results {
-                        id
-                        title
-                    }
-                }
-            }
-            """
-        )
-        organization_list = data["allOrganizations"]["results"]
-    except Exception as e:
-        console.debug(e)
-        console.exit_generic_error()
+    user_IDs = UserIDs(id=ctx.user_id)
+    if not user_IDs.organization:
+        user_IDs.update()
+        user_IDs.save()
 
     selection = console.list(
         message="Please select an organization",
-        choices=[organization["title"] for organization in organization_list],
-        identifiers=[organization["id"] for organization in organization_list],
+        choices=[organization.title for _, organization in user_IDs.organization.items()],
+        identifiers=user_IDs.organization.keys(),
         message_no_choices="No organizations available!",
     )
     if selection is None:
