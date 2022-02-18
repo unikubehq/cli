@@ -1,1 +1,1 @@
-from .cache import Cache, UserContext, UserInfo, UserSettings
+from .cache import Cache, UserContext, UserIDs, UserInfo, UserSettings

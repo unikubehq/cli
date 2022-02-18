@@ -5,7 +5,7 @@ import click
 import src.cli.console as console
 from src.authentication.authentication import TokenAuthentication
 from src.authentication.flow import password_flow, web_flow
-from src.cache import Cache, UserInfo
+from src.cache import UserIDs, UserInfo
 from src.graphql import GraphQL
 from src.helpers import compare_current_and_latest_versions
 
@@ -53,19 +53,43 @@ def login(ctx, email, password, **kwargs):
                     givenName
                     avatarImage
                 }
+                allOrganizations {
+                    results {
+                        id
+                        title
+                    }
+                }
+                allProjects {
+                    results {
+                        id
+                        title
+                        organization {
+                            id
+                        }
+                    }
+                }
+                allDecks {
+                    results {
+                        id
+                        title
+                        project {
+                            id
+                        }
+                    }
+                }
             }
             """,
         )
-        user = data["user"]
+
+        user = data.get("user", None)
     except Exception as e:
         console.debug(e)
         console.exit_generic_error()
 
     # cache user_id
     try:
-        cache = Cache()
-        cache.userId = user["id"]
-        cache.save()
+        ctx.cache.userId = user["id"]
+        ctx.cache.save()
     except Exception as e:
         console.debug(e)
 
@@ -73,6 +97,14 @@ def login(ctx, email, password, **kwargs):
     try:
         user_info = UserInfo(**user)
         user_info.save()
+    except Exception as e:
+        console.debug(e)
+
+    # cache IDs
+    try:
+        user_IDs = UserIDs(id=user["id"])
+        user_IDs.update(data)
+        user_IDs.save()
     except Exception as e:
         console.debug(e)
 

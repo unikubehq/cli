@@ -1,82 +1,55 @@
 from typing import Optional
+from uuid import UUID
 
-from src.cli import console
-from src.graphql import GraphQL
+from src.cache.cache import UserIDs
 
 
 def organization_id_2_display_name(ctx, id: str = None) -> str:
     if not id:
         return "-"
 
-    try:
-        graph_ql = GraphQL(cache=ctx.cache)
-        data = graph_ql.query(
-            """
-            query($id: UUID!) {
-                organization(id: $id) {
-                    title
-                }
-            }
-            """,
-            query_variables={
-                "id": id,
-            },
-        )
-        title = data["organization"]["title"]
-    except Exception as e:
-        console.debug(e)
-        title = "-"
+    user_IDs = UserIDs(id=ctx.user_id)
+    organization = user_IDs.organization.get(UUID(id), None)
+    if organization:
+        if organization.title:
+            return f"{organization.title} ({id})"
 
-    return f"{title} ({id})"
+    user_IDs.update()
+    user_IDs.save()
+
+    organization = user_IDs.organization.get(id, None)
+    return f"{organization.title or '-'} ({id})"
 
 
 def project_id_2_display_name(ctx, id: str = None) -> Optional[str]:
     if not id:
         return "-"
 
-    try:
-        graph_ql = GraphQL(cache=ctx.cache)
-        data = graph_ql.query(
-            """
-            query($id: UUID!) {
-                project(id: $id) {
-                    title
-                }
-            }
-            """,
-            query_variables={
-                "id": id,
-            },
-        )
-        title = data["project"]["title"]
-    except Exception as e:
-        console.debug(e)
-        title = "-"
+    user_IDs = UserIDs(id=ctx.user_id)
+    project = user_IDs.project.get(UUID(id), None)
+    if project:
+        if project.title:
+            return f"{project.title} ({id})"
 
-    return f"{title} ({id})"
+    user_IDs.update()
+    user_IDs.save()
+
+    project = user_IDs.project.get(id, None)
+    return f"{project.title or '-'} ({id})"
 
 
 def deck_id_2_display_name(ctx, id: str = None) -> Optional[str]:
     if not id:
         return "-"
 
-    try:
-        graph_ql = GraphQL(cache=ctx.cache)
-        data = graph_ql.query(
-            """
-            query($id: UUID!) {
-                deck(id: $id) {
-                    title
-                }
-            }
-            """,
-            query_variables={
-                "id": id,
-            },
-        )
-        title = data["deck"]["title"]
-    except Exception as e:
-        console.debug(e)
-        title = "-"
+    user_IDs = UserIDs(id=ctx.user_id)
+    deck = user_IDs.deck.get(UUID(id), None)
+    if deck:
+        if deck.title:
+            return f"{deck.title} ({id})"
 
-    return f"{title} ({id})"
+    user_IDs.update()
+    user_IDs.save()
+
+    deck = user_IDs.deck.get(id, None)
+    return f"{deck.title or '-'} ({id})"

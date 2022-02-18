@@ -1,8 +1,10 @@
 from typing import Tuple
 from uuid import UUID
 
+from retrying import retry
 from slugify import slugify
 
+from src.cache import UserIDs
 from src.cli import console
 from src.graphql import GraphQL
 
@@ -46,10 +48,16 @@ def __select_result(argument_value: str, results: list, exception_message: str =
     return results[index]["id"]
 
 
+# @retry(stop_max_attempt_number=2)
 def convert_organization_argument_to_uuid(cache, argument_value: str) -> str:
     # uuid provided (no conversion required)
     if is_valid_uuid4(argument_value):
         return argument_value
+
+    # user_IDs = UserIDs(id=cache.user_id)
+    # if not user_IDs.organization:
+    #     user_IDs.update()
+    #     raise RetryException
 
     # get available context options or use provided data (e.g. from previous query)
     graph_ql = GraphQL(cache=cache)
