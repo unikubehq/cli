@@ -1,5 +1,6 @@
 import re
 import sys
+from pathlib import Path
 from urllib.parse import urljoin
 
 import click_spinner
@@ -112,8 +113,9 @@ def compare_current_and_latest_versions():
     try:
         current_version = None
         try:
-            version_file = open("../VERSION", "r")
-            current_version = version_file.read()
+            path = Path(__file__).parent / "../VERSION"
+            with path.open("r") as f:
+                current_version = f.read()
         except (FileNotFoundError, PermissionError):
             console.warning("Could not read current version.")
         release = requests.get("https://api.github.com/repos/unikubehq/cli/releases/latest")
