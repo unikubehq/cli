@@ -22,10 +22,10 @@ class K3d(AbstractK8sProvider, CMDWrapper):
 
     def __init__(
             self,
-        id,
-        name: str = None,
-        prefix: str = settings.K3D_CLUSTER_PREFIX,
-        _debug_output=False,
+            id,
+            name: str = None,
+            prefix: str = settings.K3D_CLUSTER_PREFIX,
+            _debug_output=False,
     ):
         # storage
         storage = K3dStorage(id=id)
