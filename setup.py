@@ -38,6 +38,7 @@ setup(
         "oic==1.3.0",
         "python-slugify>=5.0.2,<6.1.0",
         "click-didyoumean~=0.3.0",
+        "requests-toolbelt~=0.9.1",
     ],
     python_requires="~=3.7",
     packages=find_packages(),
