@@ -9,8 +9,8 @@ from unikube.storage.types import TinyDatabaseData
 
 class TinyDatabase:
     def __init__(
-        self,
-        table_name="database",
+            self,
+            table_name="database",
     ):
         self.table_name = table_name
 

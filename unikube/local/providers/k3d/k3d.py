@@ -21,7 +21,7 @@ class K3d(AbstractK8sProvider, CMDWrapper):
     _cluster = []
 
     def __init__(
-        self,
+            self,
         id,
         name: str = None,
         prefix: str = settings.K3D_CLUSTER_PREFIX,
