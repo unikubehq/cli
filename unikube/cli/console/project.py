@@ -7,7 +7,7 @@ from unikube.graphql import GraphQL
 
 
 def project_list(
-        ctx, organization_id: str = None, filter: List[str] = None, excludes: List[str] = None
+    ctx, organization_id: str = None, filter: List[str] = None, excludes: List[str] = None
 ) -> Union[None, str]:
     # GraphQL
     try:
