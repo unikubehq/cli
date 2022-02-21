@@ -1,6 +1,6 @@
-from src.cli.unikube import ps
 from tests.login_testcase import LoginTestCase
-from unikube import ClickContext
+from unikube.cli.unikube import ps
+from unikube.click import ClickContext
 
 
 class PsTest(LoginTestCase):

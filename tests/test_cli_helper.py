@@ -1,7 +1,7 @@
 import pytest
 from requests import HTTPError, Session
 
-from src.helpers import (
+from unikube.helpers import (
     check_environment_type_local_or_exit,
     download_manifest,
     download_specs,

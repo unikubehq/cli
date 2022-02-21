@@ -1,6 +1,6 @@
 import unittest
 
-from src.context.helper import is_valid_uuid4
+from unikube.context.helper import is_valid_uuid4
 
 
 class IsValidUuid4Test(unittest.TestCase):

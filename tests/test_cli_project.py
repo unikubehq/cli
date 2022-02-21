@@ -1,6 +1,6 @@
-from src.cli import orga, project
 from tests.login_testcase import LoginTestCase
-from unikube import ClickContext
+from unikube.cli import orga, project
+from unikube.click import ClickContext
 
 
 class ProjectTestCase(LoginTestCase):

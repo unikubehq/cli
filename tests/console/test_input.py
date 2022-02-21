@@ -1,4 +1,4 @@
-from src.cli.console.input import (
+from unikube.cli.console.input import (
     exclude_by_identifiers,
     filter_by_identifiers,
     get_identifier_or_pass,

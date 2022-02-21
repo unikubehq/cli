@@ -4,8 +4,8 @@ from unittest.mock import patch
 import pytest
 from click.testing import CliRunner
 
-from src.cli import auth
-from unikube import ClickContext
+from unikube.cli import auth
+from unikube.click import ClickContext
 
 
 def test_login_failed():
