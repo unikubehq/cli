@@ -1,6 +1,6 @@
-from src.cli import app
 from tests.login_testcase import LoginTestCase
-from unikube import ClickContext
+from unikube.cli import app
+from unikube.click import ClickContext
 
 
 def check():

@@ -1,8 +1,8 @@
 import os
 import unittest
 
-from src.unikubefile.selector import unikube_file_selector
-from src.unikubefile.unikube_file import UnikubeFileError
+from unikube.unikubefile.selector import unikube_file_selector
+from unikube.unikubefile.unikube_file import UnikubeFileError
 
 
 class SelectorTest(unittest.TestCase):
