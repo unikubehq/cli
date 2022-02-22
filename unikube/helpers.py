@@ -117,7 +117,13 @@ def compare_current_and_latest_versions():
             with path.open("r") as f:
                 current_version = f.read()
         except (FileNotFoundError, PermissionError):
-            console.warning("Could not read current version.")
+            console.debug("Could not read current version.")
+
+        if not current_version:
+            dist = pkg_resources.working_set.by_key.get("unikube")
+            if dist:
+                current_version = dist.version
+
         release = requests.get("https://api.github.com/repos/unikubehq/cli/releases/latest")
         if release.status_code == 403:
             console.info("Versions cannot be compared, as API rate limit was exceeded")
