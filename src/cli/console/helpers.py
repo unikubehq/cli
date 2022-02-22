@@ -4,12 +4,12 @@ from uuid import UUID
 from src.cache.cache import UserIDs
 
 
-def organization_id_2_display_name(ctx, id: str = None) -> str:
+def organization_id_2_display_name(ctx, id: UUID = None) -> str:
     if not id:
         return "-"
 
     user_IDs = UserIDs(id=ctx.user_id)
-    organization = user_IDs.organization.get(UUID(id), None)
+    organization = user_IDs.organization.get(id, None)
     if organization:
         if organization.title:
             return f"{organization.title} ({id})"
@@ -21,12 +21,12 @@ def organization_id_2_display_name(ctx, id: str = None) -> str:
     return f"{organization.title or '-'} ({id})"
 
 
-def project_id_2_display_name(ctx, id: str = None) -> Optional[str]:
+def project_id_2_display_name(ctx, id: UUID = None) -> Optional[str]:
     if not id:
         return "-"
 
     user_IDs = UserIDs(id=ctx.user_id)
-    project = user_IDs.project.get(UUID(id), None)
+    project = user_IDs.project.get(id, None)
     if project:
         if project.title:
             return f"{project.title} ({id})"
@@ -38,12 +38,12 @@ def project_id_2_display_name(ctx, id: str = None) -> Optional[str]:
     return f"{project.title or '-'} ({id})"
 
 
-def deck_id_2_display_name(ctx, id: str = None) -> Optional[str]:
+def deck_id_2_display_name(ctx, id: UUID = None) -> Optional[str]:
     if not id:
         return "-"
 
     user_IDs = UserIDs(id=ctx.user_id)
-    deck = user_IDs.deck.get(UUID(id), None)
+    deck = user_IDs.deck.get(id, None)
     if deck:
         if deck.title:
             return f"{deck.title} ({id})"

@@ -1,5 +1,6 @@
 import sys
 from urllib.parse import urljoin
+from uuid import UUID
 
 import click_spinner
 import jwt
@@ -146,6 +147,7 @@ class TokenAuthentication(IAuthentication):
         return response
 
     def logout(self):
+        self.cache.userId = UUID("00000000-0000-0000-0000-000000000000")
         self.cache.auth = AuthenticationData()
         self.cache.save()
 

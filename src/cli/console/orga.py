@@ -1,4 +1,5 @@
-from typing import Union
+from typing import Optional
+from uuid import UUID
 
 import src.cli.console as console
 from src.cache import UserIDs
@@ -6,7 +7,7 @@ from src.cli.console.input import get_identifier_or_pass
 from src.context.helper import convert_organization_argument_to_uuid
 
 
-def organization_list(ctx) -> Union[None, str]:
+def organization_list(ctx) -> Optional[UUID]:
     user_IDs = UserIDs(id=ctx.user_id)
     if not user_IDs.organization:
         user_IDs.update()

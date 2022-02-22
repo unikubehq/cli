@@ -34,5 +34,5 @@ class OrgaTestCase(LoginTestCase):
 
         self.assertIn("id", result.output)
         self.assertIn("name", result.output)
-        self.assertIn("acme", result.output)
+        self.assertIn("ACME", result.output)
         self.assertEqual(result.exit_code, 0)

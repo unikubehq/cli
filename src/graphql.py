@@ -10,7 +10,6 @@ from retrying import retry
 
 import src.cli.console as console
 from src import settings
-from src.authentication.authentication import TokenAuthentication
 from src.cache import Cache
 
 
@@ -83,6 +82,8 @@ class GraphQL:
                 )
 
             except requests.exceptions.HTTPError:
+                from src.authentication.authentication import TokenAuthentication
+
                 # refresh token
                 auth = TokenAuthentication(cache=self.cache)
                 response = auth.refresh()
