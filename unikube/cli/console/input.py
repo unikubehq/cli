@@ -2,8 +2,10 @@ import re
 from typing import Any, Callable, List, Union
 
 from InquirerPy import inquirer
+from InquirerPy.utils import InquirerPyValidate
 
 import unikube.cli.console as console
+from unikube.settings import INQUIRER_STYLE
 
 
 def get_identifier_or_pass(selection: str) -> str:
@@ -122,11 +124,36 @@ def list(
         multiselect=multiselect,
         transformer=transformer,
         keybindings={"toggle": [{"key": "space"}]},
+        style=INQUIRER_STYLE,
+        amark="✔",
     ).execute()
     if not answer:
         return None
 
     return answer
+
+
+def input(
+    text: str,
+    default: str = "",
+    mandatory: bool = False,
+    validate: InquirerPyValidate = None,
+    invalid_message: str = "",
+):
+    kwargs = {}
+    if mandatory:
+        kwargs.update(
+            {
+                "validate": lambda result: len(result) > 0,
+                "invalid_message": "Input cannot be empty.",
+            }
+        )
+    if validate and invalid_message:
+        kwargs.update({"validate": validate, "invalid_message": invalid_message})
+    result = inquirer.text(
+        text, default=default, style=INQUIRER_STYLE, mandatory=mandatory, amark="✔", **kwargs
+    ).execute()
+    return result
 
 
 def confirm(
