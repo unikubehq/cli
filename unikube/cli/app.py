@@ -128,12 +128,12 @@ def list(ctx, organization, project, deck, **kwargs):
 
     def _ready_ind(c) -> Tuple[bool, str]:
         # get container count
-        if not c:
+        if c is None:
             container_count = 0
+            ready_count = 0
         else:
             container_count = len(c)
-
-        ready_count = sum([val.ready for val in c])
+            ready_count = sum([val.ready for val in c])
         return container_count == ready_count, f"{ready_count}/{container_count}"
 
     for pod in k8s.get_pods().items:
