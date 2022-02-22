@@ -1,13 +1,13 @@
-from typing import Union
+from typing import Optional
 from uuid import UUID
 
 import unikube.cli.console as console
 from unikube.cli.console.input import get_identifier_or_pass
 from unikube.context.helper import convert_deck_argument_to_uuid
-from unikube.cache.cache import UserIDs
+from unikube.cache import UserIDs
 
 
-def deck_list(ctx, organization_id: str = None, project_id: str = None) -> Union[None, str]:
+def deck_list(ctx, organization_id: UUID = None, project_id: UUID = None) -> Optional[UUID]:
     user_IDs = UserIDs(id=ctx.user_id)
     if not user_IDs.deck:
         user_IDs.update()
@@ -17,11 +17,11 @@ def deck_list(ctx, organization_id: str = None, project_id: str = None) -> Union
     if project_id or organization_id:
         deck_list = {}
         for id, deck in user_IDs.deck.items():
-            deck_project_id = str(deck.project_id)
+            deck_project_id = deck.project_id
 
-            project = user_IDs.project.get(UUID(deck_project_id), None)
+            project = user_IDs.project.get(deck_project_id, None)
             if project:
-                deck_organization_id = str(project.organization_id)
+                deck_organization_id = project.organization_id
             else:
                 deck_organization_id = None
 

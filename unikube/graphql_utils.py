@@ -11,7 +11,6 @@ from retrying import retry
 import unikube.cli.console as console
 from unikube import settings
 from unikube.cache import Cache
-from unikube.authentication.authentication import TokenAuthentication
 
 
 # EnvironmentType
@@ -83,6 +82,8 @@ class GraphQL:
                 )
 
             except requests.exceptions.HTTPError:
+                from unikube.authentication.authentication import TokenAuthentication
+
                 # refresh token
                 auth = TokenAuthentication(cache=self.cache)
                 response = auth.refresh()

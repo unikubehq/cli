@@ -1,5 +1,5 @@
 import os
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -7,7 +7,6 @@ from pydantic import BaseModel
 from src import settings
 from src.authentication.types import AuthenticationData
 from src.cache.base_file_cache import BaseFileCache
-from src.cli import console
 
 
 class Cache(BaseFileCache):
@@ -54,11 +53,13 @@ class UserContext(BaseFileCache):
 
 class Organization(BaseModel):
     title: str = None
+    project_ids: List[UUID] = None
 
 
 class Project(BaseModel):
     title: str = None
     organization_id: UUID = None
+    deck_ids: List[UUID] = None
 
 
 class Deck(BaseModel):
@@ -114,17 +115,29 @@ class UserIDs(BaseFileCache):
                     """,
                 )
             except Exception as e:
+                from src.cli import console
+
                 console.debug(e)
                 return None
 
         organization = dict()
         for item in data["allOrganizations"]["results"]:
-            organization[item["id"]] = Organization(title=item["title"])
+            project_ids = []
+            for project in data["allProjects"]["results"]:
+                if project["organization"]["id"] == item["id"]:
+                    project_ids.append(project["id"])
+            organization[item["id"]] = Organization(title=item["title"], project_ids=project_ids or None)
         self.organization = organization
 
         project = dict()
         for item in data["allProjects"]["results"]:
-            project[item["id"]] = Project(title=item["title"], organization_id=item["organization"]["id"])
+            deck_ids = []
+            for deck in data["allDecks"]["results"]:
+                if deck["project"]["id"] == item["id"]:
+                    deck_ids.append(deck["id"])
+            project[item["id"]] = Project(
+                title=item["title"], organization_id=item["organization"]["id"], deck_ids=deck_ids or None
+            )
         self.project = project
 
         deck = dict()
