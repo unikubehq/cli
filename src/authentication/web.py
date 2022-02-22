@@ -7,6 +7,7 @@ from urllib.parse import parse_qs
 from oic.oic import Client
 
 from src.authentication.authentication import TokenAuthentication
+from src.authentication.flow import cache_information
 from src.authentication.types import AuthenticationData
 from src.cache.cache import Cache
 from src.cli import console
@@ -82,7 +83,7 @@ def run_callback_server(state: str, nonce: str, client: Client, ctx: ClickContex
                         refresh_token=response["response"]["refresh_token"],
                         requesting_party_token=True,
                     )
-                    cache.save()
+                    cache_information(cache=cache)
 
                     if given_name := token.get("given_name", ""):
                         greeting = f"Hello {given_name}!"
@@ -90,7 +91,6 @@ def run_callback_server(state: str, nonce: str, client: Client, ctx: ClickContex
                         greeting = "Hello!"
 
                     html_close = "close"
-
                     text_html = (
                         f"You have successfully logged in. You can {html_close} this browser tab and return "
                         f"to the shell."

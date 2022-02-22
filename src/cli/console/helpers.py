@@ -14,7 +14,7 @@ def organization_id_2_display_name(ctx, id: UUID = None) -> str:
         if organization.title:
             return f"{organization.title} ({id})"
 
-    user_IDs.update()
+    user_IDs.refresh()
     user_IDs.save()
 
     organization = user_IDs.organization.get(id, None)
@@ -31,7 +31,7 @@ def project_id_2_display_name(ctx, id: UUID = None) -> Optional[str]:
         if project.title:
             return f"{project.title} ({id})"
 
-    user_IDs.update()
+    user_IDs.refresh()
     user_IDs.save()
 
     project = user_IDs.project.get(id, None)
@@ -48,7 +48,7 @@ def deck_id_2_display_name(ctx, id: UUID = None) -> Optional[str]:
         if deck.title:
             return f"{deck.title} ({id})"
 
-    user_IDs.update()
+    user_IDs.refresh()
     user_IDs.save()
 
     deck = user_IDs.deck.get(id, None)

@@ -1,5 +1,6 @@
 import json
 import os
+from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
@@ -9,6 +10,7 @@ from src import settings
 
 
 class BaseFileCache(BaseModel):
+    timestamp: datetime = datetime.now()
     file_path: str
     file_name: str
 
@@ -30,6 +32,7 @@ class BaseFileCache(BaseModel):
         Path(self.file_path).mkdir(parents=True, exist_ok=True)
 
         # save user information
+        self.timestamp = datetime.now()
         file_location = os.path.join(self.file_path, self.file_name)
         with open(file_location, "w") as f:
             json.dump(json.loads(self.json(exclude={"file_path", "file_name"})), f, ensure_ascii=False, indent=4)
@@ -48,3 +51,6 @@ class BaseFileCache(BaseModel):
         except Exception:
             file = Path(file_location)
             file.unlink()
+
+    def refresh(self):
+        pass

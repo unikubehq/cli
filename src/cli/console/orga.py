@@ -10,7 +10,7 @@ from src.context.helper import convert_organization_argument_to_uuid
 def organization_list(ctx) -> Optional[UUID]:
     user_IDs = UserIDs(id=ctx.user_id)
     if not user_IDs.organization:
-        user_IDs.update()
+        user_IDs.refresh()
         user_IDs.save()
 
     selection = console.list(

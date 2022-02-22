@@ -5,8 +5,6 @@ import click
 import src.cli.console as console
 from src.authentication.authentication import TokenAuthentication
 from src.authentication.flow import password_flow, web_flow
-from src.cache import UserIDs, UserInfo
-from src.graphql import GraphQL
 from src.helpers import compare_current_and_latest_versions
 
 
@@ -38,75 +36,6 @@ def login(ctx, email, password, **kwargs):
     # error
     if not success:
         console.error("Login failed. Please check email and password.", _exit=True)
-
-    # GraphQL
-    try:
-        graph_ql = GraphQL(cache=ctx.cache)
-        data = graph_ql.query(
-            """
-            query {
-                user {
-                    id
-                    email
-                    name
-                    familyName
-                    givenName
-                    avatarImage
-                }
-                allOrganizations {
-                    results {
-                        id
-                        title
-                    }
-                }
-                allProjects {
-                    results {
-                        id
-                        title
-                        organization {
-                            id
-                        }
-                    }
-                }
-                allDecks {
-                    results {
-                        id
-                        title
-                        project {
-                            id
-                        }
-                    }
-                }
-            }
-            """,
-        )
-
-        user = data.get("user", None)
-    except Exception as e:
-        console.debug(e)
-        console.exit_generic_error()
-
-    # cache user_id
-    try:
-        ctx.cache.userId = user["id"]
-        ctx.cache.save()
-    except Exception as e:
-        console.debug(e)
-
-    # cache user information
-    try:
-        user_info = UserInfo(**user)
-        user_info.save()
-    except Exception as e:
-        console.debug(e)
-
-    # cache IDs
-    try:
-        user_IDs = UserIDs(id=user["id"])
-        user_IDs.update(data)
-        user_IDs.save()
-    except Exception as e:
-        console.debug(e)
 
     console.success("Login successful.")
     return True
