@@ -7,7 +7,7 @@ from unikube.cli.console.helpers import (
     project_id_2_display_name,
 )
 from unikube.context.helper import convert_context_arguments
-from unikube.graphql import GraphQL
+from unikube.graphql_utils import GraphQL
 from unikube.storage.user import get_local_storage_user
 
 

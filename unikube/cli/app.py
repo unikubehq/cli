@@ -11,7 +11,7 @@ import click_spinner
 from unikube import settings
 from unikube.cli import console
 from unikube.cli.helper import age_from_timestamp
-from unikube.graphql import GraphQL
+from unikube.graphql_utils import GraphQL
 from unikube.local.providers.helper import get_cluster_or_exit
 from unikube.local.system import Docker, KubeAPI, KubeCtl, Telepresence
 from unikube.settings import UNIKUBE_FILE

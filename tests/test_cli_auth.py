@@ -5,7 +5,7 @@ import pytest
 from click.testing import CliRunner
 
 from unikube.cli import auth
-from unikube.click import ClickContext
+from unikube.commands import ClickContext
 
 
 def test_login_failed():

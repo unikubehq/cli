@@ -2,7 +2,7 @@ import click
 
 import unikube.cli.console as console
 from unikube.cli.context import show_context
-from unikube.graphql import GraphQL
+from unikube.graphql_utils import GraphQL
 from unikube.local.providers.helper import get_cluster_or_exit
 from unikube.local.system import Telepresence
 from unikube.storage.user import get_local_storage_user

@@ -46,11 +46,9 @@ def version():
         except ImportError:
             pass
         else:
-            for dist in pkg_resources.working_set:
-                scripts = dist.get_entry_map().get("console_scripts") or {}
-                for _, _ in scripts.items():
-                    version = dist.version
-                    break
+            dist = pkg_resources.working_set.by_key.get("unikube")
+            if dist:
+                version = dist.version
 
     if version is None:
         console.error("Could not determine version.")

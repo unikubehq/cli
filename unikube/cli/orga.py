@@ -1,7 +1,7 @@
 import click
 
 import unikube.cli.console as console
-from unikube.graphql import GraphQL
+from unikube.graphql_utils import GraphQL
 from unikube.keycloak.permissions import KeycloakPermissions
 
 

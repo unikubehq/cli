@@ -4,7 +4,7 @@ import unittest
 from click.testing import CliRunner
 
 from unikube.cli import auth
-from unikube.click import ClickContext
+from unikube.commands import ClickContext
 
 
 class LoginTestCase(unittest.TestCase):

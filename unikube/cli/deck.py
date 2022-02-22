@@ -1,7 +1,7 @@
 import click
 
 import unikube.cli.console as console
-from unikube.graphql import GraphQL
+from unikube.graphql_utils import GraphQL
 from unikube.helpers import check_environment_type_local_or_exit, download_manifest
 from unikube.local.system import KubeAPI, KubeCtl, Telepresence
 

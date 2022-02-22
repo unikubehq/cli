@@ -1,6 +1,6 @@
 from tests.login_testcase import LoginTestCase
 from unikube.cli import orga, project
-from unikube.click import ClickContext
+from unikube.commands import ClickContext
 
 
 class ProjectTestCase(LoginTestCase):

@@ -1,7 +1,7 @@
 from typing import Optional
 
 from unikube.cli import console
-from unikube.graphql import GraphQL
+from unikube.graphql_utils import GraphQL
 
 
 def organization_id_2_display_name(ctx, id: str = None) -> str:

@@ -12,7 +12,7 @@ import unikube.cli.console as console
 from unikube import settings
 from unikube.authentication.authentication import TokenAuthentication
 from unikube.context import ClickContext
-from unikube.graphql import EnvironmentType
+from unikube.graphql_utils import EnvironmentType
 from unikube.local.providers.types import K8sProviderType
 from unikube.local.system import Telepresence
 

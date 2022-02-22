@@ -3,7 +3,7 @@ from typing import Union
 import unikube.cli.console as console
 from unikube.cli.console.input import get_identifier_or_pass
 from unikube.context.helper import convert_organization_argument_to_uuid
-from unikube.graphql import GraphQL
+from unikube.graphql_utils import GraphQL
 
 
 def organization_list(ctx) -> Union[None, str]:

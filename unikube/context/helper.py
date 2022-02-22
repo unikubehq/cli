@@ -4,7 +4,7 @@ from uuid import UUID
 from slugify import slugify
 
 from unikube.cli import console
-from unikube.graphql import GraphQL
+from unikube.graphql_utils import GraphQL
 
 
 class ArgumentError(Exception):

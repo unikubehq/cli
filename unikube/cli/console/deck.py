@@ -3,7 +3,7 @@ from typing import Union
 import unikube.cli.console as console
 from unikube.cli.console.input import get_identifier_or_pass
 from unikube.context.helper import convert_deck_argument_to_uuid
-from unikube.graphql import GraphQL
+from unikube.graphql_utils import GraphQL
 
 
 def deck_list(ctx, organization_id: str = None, project_id: str = None) -> Union[None, str]:
