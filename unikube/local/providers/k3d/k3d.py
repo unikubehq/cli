@@ -153,7 +153,9 @@ class K3d(AbstractK8sProvider, CMDWrapper):
 
     def start(self):
         arguments = ["cluster", "start", self.k3d_cluster_name]
-        self._execute(arguments)
+        p = self._execute(arguments)
+        if p.returncode != 0:
+            return False
         data = self.storage.get()
         data.kubeconfig_path = self.get_kubeconfig()
         self.storage.set(data)
