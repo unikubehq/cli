@@ -12,7 +12,7 @@ def project_list(
 ) -> Optional[UUID]:
     user_IDs = UserIDs(id=ctx.user_id)
     if not user_IDs.project:
-        user_IDs.update()
+        user_IDs.refresh()
         user_IDs.save()
 
     # filter

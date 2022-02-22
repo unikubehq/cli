@@ -101,11 +101,6 @@ class TokenAuthentication(IAuthentication):
         email: str,
         password: str,
     ) -> dict:
-        # set/update user config
-        user_settings = UserSettings(id=self.user_id)
-        user_settings.auth_host = settings.AUTH_DEFAULT_HOST
-        user_settings.save()
-
         # access token + refresh token
         response_token = self.__request(
             url=self.url_login,

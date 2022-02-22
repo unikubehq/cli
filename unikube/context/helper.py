@@ -62,7 +62,7 @@ def convert_organization_argument_to_uuid(cache, argument_value: str) -> UUID:
         user_IDs = UserIDs(id=cache.userId)
         uuid = __select_result(argument_value, user_IDs.organization, exception_message="organization")
     except Exception as e:
-        user_IDs.update()
+        user_IDs.refresh()
         raise RetryError(e)
 
     return uuid
@@ -84,7 +84,7 @@ def convert_project_argument_to_uuid(cache, argument_value: str, organization_id
 
         uuid = __select_result(argument_value, projects, exception_message="project")
     except Exception as e:
-        user_IDs.update()
+        user_IDs.refresh()
         raise RetryError(e)
 
     return uuid
@@ -121,7 +121,7 @@ def convert_deck_argument_to_uuid(
 
         uuid = __select_result(argument_value, decks, exception_message="deck")
     except Exception as e:
-        user_IDs.update()
+        user_IDs.refresh()
         raise RetryError(e)
 
     return uuid

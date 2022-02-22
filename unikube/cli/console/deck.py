@@ -10,7 +10,7 @@ from unikube.cache import UserIDs
 def deck_list(ctx, organization_id: UUID = None, project_id: UUID = None) -> Optional[UUID]:
     user_IDs = UserIDs(id=ctx.user_id)
     if not user_IDs.deck:
-        user_IDs.update()
+        user_IDs.refresh()
         user_IDs.save()
 
     # filter

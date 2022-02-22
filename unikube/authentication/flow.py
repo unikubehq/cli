@@ -6,6 +6,87 @@ from oic.utils.authn.client import CLIENT_AUTHN_METHOD
 import unikube.cli.console as console
 from unikube import settings
 from unikube.authentication.authentication import TokenAuthentication
+from unikube.cache import Cache
+from unikube.cache.cache import UserIDs, UserInfo, UserSettings
+from unikube.graphql_utils import GraphQL
+
+
+def cache_information(cache: Cache):
+    # GraphQL
+    try:
+        graph_ql = GraphQL(cache=cache)
+        data = graph_ql.query(
+            """
+            query {
+                user {
+                    id
+                    email
+                    name
+                    familyName
+                    givenName
+                    avatarImage
+                }
+                allOrganizations {
+                    results {
+                        id
+                        title
+                    }
+                }
+                allProjects {
+                    results {
+                        id
+                        title
+                        organization {
+                            id
+                        }
+                    }
+                }
+                allDecks {
+                    results {
+                        id
+                        title
+                        project {
+                            id
+                        }
+                    }
+                }
+            }
+            """,
+        )
+
+        user = data.get("user", None)
+    except Exception as e:
+        console.debug(e)
+        console.exit_generic_error()
+
+    # cache user_id
+    try:
+        cache.userId = user["id"]
+        cache.save()
+    except Exception as e:
+        console.debug(e)
+
+    # cache user settings
+    try:
+        user_settings = UserSettings(id=user["id"])
+        user_settings.save()
+    except Exception as e:
+        console.debug(e)
+
+    # cache user information
+    try:
+        user_info = UserInfo(**user)
+        user_info.save()
+    except Exception as e:
+        console.debug(e)
+
+    # cache IDs
+    try:
+        user_IDs = UserIDs(id=user["id"])
+        user_IDs.update(data)
+        user_IDs.save()
+    except Exception as e:
+        console.debug(e)
 
 
 def password_flow(ctx, email: str, password: str) -> bool:
@@ -23,6 +104,8 @@ def password_flow(ctx, email: str, password: str) -> bool:
         console.debug(e)
         console.debug(response)
         return False
+
+    cache_information(cache=ctx.cache)
 
     return True
 

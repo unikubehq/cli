@@ -11,6 +11,7 @@ from unikube.cli import console
 from unikube.context import ClickContext
 from unikube.cache import Cache
 from unikube.authentication.authentication import TokenAuthentication
+from unikube.authentication.flow import cache_information
 
 
 CALLBACK_PORT_RANGE = range(44444, 44448)
@@ -83,7 +84,7 @@ def run_callback_server(state: str, nonce: str, client: Client, ctx: ClickContex
                         refresh_token=response["response"]["refresh_token"],
                         requesting_party_token=True,
                     )
-                    cache.save()
+                    cache_information(cache=cache)
 
                     if given_name := token.get("given_name", ""):
                         greeting = f"Hello {given_name}!"
@@ -91,7 +92,6 @@ def run_callback_server(state: str, nonce: str, client: Client, ctx: ClickContex
                         greeting = "Hello!"
 
                     html_close = "close"
-
                     text_html = (
                         f"You have successfully logged in. You can {html_close} this browser tab and return "
                         f"to the shell."

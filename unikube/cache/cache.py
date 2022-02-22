@@ -76,7 +76,7 @@ class UserIDs(BaseFileCache):
         file_path = os.path.join(settings.CLI_UNIKUBE_DIRECTORY, "user", str(id), "cache")
         super().__init__(file_path=file_path, file_name=file_name, **data)
 
-    def update(self, data=None):
+    def refresh(self, data=None):
         if not data:
             # GraphQL
             try:
