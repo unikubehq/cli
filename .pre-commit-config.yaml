@@ -5,7 +5,7 @@ default_language_version:
 repos:
 # black - format python code
 - repo: https://github.com/psf/black
-  rev: 20.8b1
+  rev: 22.1.0
   hooks:
     - id: black
       args: # arguments to configure black

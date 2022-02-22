@@ -2,7 +2,7 @@ import unittest
 
 from click.testing import CliRunner
 
-from unikube import ClickContext, completion
+from unikube.click import ClickContext, completion
 
 
 class CompletionTest(unittest.TestCase):

@@ -1,6 +1,6 @@
-from src.cli import deck
 from tests.login_testcase import LoginTestCase
-from unikube import ClickContext
+from unikube.cli import deck
+from unikube.click import ClickContext
 
 
 class DeckTestCase(LoginTestCase):
