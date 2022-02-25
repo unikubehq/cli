@@ -60,10 +60,10 @@ def convert_organization_argument_to_uuid(cache, argument_value: str) -> UUID:
         return UUID(argument_value)
 
     try:
-        user_IDs = UserIDs(id=cache.userId)
-        uuid = __select_result(argument_value, user_IDs.organization, exception_message="organization")
+        user_ids = UserIDs(id=cache.userId)
+        uuid = __select_result(argument_value, user_ids.organization, exception_message="organization")
     except Exception as e:
-        user_IDs.refresh()
+        user_ids.refresh()
         raise RetryError(e)
 
     return uuid
@@ -75,17 +75,17 @@ def convert_project_argument_to_uuid(cache, argument_value: str, organization_id
         return UUID(argument_value)
 
     try:
-        user_IDs = UserIDs(id=cache.userId)
-        projects = user_IDs.project
+        user_ids = UserIDs(id=cache.userId)
+        projects = user_ids.project
 
         # filter
         if organization_id:
-            organization = user_IDs.organization.get(organization_id)
+            organization = user_ids.organization.get(organization_id)
             projects = {key: projects[key] for key in organization.project_ids}
 
         uuid = __select_result(argument_value, projects, exception_message="project")
     except Exception as e:
-        user_IDs.refresh()
+        user_ids.refresh()
         raise RetryError(e)
 
     return uuid
@@ -99,19 +99,19 @@ def convert_deck_argument_to_uuid(
         return argument_value
 
     try:
-        user_IDs = UserIDs(id=cache.userId)
-        decks = user_IDs.deck
+        user_ids = UserIDs(id=cache.userId)
+        decks = user_ids.deck
 
         # filter
         filter_ids = []
         if organization_id and not project_id:
-            organization = user_IDs.organization.get(organization_id)
+            organization = user_ids.organization.get(organization_id)
             for project_id in organization.project_ids:
-                project = user_IDs.project.get(project_id)
+                project = user_ids.project.get(project_id)
                 filter_ids.append(project.deck_ids)
 
         elif not organization_id and project_id:
-            project = user_IDs.project.get(project_id)
+            project = user_ids.project.get(project_id)
             filter_ids = project.deck_ids
 
         else:
@@ -122,7 +122,7 @@ def convert_deck_argument_to_uuid(
 
         uuid = __select_result(argument_value, decks, exception_message="deck")
     except Exception as e:
-        user_IDs.refresh()
+        user_ids.refresh()
         raise RetryError(e)
 
     return uuid

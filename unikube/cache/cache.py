@@ -25,7 +25,7 @@ class UserInfo(BaseFileCache):
     avatarImage: Optional[str]
 
     def __init__(self, id: UUID, file_path: str = settings.CLI_UNIKUBE_DIRECTORY, file_name: str = "info.json", **data):
-        file_path = os.path.join(settings.CLI_UNIKUBE_DIRECTORY, "user", str(id))
+        file_path = os.path.join(file_path, "user", str(id))
         super().__init__(id=id, file_path=file_path, file_name=file_name, **data)
 
 
@@ -35,7 +35,7 @@ class UserSettings(BaseFileCache):
     def __init__(
         self, id: UUID, file_path: str = settings.CLI_UNIKUBE_DIRECTORY, file_name: str = "settings.json", **data
     ):
-        file_path = os.path.join(settings.CLI_UNIKUBE_DIRECTORY, "user", str(id))
+        file_path = os.path.join(file_path, "user", str(id))
         super().__init__(file_path=file_path, file_name=file_name, **data)
 
 
@@ -47,7 +47,7 @@ class UserContext(BaseFileCache):
     def __init__(
         self, id: UUID, file_path: str = settings.CLI_UNIKUBE_DIRECTORY, file_name: str = "context.json", **data
     ):
-        file_path = os.path.join(settings.CLI_UNIKUBE_DIRECTORY, "user", str(id), "cache")
+        file_path = os.path.join(file_path, "user", str(id), "cache")
         super().__init__(file_path=file_path, file_name=file_name, **data)
 
 
@@ -73,7 +73,7 @@ class UserIDs(BaseFileCache):
     deck: Dict[UUID, Deck] = None
 
     def __init__(self, id: UUID, file_path: str = settings.CLI_UNIKUBE_DIRECTORY, file_name: str = "IDs.json", **data):
-        file_path = os.path.join(settings.CLI_UNIKUBE_DIRECTORY, "user", str(id), "cache")
+        file_path = os.path.join(file_path, "user", str(id), "cache")
         super().__init__(file_path=file_path, file_name=file_name, **data)
 
     def refresh(self, data=None):

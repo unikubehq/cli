@@ -53,4 +53,5 @@ class BaseFileCache(BaseModel):
             file.unlink()
 
     def refresh(self):
+        # implement cache specific refresh method if requested
         pass

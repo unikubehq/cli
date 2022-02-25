@@ -41,10 +41,6 @@ def test_download_manifest():
         },
     }
 
-    # class Authentication:
-    #     def refresh(self):
-    #         return {"success": True, "response": {"access_token": ""}}
-
     cache = Cache()
     with pytest.raises(SystemExit) as pytest_wrapped_e:
         _ = download_manifest(deck=deck, cache=cache)
