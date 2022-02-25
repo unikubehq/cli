@@ -1,10 +1,11 @@
 from typing import Tuple
 from uuid import UUID
 
+from retrying import retry
 from slugify import slugify
 
+from unikube.cache import UserIDs
 from unikube.cli import console
-from unikube.graphql_utils import GraphQL
 
 
 class ArgumentError(Exception):

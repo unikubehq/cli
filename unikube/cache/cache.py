@@ -80,7 +80,7 @@ class UserIDs(BaseFileCache):
         if not data:
             # GraphQL
             try:
-                from src.graphql import GraphQL
+                from unikube.graphql_utils import GraphQL
 
                 cache = Cache()
                 graph_ql = GraphQL(cache=cache)
@@ -115,7 +115,7 @@ class UserIDs(BaseFileCache):
                     """,
                 )
             except Exception as e:
-                from src.cli import console
+                from unikube.cli import console
 
                 console.debug(e)
                 return None

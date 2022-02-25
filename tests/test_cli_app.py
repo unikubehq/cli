@@ -1,9 +1,9 @@
 from unittest.mock import patch
 
 from tests.login_testcase import LoginTestCase
-from unikube import ClickContext
 from unikube.authentication.authentication import TokenAuthentication
 from unikube.cli import app
+from unikube.context import ClickContext
 
 
 class AppTestCase(LoginTestCase):
