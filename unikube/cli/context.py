@@ -1,6 +1,7 @@
 import click
 
 import unikube.cli.console as console
+from unikube.cache import UserContext
 from unikube.cli.console.helpers import (
     deck_id_2_display_name,
     organization_id_2_display_name,
@@ -8,7 +9,6 @@ from unikube.cli.console.helpers import (
 )
 from unikube.context.helper import convert_context_arguments
 from unikube.graphql_utils import GraphQL
-from unikube.cache import UserContext
 
 
 def show_context(ctx, context):

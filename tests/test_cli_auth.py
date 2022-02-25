@@ -4,10 +4,9 @@ from unittest.mock import patch
 
 from click.testing import CliRunner
 
-from unikube.cli import auth
-from unikube.commands import ClickContext
-from unikube.authentication.authentication import TokenAuthentication
 from unikube import ClickContext
+from unikube.authentication.authentication import TokenAuthentication
+from unikube.cli import auth
 
 
 class AuthTest(unittest.TestCase):

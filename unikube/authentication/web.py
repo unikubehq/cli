@@ -6,13 +6,12 @@ from urllib.parse import parse_qs
 
 from oic.oic import Client
 
-from unikube.authentication.types import AuthenticationData
-from unikube.cli import console
-from unikube.context import ClickContext
-from unikube.cache import Cache
 from unikube.authentication.authentication import TokenAuthentication
 from unikube.authentication.flow import cache_information
-
+from unikube.authentication.types import AuthenticationData
+from unikube.cache import Cache
+from unikube.cli import console
+from unikube.context import ClickContext
 
 CALLBACK_PORT_RANGE = range(44444, 44448)
 

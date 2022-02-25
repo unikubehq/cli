@@ -2,12 +2,12 @@ from abc import ABC, abstractmethod
 from typing import List, Tuple, Union
 
 from unikube import settings
+from unikube.cache import Cache, UserContext
 from unikube.cli import console
 from unikube.context.helper import convert_context_arguments, is_valid_uuid4
 from unikube.context.types import ContextData
 from unikube.unikubefile.selector import unikube_file_selector
 from unikube.unikubefile.unikube_file import UnikubeFile
-from unikube.cache import Cache, UserContext
 
 
 class ContextError(Exception):

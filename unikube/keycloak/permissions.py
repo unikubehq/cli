@@ -7,8 +7,8 @@ from pydantic import BaseModel
 
 from unikube import settings
 from unikube.authentication.authentication import IAuthentication
-from unikube.cli import console
 from unikube.cache.cache import Cache
+from unikube.cli import console
 
 
 class KeycloakPermissionData(BaseModel):

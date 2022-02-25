@@ -6,13 +6,13 @@ import click_spinner
 
 import unikube.cli.console as console
 from unikube import settings
+from unikube.authentication.authentication import TokenAuthentication
 from unikube.cli.console.helpers import project_id_2_display_name
 from unikube.cli.helper import check_ports
 from unikube.graphql_utils import GraphQL
 from unikube.helpers import check_running_cluster
 from unikube.local.providers.types import K8sProviderType
 from unikube.local.system import Docker, KubeAPI, Telepresence
-from unikube.authentication.authentication import TokenAuthentication
 
 
 @click.command()

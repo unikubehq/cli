@@ -10,11 +10,11 @@ from requests import HTTPError, Session
 import unikube.cli.console as console
 from unikube import settings
 from unikube.authentication.authentication import TokenAuthentication
+from unikube.cache import Cache
 from unikube.context import ClickContext
 from unikube.graphql_utils import EnvironmentType
 from unikube.local.providers.types import K8sProviderType
 from unikube.local.system import Telepresence
-from unikube.cache import Cache
 
 
 def get_requests_session(access_token) -> Session:

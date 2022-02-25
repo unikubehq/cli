@@ -1,11 +1,11 @@
 import click
 
 import unikube.cli.console as console
+from unikube.cache import UserContext
 from unikube.cli.context import show_context
 from unikube.graphql_utils import GraphQL
 from unikube.local.providers.helper import get_cluster_or_exit
 from unikube.local.system import Telepresence
-from unikube.cache import UserContext
 
 
 @click.command()

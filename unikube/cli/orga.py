@@ -1,7 +1,7 @@
 import click
-from unikube.authentication.authentication import TokenAuthentication
 
 import unikube.cli.console as console
+from unikube.authentication.authentication import TokenAuthentication
 from unikube.graphql_utils import GraphQL
 
 
