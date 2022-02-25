@@ -40,16 +40,6 @@ def version():
     Check unikube version.
     """
     version = compare_current_and_latest_versions()
-    if not version:
-        try:
-            import pkg_resources
-        except ImportError:
-            pass
-        else:
-            dist = pkg_resources.working_set.by_key.get("unikube")
-            if dist:
-                version = dist.version
-
     if version is None:
         console.error("Could not determine version.")
 
