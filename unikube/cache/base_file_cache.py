@@ -6,7 +6,7 @@ from typing import Optional
 
 from pydantic import BaseModel
 
-from src import settings
+from unikube import settings
 
 
 class BaseFileCache(BaseModel):

@@ -4,7 +4,7 @@ import unittest
 from pathlib import Path
 from uuid import UUID
 
-from src.cache.cache import Cache
+from unikube.cache import Cache
 
 
 class CacheTest(unittest.TestCase):

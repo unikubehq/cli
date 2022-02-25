@@ -4,9 +4,9 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
-from src import settings
-from src.authentication.types import AuthenticationData
-from src.cache.base_file_cache import BaseFileCache
+from unikube import settings
+from unikube.authentication.types import AuthenticationData
+from unikube.cache.base_file_cache import BaseFileCache
 
 
 class Cache(BaseFileCache):
