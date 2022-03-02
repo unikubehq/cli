@@ -1,50 +1,37 @@
 import os
 import re
+import shutil
 import subprocess
 from time import sleep
 from typing import Dict, List, Optional
+from uuid import UUID
 
 from semantic_version import Version
 
 import unikube.cli.console as console
 from unikube import settings
-from unikube.local.providers.abstract_provider import AbstractK8sProvider
-from unikube.local.providers.k3d.storage import K3dStorage
-from unikube.local.providers.types import K8sProviderType
-from unikube.local.system import CMDWrapper
+from unikube.cluster.providers.abstract_provider import AbstractProvider
+from unikube.cluster.providers.k3d.storage import K3dData
+from unikube.cluster.providers.types import ProviderType
+from unikube.cluster.storage.cluster_data import ClusterStorage
+from unikube.cluster.system import CMDWrapper, Docker
 
 
-class K3d(AbstractK8sProvider, CMDWrapper):
-    kubernetes_cluster_type = K8sProviderType.k3d
+class K3d(AbstractProvider, CMDWrapper):
+    provider_type = ProviderType.k3d
 
     base_command = "k3d"
     _cluster = []
 
-    def __init__(
-        self,
-        id,
-        name: str = None,
-        prefix: str = settings.K3D_CLUSTER_PREFIX,
-        _debug_output=False,
-    ):
+    def __init__(self, id: UUID, name: str = None, _debug_output=False):
         # storage
-        storage = K3dStorage(id=id)
+        self.storage = ClusterStorage(id=id)
 
         # abstract kubernetes cluster
-        AbstractK8sProvider.__init__(
-            self,
-            id=id,
-            name=name,
-            storage=storage,
-        )
+        AbstractProvider.__init__(self, id=id, name=name)
 
         # CMDWrapper
         self._debug_output = _debug_output
-
-        # cluster name
-        cluster_name = prefix + self.name.lower()
-        cluster_name = cluster_name.replace(" ", "-")
-        self.k3d_cluster_name = cluster_name
 
     def _clusters(self) -> List[Dict[str, str]]:
         if len(self._cluster) == 0:
@@ -70,7 +57,7 @@ class K3d(AbstractK8sProvider, CMDWrapper):
         return self._cluster
 
     def get_kubeconfig(self, wait=10) -> Optional[str]:
-        arguments = ["kubeconfig", "get", self.k3d_cluster_name]
+        arguments = ["kubeconfig", "get", self.cluster_name]
         # this is a nasty busy wait, but we don't have another chance
         for i in range(1, wait):
             process = self._execute(arguments)
@@ -81,35 +68,26 @@ class K3d(AbstractK8sProvider, CMDWrapper):
                 sleep(2)
 
         if process.returncode != 0:
-            console.error("Something went completely wrong with the cluster spin up (or we got a timeout).")
-        else:
-            # we now need to write the kubekonfig to a file
-            config = process.stdout.read().strip()
-            if not os.path.isdir(os.path.join(settings.CLI_KUBECONFIG_DIRECTORY, self.k3d_cluster_name)):
-                os.mkdir(os.path.join(settings.CLI_KUBECONFIG_DIRECTORY, self.k3d_cluster_name))
-            config_path = os.path.join(
-                settings.CLI_KUBECONFIG_DIRECTORY,
-                self.k3d_cluster_name,
-                "kubeconfig.yaml",
-            )
-            file = open(config_path, "w+")
-            file.write(config)
-            file.close()
-            return config_path
+            console.error("Something went completely wrong with the cluster spin up (or we got a timeout).", _exit=True)
 
-    @staticmethod
-    def _get_random_unused_port() -> int:
-        import socket
-
-        tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        tcp.bind(("", 0))
-        addr, port = tcp.getsockname()
-        tcp.close()
-        return port
+        # we now need to write the kubekonfig to a file
+        config = process.stdout.read().strip()
+        if not os.path.isdir(os.path.join(settings.CLI_UNIKUBE_DIRECTORY, "cluster", str(self.id))):
+            os.mkdir(os.path.join(settings.CLI_UNIKUBE_DIRECTORY, "cluster", str(self.id)))
+        config_path = os.path.join(
+            settings.CLI_UNIKUBE_DIRECTORY,
+            "cluster",
+            str(self.id),
+            "kubeconfig.yaml",
+        )
+        file = open(config_path, "w+")
+        file.write(config)
+        file.close()
+        return config_path
 
     def exists(self) -> bool:
         for cluster in self._clusters():
-            if cluster["name"] == self.k3d_cluster_name:
+            if cluster["name"] == self.cluster_name:
                 return True
         return False
 
@@ -120,14 +98,16 @@ class K3d(AbstractK8sProvider, CMDWrapper):
     ):
         v5plus = self.version().major >= 5
         api_port = self._get_random_unused_port()
+
         if not ingress_port:
             publisher_port = self._get_random_unused_port()
         else:
             publisher_port = ingress_port
+
         arguments = [
             "cluster",
             "create",
-            self.k3d_cluster_name,
+            self.cluster_name,
             "--agents",
             str(workers),
             "--api-port",
@@ -142,34 +122,45 @@ class K3d(AbstractK8sProvider, CMDWrapper):
         ]
         self._execute(arguments)
 
-        data = self.storage.get()
-        data.name = self.k3d_cluster_name
-        data.api_port = api_port
-        data.publisher_port = publisher_port
-        data.kubeconfig_path = self.get_kubeconfig()
-        self.storage.set(data)
+        self.storage.name = self.cluster_name
+        self.storage.provider[self.provider_type.name] = K3dData(
+            api_port=api_port,
+            publisher_port=publisher_port,
+            kubeconfig_path=self.get_kubeconfig(),
+        )
+        self.storage.save()
 
         return True
 
     def start(self):
-        arguments = ["cluster", "start", self.k3d_cluster_name]
+        arguments = ["cluster", "start", self.cluster_name]
         p = self._execute(arguments)
         if p.returncode != 0:
             return False
-        data = self.storage.get()
-        data.kubeconfig_path = self.get_kubeconfig()
-        self.storage.set(data)
+
+        _ = self.get_kubeconfig()
         return True
 
     def stop(self):
-        arguments = ["cluster", "stop", self.k3d_cluster_name]
+        arguments = ["cluster", "stop", self.cluster_name]
         self._execute(arguments)
         return True
 
     def delete(self):
-        arguments = ["cluster", "delete", self.k3d_cluster_name]
+        arguments = ["cluster", "delete", self.cluster_name]
         self._execute(arguments)
-        self.storage.delete()
+
+        try:
+            self.storage.delete()
+        except Exception as e:
+            console.debug(e)
+
+        try:
+            folder_path = os.path.join(settings.CLI_UNIKUBE_DIRECTORY, "cluster", str(self.id))
+            shutil.rmtree(folder_path)
+        except Exception as e:
+            console.debug(e)
+
         return True
 
     def version(self) -> Version:
@@ -178,6 +169,9 @@ class K3d(AbstractK8sProvider, CMDWrapper):
         version_str = re.search(r"(\d+\.\d+\.\d+)", output).group(1)
         return Version(version_str)
 
+    def ready(self) -> bool:
+        return Docker().check_running(self.cluster_name)
+
 
 class K3dBuilder:
     def __init__(self):
@@ -185,8 +179,8 @@ class K3dBuilder:
 
     def __call__(
         self,
-        id,
-        name=None,
+        id: UUID,
+        name: str = None,
         **_ignored,
     ):
         # get instance from cache
@@ -195,11 +189,7 @@ class K3dBuilder:
             return instance
 
         # create instance
-        instance = K3d(
-            id,
-            name=name,
-            prefix=settings.K3D_CLUSTER_PREFIX,
-        )
+        instance = K3d(id, name=name)
         self._instances[id] = instance
 
         return instance

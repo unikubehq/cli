@@ -3,9 +3,8 @@ import click
 import unikube.cli.console as console
 from unikube.cache import UserContext
 from unikube.cli.context import show_context
+from unikube.cluster.bridge.telepresence import Telepresence
 from unikube.graphql_utils import GraphQL
-from unikube.local.providers.helper import get_cluster_or_exit
-from unikube.local.system import Telepresence
 
 
 @click.command()
@@ -16,7 +15,7 @@ def ps(ctx, **kwargs):
     """
 
     # cluster
-    cluster_list = ctx.cluster_manager.get_cluster_list(ready=True)
+    cluster_list = ctx.cluster_manager.get_clusters(ready=True)
     cluster_id_list = [cluster.id for cluster in cluster_list]
 
     # GraphQL
@@ -59,13 +58,13 @@ def ps(ctx, **kwargs):
     # switch
     intercept_count = 0
     if cluster_data:
-        cluster = get_cluster_or_exit(ctx, cluster_data[0]["id"])
+        cluster = ctx.cluster_manager.select(cluster_data[0]["id"], exit_on_exception=True)
         provider_data = cluster.storage.get()
 
         telepresence = Telepresence(provider_data)
         intercept_count = telepresence.intercept_count()
 
-    if intercept_count == 0 or not intercept_count:
+    if intercept_count == 0:
         console.info("No app switched!")
     else:
         console.info(f"Apps switched: #{intercept_count}")

@@ -1,18 +1,17 @@
 import sys
 from time import sleep, time
+from uuid import UUID
 
 import click
 import click_spinner
 
 import unikube.cli.console as console
-from unikube import settings
 from unikube.authentication.authentication import TokenAuthentication
 from unikube.cli.console.helpers import project_id_2_display_name
 from unikube.cli.helper import check_ports
+from unikube.cluster.providers.types import ProviderType
+from unikube.cluster.system import Docker, KubeAPI
 from unikube.graphql_utils import GraphQL
-from unikube.helpers import check_running_cluster
-from unikube.local.providers.types import K8sProviderType
-from unikube.local.system import Docker, KubeAPI, Telepresence
 
 
 @click.command()
@@ -136,15 +135,9 @@ def info(ctx, project=None, organization=None, **kwargs):
 @click.argument("project", required=False)
 @click.option("--organization", "-o", help="Select an organization")
 @click.option("--ingress", help="Overwrite the ingress port for the project from cluster settings", default=None)
-@click.option(
-    "--provider",
-    "-p",
-    help="Specify the Kubernetes provider type for this cluster (default uses k3d)",
-    default=settings.UNIKUBE_DEFAULT_PROVIDER_TYPE.name,
-)
 @click.option("--workers", help="Specify count of k3d worker nodes", default=1)
 @click.pass_obj
-def up(ctx, project=None, organization=None, ingress=None, provider=None, workers=None, **kwargs):
+def up(ctx, project=None, organization=None, ingress=None, workers=None, **kwargs):
     """
     This command starts or resumes a Kubernetes cluster for the specified project. As it is a selection command, the
     project can be specified and/or filtered in several ways:
@@ -168,16 +161,23 @@ def up(ctx, project=None, organization=None, ingress=None, provider=None, worker
     )
 
     # cluster information
-    cluster_list = ctx.cluster_manager.get_cluster_list(ready=True)
-    cluster_id_list = [item.id for item in cluster_list]
+    cluster_ids = ctx.cluster_manager.get_cluster_ids()
+    cluster_ids_exclude = []
+    for cluster_id in cluster_ids:
+        cluster = ctx.cluster_manager.select(id=cluster_id, provider_type=ProviderType.k3d)
+        if not cluster:
+            continue
+
+        if cluster.ready():
+            cluster_ids_exclude.append(str(cluster_id))
 
     # argument
     if not project_id:
-        project_id = console.project_list(ctx, organization_id=organization_id, excludes=cluster_id_list)
+        project_id = console.project_list(ctx, organization_id=organization_id, excludes=cluster_ids_exclude)
         if not project_id:
             return None
 
-    if project_id in cluster_id_list:
+    if project_id in cluster_ids_exclude:
         console.info(f"Project '{project_id_2_display_name(ctx=ctx, id=project_id)}' is already up.", _exit=True)
 
     # GraphQL
@@ -203,7 +203,7 @@ def up(ctx, project=None, organization=None, ingress=None, provider=None, worker
             }
             """,
             query_variables={
-                "id": project_id,
+                "id": str(project_id),
             },
         )
         project_selected = data["project"]
@@ -216,16 +216,10 @@ def up(ctx, project=None, organization=None, ingress=None, provider=None, worker
             f"The project '{project_id_2_display_name(ctx=ctx, id=project_id)}' could not be found.", _exit=True
         )
 
-    try:
-        cluster_provider_type = K8sProviderType[provider]
-    except KeyError:
-        console.error(
-            f"The provider '{provider}' is not supported. Please use "
-            f"one of: {','.join(opt.name for opt in K8sProviderType)}",
-            _exit=True,
-        )
-
-    check_running_cluster(ctx, cluster_provider_type, project_selected)
+    count = ctx.cluster_manager.count_active_clusters()
+    if count > 0:
+        # TODO: limit cluster count
+        pass
 
     # get project id
     if ingress is None:
@@ -240,19 +234,19 @@ def up(ctx, project=None, organization=None, ingress=None, provider=None, worker
         )
 
     # cluster up
-    cluster_data = ctx.cluster_manager.get(id=project_selected["id"])
-    cluster_data.name = project_selected["title"]
-    ctx.cluster_manager.set(id=project_selected["id"], data=cluster_data)
+    cluster_id = UUID(project_selected["id"])
+    provider_type = ProviderType.k3d
 
-    cluster = ctx.cluster_manager.select(cluster_data=cluster_data, cluster_provider_type=cluster_provider_type)
+    cluster = ctx.cluster_manager.select(id=cluster_id, provider_type=provider_type, exit_on_exception=True)
     console.info(
-        f"Setting up a Kubernetes cluster (with provider {provider}) for " f"project '{cluster.display_name}'."
+        f"Setting up a Kubernetes cluster (with provider {str(provider_type)}) for "
+        f"project '{cluster.display_name}'."
     )
 
     if not cluster.exists():
         console.info(f"Kubernetes cluster for '{cluster.display_name}' does not exist, creating it now.")
         with click_spinner.spinner(beep=False, disable=False, force=False, stream=sys.stdout):
-            success = cluster.create(
+            _ = cluster.create(
                 ingress_port=ingress,
                 workers=workers,
             )
@@ -261,26 +255,26 @@ def up(ctx, project=None, organization=None, ingress=None, provider=None, worker
     else:
         console.info(f"Kubernetes cluster for '{cluster.display_name}' already exists, starting it now.")
         with click_spinner.spinner(beep=False, disable=False, force=False, stream=sys.stdout):
-            success = cluster.start()
+            _ = cluster.start()
 
     # console
-    if success:
-        console.info("Now connecting Telepresence daemon. You probably have to enter your 'sudo' password.")
-        provider_data = cluster.storage.get()
-        k8s = KubeAPI(provider_data)
-        timeout = time() + 60  # wait one minute
-        while not k8s.is_available or time() > timeout:
-            sleep(1)
-        if not k8s.is_available:
-            console.error(
-                "There was an error bringing up the project cluster. The API was not available within the"
-                "expiration period.",
-                _exit=True,
-            )
-        Telepresence(cluster.storage.get()).start()
-        console.success("The project cluster is up.")
-    else:
-        console.error("The project cluster could not be started.")
+    # if success:
+    #     console.info("Now connecting Telepresence daemon. You probably have to enter your 'sudo' password.")
+    #     provider_data = cluster.storage.get()
+    #     k8s = KubeAPI(provider_data)
+    #     timeout = time() + 60  # wait one minute
+    #     while not k8s.is_available or time() > timeout:
+    #         sleep(1)
+    #     if not k8s.is_available:
+    #         console.error(
+    #             "There was an error bringing up the project cluster. The API was not available within the"
+    #             "expiration period.",
+    #             _exit=True,
+    #         )
+    #     Telepresence(cluster.storage.get()).start()
+    #     console.success("The project cluster is up.")
+    # else:
+    #     console.error("The project cluster could not be started.")
 
 
 @click.command()
@@ -298,12 +292,12 @@ def down(ctx, project=None, organization=None, **kwargs):
     )
 
     # cluster
-    cluster_list = ctx.cluster_manager.get_cluster_list(ready=True)
+    cluster_list = ctx.cluster_manager.get_clusters(ready=True)
 
     # argument
     if not project_id:
         project_id = console.project_list(
-            ctx, organization_id=organization_id, filter=[cluster.id for cluster in cluster_list]
+            ctx, organization_id=organization_id, filter=[str(cluster.id) for cluster in cluster_list]
         )
         if not project_id:
             return None
@@ -316,13 +310,7 @@ def down(ctx, project=None, organization=None, **kwargs):
         )
 
     # get cluster
-    cluster = None
-    for cluster_data in cluster_list:
-        if cluster_data.id == project_id:
-            cluster = ctx.cluster_manager.select(
-                cluster_data=cluster_data,
-            )
-            break
+    cluster = ctx.cluster_manager.select(id=project_id, exit_on_exception=True)
 
     # cluster down
     if not cluster.exists():
@@ -332,8 +320,8 @@ def down(ctx, project=None, organization=None, **kwargs):
     if not cluster.ready():
         console.info(f"Kubernetes cluster for '{cluster.display_name}' is not running", _exit=True)
 
-    console.info("Stopping Telepresence daemon.")
-    Telepresence(cluster.storage.get()).stop()
+    # console.info("Stopping Telepresence daemon.")
+    # Telepresence(cluster.storage.get()).stop()
 
     # stop cluster
     console.info(f"Stopping Kubernetes cluster for '{cluster.display_name}'")
@@ -361,12 +349,14 @@ def delete(ctx, project=None, organization=None, **kwargs):
     )
 
     # cluster
-    cluster_list = ctx.cluster_manager.get_cluster_list()
+    cluster_list = ctx.cluster_manager.get_clusters()
+    if len(cluster_list) == 0:
+        console.info("No clusters found.", _exit=True)
 
     # argument
     if not project_id:
         project_id = console.project_list(
-            ctx, organization_id=organization_id, filter=[cluster.id for cluster in cluster_list]
+            ctx, organization_id=organization_id, filter=[str(cluster.id) for cluster in cluster_list]
         )
         if not project_id:
             return None
@@ -386,25 +376,14 @@ def delete(ctx, project=None, organization=None, **kwargs):
         console.info("No action taken.", _exit=True)
 
     # get cluster
-    cluster = None
-    for cluster_data in cluster_list:
-        if cluster_data.id == project_id:
-            cluster = ctx.cluster_manager.select(
-                cluster_data=cluster_data,
-            )
-            break
+    cluster = ctx.cluster_manager.select(id=project_id, exit_on_exception=True)
 
     # delete cluster
-    if not cluster.exists():
-        ctx.cluster_manager.delete(cluster.id)
-        console.info(f"No Kubernetes cluster to delete for '{cluster.display_name}', nothing to do.", _exit=True)
-
     success = cluster.delete()
 
     # console
     if success:
         console.success("The project was deleted successfully.")
-        ctx.cluster_manager.delete(cluster.id)
     else:
         console.error("The cluster could not be deleted.")
 
@@ -436,7 +415,7 @@ def prune(ctx, **kwargs):
         console.exit_generic_error()
 
     # cluster
-    cluster_list = ctx.cluster_manager.get_cluster_list()
+    cluster_list = ctx.cluster_manager.get_clusters()
 
     # select clusters to prune
     prune_clusters = []

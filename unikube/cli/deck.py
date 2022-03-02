@@ -1,9 +1,10 @@
 import click
 
 import unikube.cli.console as console
+from unikube.cluster.bridge.telepresence import Telepresence
+from unikube.cluster.system import KubeAPI, KubeCtl
 from unikube.graphql_utils import GraphQL
 from unikube.helpers import check_environment_type_local_or_exit, download_manifest
-from unikube.local.system import KubeAPI, KubeCtl, Telepresence
 
 
 def get_deck(ctx, deck_id: str):

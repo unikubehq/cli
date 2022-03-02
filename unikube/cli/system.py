@@ -4,8 +4,8 @@ import sys
 import click
 
 import unikube.cli.console as console
+from unikube.cluster.dependency import install_dependency, probe_dependencies
 from unikube.helpers import compare_current_and_latest_versions
-from unikube.local.dependency import install_dependency, probe_dependencies
 
 
 @click.command()

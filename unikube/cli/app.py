@@ -10,9 +10,9 @@ import click_spinner
 from unikube import settings
 from unikube.cli import console
 from unikube.cli.helper import age_from_timestamp
+from unikube.cluster.bridge.telepresence import Telepresence
+from unikube.cluster.system import Docker, KubeAPI, KubeCtl
 from unikube.graphql_utils import GraphQL
-from unikube.local.providers.helper import get_cluster_or_exit
-from unikube.local.system import Docker, KubeAPI, KubeCtl, Telepresence
 from unikube.unikubefile.selector import unikube_file_selector
 
 
@@ -63,7 +63,7 @@ def get_deck_from_arguments(ctx, organization_id: str, project_id: str, deck_id:
         console.exit_generic_error()
 
     # cluster data
-    cluster_list = ctx.cluster_manager.get_cluster_list(ready=True)
+    cluster_list = ctx.cluster_manager.get_clusters(ready=True)
     if project_id not in [cluster.id for cluster in cluster_list]:
         console.info(f"The project cluster for '{project_id}' is not up or does not exist yet.", _exit=True)
 
@@ -117,7 +117,7 @@ def list(ctx, organization, project, deck, **kwargs):
     cluster_data, deck = get_deck_from_arguments(ctx, organization, project, deck)
 
     # get cluster
-    cluster = get_cluster_or_exit(ctx, cluster_data.id)
+    cluster = ctx.cluster_manager.select(cluster_data.id, exit_on_exception=True)
     provider_data = cluster.storage.get()
 
     # list
@@ -171,7 +171,7 @@ def info(ctx, app, organization, project, deck, **kwargs):
     cluster_data, deck = get_deck_from_arguments(ctx, organization, project, deck)
 
     # get cluster
-    cluster = get_cluster_or_exit(ctx, cluster_data.id)
+    cluster = ctx.cluster_manager.select(cluster_data.id, exit_on_exception=True)
     provider_data = cluster.storage.get()
 
     # shell
@@ -254,7 +254,7 @@ def shell(ctx, app, organization=None, project=None, deck=None, container=None, 
     cluster_data, deck = get_deck_from_arguments(ctx, organization, project, deck)
 
     # get cluster
-    cluster = get_cluster_or_exit(ctx, cluster_data.id)
+    cluster = ctx.cluster_manager.select(cluster_data.id, exit_on_exception=True)
     provider_data = cluster.storage.get()
 
     # shell
@@ -328,7 +328,7 @@ def switch(
     cluster_data, deck = get_deck_from_arguments(ctx, organization, project, deck)
 
     # get cluster
-    cluster = get_cluster_or_exit(ctx, cluster_data.id)
+    cluster = ctx.cluster_manager.select(cluster_data.id, exit_on_exception=True)
 
     # unikube file input
     try:
@@ -526,7 +526,7 @@ def logs(ctx, app, container=None, organization=None, project=None, deck=None, f
     cluster_data, deck = get_deck_from_arguments(ctx, organization, project, deck)
 
     # get cluster
-    cluster = get_cluster_or_exit(ctx, cluster_data.id)
+    cluster = ctx.cluster_manager.select(cluster_data.id, exit_on_exception=True)
     provider_data = cluster.storage.get()
 
     # log
@@ -563,7 +563,7 @@ def env(ctx, app, init, organization, project, deck, **kwargs):
     cluster_data, deck = get_deck_from_arguments(ctx, organization, project, deck)
 
     # get cluster
-    cluster = get_cluster_or_exit(ctx, cluster_data.id)
+    cluster = ctx.cluster_manager.select(cluster_data.id, exit_on_exception=True)
     provider_data = cluster.storage.get()
 
     # env
@@ -658,7 +658,7 @@ def update(ctx, app, organization, project, deck, **kwargs):
     cluster_data, deck = get_deck_from_arguments(ctx, organization, project, deck)
 
     # get cluster
-    cluster = get_cluster_or_exit(ctx, cluster_data.id)
+    cluster = ctx.cluster_manager.select(cluster_data.id, exit_on_exception=True)
     provider_data = cluster.storage.get()
 
     # delete pod

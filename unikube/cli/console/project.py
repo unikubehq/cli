@@ -21,7 +21,7 @@ def project_list(
             id: project for id, project in user_ids.project.items() if project.organization_id == organization_id
         }
     else:
-        project_list = user_ids.project.values()
+        project_list = user_ids.project
 
     choices = []
     identifiers = []

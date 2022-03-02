@@ -3,7 +3,6 @@ import os
 import platform
 import re
 import subprocess
-from time import sleep
 from typing import Dict, List, Optional, Tuple
 
 import click
@@ -11,7 +10,6 @@ import semantic_version
 
 import unikube.cli.console as console
 from unikube import settings
-from unikube.cli.console import error
 
 
 class LocalDependency(object):

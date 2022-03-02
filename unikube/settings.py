@@ -3,7 +3,7 @@ import os
 import urllib3
 
 from unikube.cli.helper import exist_or_create
-from unikube.local.providers.types import K8sProviderType
+from unikube.cluster.providers.types import ProviderType
 
 # disable warnings
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -13,10 +13,9 @@ CLI_CONFIG_FILE = os.path.expanduser("~/.unikube/config_dev")
 exist_or_create(CLI_CONFIG_FILE)
 
 CLI_UNIKUBE_DIRECTORY = os.path.expanduser("~/.unikube/")
-CLI_KUBECONFIG_DIRECTORY = os.path.expanduser("~/.unikube/")
 CLI_TABLEFMT = "psql"
 
-CLI_LOG_LEVEL = "INFO"  # DEBUG, INFO, WARNING, ERROR/SUCCESS
+CLI_LOG_LEVEL = "DEBUG"  # DEBUG, INFO, WARNING, ERROR/SUCCESS
 CLI_ALWAYS_SHOW_CONTEXT = False
 
 # authentication
@@ -24,7 +23,7 @@ AUTH_DEFAULT_HOST = "https://login.unikube.io"  # "http://keycloak.127.0.0.1.nip
 
 # unikube
 UNIKUBE_FILE = "unikube.yaml"
-UNIKUBE_DEFAULT_PROVIDER_TYPE = K8sProviderType.k3d
+UNIKUBE_DEFAULT_PROVIDER_TYPE = ProviderType.k3d
 
 # token
 TOKEN_REALM = "unikube"
@@ -54,7 +53,6 @@ K3S_CLI_MIN_VERSION = "1.17.1"
 
 K3D_CLI_MIN_VERSION = "3.0.0"
 K3D_WEBSITE = "https://github.com/rancher/k3d"
-K3D_CLUSTER_PREFIX = "unikube-"
 K3D_DEFAULT_INGRESS_PORT = 80
 K3D_DEFAULT_WORKERS = 1
 
