@@ -40,10 +40,10 @@ class UnikubeDumper(yaml.SafeDumper):
         return super(UnikubeDumper, self).increase_indent(flow, False)
 
 
-def _generate_unikube_file(apps: List[Tuple[str, UnikubeFileApp]], to_file: bool = True):
+def _generate_unikube_file(apps: List[UnikubeFileApp], to_file: bool = True):
     result = {"version": "1", "apps": {}}
     for app in apps:
-        result["apps"].update({app[0]: app[1].dict(exclude_unset=True)})
+        result["apps"].update({"app": app.dict(exclude_unset=True)})
 
     if to_file:
         with open("unikube.yaml", "w") as unikube_file:
@@ -81,19 +81,21 @@ def env_validator(input_string: str):
     return len(input_string) == 0 or (isinstance(input_string, str) and "=" in input_string)
 
 
-def get_service_name():
-    return console.input("What's the name of the service?", mandatory=True)
-
-
 def get_docker_file():
     return console.input("Dockerfile (default: 'Dockerfile')", "Dockerfile")
 
 
 def get_context():
-    return console.input("Context (default: '.')", ".")
+    console.echo("What's the context for building your docker image?")
+    console.echo("For more information on 'docker build context' please see:")
+    console.link("https://docs.docker.com/engine/reference/commandline/build/#extended-description")
+    return console.input("Build Context (default: '.')", ".")
 
 
 def get_target():
+    console.echo("What's the target stage for building your docker image?")
+    console.echo("For more information on Docker's target stage please see:")
+    console.link("https://docs.docker.com/engine/reference/commandline/build/#specifying-target-build-stage---target")
     return console.input("Target (optional)", "")
 
 
@@ -111,7 +113,7 @@ def get_port():
 
 
 def get_command():
-    return console.input("What command should be executed on start?", "")
+    return console.input("What command should be executed on start? (optional)", "")
 
 
 def get_env():
@@ -122,14 +124,14 @@ def get_env():
 
 def get_volume():
     return console.input(
-        "Enter a volume mapping (e.g. <path>:<path>)",
+        "Enter a volume mapping (e.g. </local_path>:</container_path>)",
         "",
         validate=path_validator,
         invalid_message="Input must contain ':'.",
     )
 
 
-def collect_app_data(ctx) -> Tuple[str, UnikubeFileApp]:
+def collect_app_data(ctx) -> UnikubeFileApp:
     click.echo("")
     click.echo("This command helps to generate a unikube.yaml file.")
     click.echo("For detailed information concerning the file please visit:")
@@ -141,8 +143,6 @@ def collect_app_data(ctx) -> Tuple[str, UnikubeFileApp]:
     organization = prompt_for_choice("Which organization does the project belong to?", organization_list, ctx)
     project = prompt_for_choice("Which project does the service run in?", project_list, ctx)
     deck = prompt_for_choice("Which deck contains the deployment?", deck_list, ctx)
-
-    name = get_service_name()
 
     unikube_context = UnikubeFileContext(organization=organization, deck=deck, project=project)
 
@@ -208,20 +208,20 @@ def collect_app_data(ctx) -> Tuple[str, UnikubeFileApp]:
 
     app = UnikubeFileApp(**unikube_app_kwargs)
 
-    return name, app
+    return app
 
 
 # TODO add options to command to shorten prompts / make command scriptable
 @click.command()
-@click.option("--console", "-c", help="Print file output to console.", is_flag=True)
+@click.option("--stdout", "-s", help="Print file output to console.", is_flag=True)
 @click.pass_obj
-def init(ctx, console):
+def init(ctx, stdout):
     _ = ctx.auth.refresh()
 
     # We plan to support multiple apps in the future.
     results = [collect_app_data(ctx)]
 
-    result = _generate_unikube_file(results, to_file=not console)
+    result = _generate_unikube_file(results, to_file=not stdout)
     if result:
         console.echo("")
         success = click.style("Successfully generated unikube.yaml!", bold=True, underline=True)
