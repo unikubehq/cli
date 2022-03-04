@@ -10,7 +10,6 @@ import click_spinner
 from unikube import settings
 from unikube.cli import console
 from unikube.cli.helper import age_from_timestamp
-from unikube.cluster.bridge.telepresence import Telepresence
 from unikube.cluster.system import Docker, KubeAPI, KubeCtl
 from unikube.graphql_utils import GraphQL
 from unikube.unikubefile.selector import unikube_file_selector
@@ -255,21 +254,19 @@ def shell(ctx, app, organization=None, project=None, deck=None, container=None, 
 
     # get cluster
     cluster = ctx.cluster_manager.select(cluster_data.id, exit_on_exception=True)
-    provider_data = cluster.storage.get()
 
     # shell
-    k8s = KubeAPI(provider_data, deck)
+    k8s = KubeAPI(cluster.get_kubeconfig_path(), deck)
     app = argument_app(k8s, app)
 
     # get the data of the selected pod
     data = k8s.get_pod(app)
-    telepresence = Telepresence(provider_data)
 
     # the corresponding deployment by getting rid of the pod name suffix
     deployment = "-".join(data.metadata.name.split("-")[0:-2])
 
-    # 1. check if this pod is of a switched deployment (in case of an active Telepresence)
-    if telepresence.is_swapped(deployment, namespace=data.metadata.namespace):
+    # 1. check if this pod is of a switched deployment
+    if cluster.bridge.is_swapped(deployment, namespace=data.metadata.namespace):
         # the container name generated in "app switch" for that pod
         container_name = settings.TELEPRESENCE_DOCKER_IMAGE_FORMAT.format(
             project=cluster_data.name.lower(), deck=deck["title"].lower(), name=deployment.lower()
@@ -292,7 +289,7 @@ def shell(ctx, app, organization=None, project=None, deck=None, container=None, 
                 return None
 
         # 2.b connect using kubernetes
-        KubeCtl(provider_data).exec_pod(
+        KubeCtl(cluster.get_kubeconfig_path()).exec_pod(
             app, deck["environment"][0]["namespace"], "/bin/sh", interactive=True, container=container
         )
 
@@ -402,20 +399,17 @@ def switch(
 
     console.info("Please wait while unikube prepares the switch.")
     with click_spinner.spinner(beep=False, disable=False, force=False, stream=sys.stdout):
-        # check telepresence
-        provider_data = cluster.storage.get()
-        telepresence = Telepresence(provider_data)
-
-        available_deployments = telepresence.list(namespace, flat=True)
+        # check
+        available_deployments = cluster.bridge.list(namespace, flat=True)
         if deployment not in available_deployments:
             console.error(
                 "The given deployment cannot be switched. " f"You may have to run 'unikube deck install {deck}' first.",
                 _exit=True,
             )
 
-        is_swapped = telepresence.is_swapped(deployment, namespace)
+        is_swapped = cluster.bridge.is_swapped(deployment, namespace)
 
-        k8s = KubeAPI(provider_data, deck)
+        k8s = KubeAPI(cluster.get_kubeconfig_path(), deck)
         # service account token, service cert
         service_account_tokens = k8s.get_serviceaccount_tokens(deployment)
 
@@ -436,7 +430,7 @@ def switch(
     if is_swapped:
         console.warning("It seems this app is already switched in another process. ")
         if click.confirm("Do you want to kill it and switch here?"):
-            telepresence.leave(deployment, namespace, silent=True)
+            cluster.bridge.leave(deployment, namespace, silent=True)
             if docker.check_running(image_name):
                 docker.kill(name=image_name)
         else:
@@ -455,7 +449,7 @@ def switch(
 
         console.info(f"Docker image successfully built: {image_name}")
 
-    # 4. Start the Telepresence session
+    # 4. Start the Session
     # 4.1 Set the right intercept port
     port = unikube_file_app.get_port()
     if port is None:
@@ -500,7 +494,7 @@ def switch(
 
     console.info("Starting your container, this may take a while to become effective")
 
-    telepresence.swap(deployment, image_name, command, namespace, envs, mounts, port)
+    cluster.bridge.swap(deployment, image_name, command, namespace, envs, mounts, port)
     if docker.check_running(image_name):
         docker.kill(name=image_name)
     if tmp_sa_token:

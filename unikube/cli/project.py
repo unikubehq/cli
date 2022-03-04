@@ -1,16 +1,13 @@
-import sys
-from time import sleep, time
 from uuid import UUID
 
 import click
-import click_spinner
 
 import unikube.cli.console as console
 from unikube.authentication.authentication import TokenAuthentication
 from unikube.cli.console.helpers import project_id_2_display_name
 from unikube.cli.helper import check_ports
 from unikube.cluster.providers.types import ProviderType
-from unikube.cluster.system import Docker, KubeAPI
+from unikube.cluster.system import Docker
 from unikube.graphql_utils import GraphQL
 
 
@@ -161,15 +158,8 @@ def up(ctx, project=None, organization=None, ingress=None, workers=None, **kwarg
     )
 
     # cluster information
-    cluster_ids = ctx.cluster_manager.get_cluster_ids()
-    cluster_ids_exclude = []
-    for cluster_id in cluster_ids:
-        cluster = ctx.cluster_manager.select(id=cluster_id, provider_type=ProviderType.k3d)
-        if not cluster:
-            continue
-
-        if cluster.ready():
-            cluster_ids_exclude.append(str(cluster_id))
+    cluster_list = ctx.cluster_manager.get_clusters(ready=True)
+    cluster_ids_exclude = [str(cluster.id) for cluster in cluster_list]
 
     # argument
     if not project_id:
@@ -218,10 +208,9 @@ def up(ctx, project=None, organization=None, ingress=None, workers=None, **kwarg
 
     count = ctx.cluster_manager.count_active_clusters()
     if count > 0:
-        # TODO: limit cluster count
+        # TODO: limit cluster count???
         pass
 
-    # get project id
     if ingress is None:
         ingress = project_selected["clusterSettings"]["port"]
 
@@ -236,45 +225,12 @@ def up(ctx, project=None, organization=None, ingress=None, workers=None, **kwarg
     # cluster up
     cluster_id = UUID(project_selected["id"])
     provider_type = ProviderType.k3d
-
     cluster = ctx.cluster_manager.select(id=cluster_id, provider_type=provider_type, exit_on_exception=True)
-    console.info(
-        f"Setting up a Kubernetes cluster (with provider {str(provider_type)}) for "
-        f"project '{cluster.display_name}'."
-    )
+    success = cluster.up()
+    if not success:
+        console.error("The project cluster could not be started.")
 
-    if not cluster.exists():
-        console.info(f"Kubernetes cluster for '{cluster.display_name}' does not exist, creating it now.")
-        with click_spinner.spinner(beep=False, disable=False, force=False, stream=sys.stdout):
-            _ = cluster.create(
-                ingress_port=ingress,
-                workers=workers,
-            )
-
-    # start
-    else:
-        console.info(f"Kubernetes cluster for '{cluster.display_name}' already exists, starting it now.")
-        with click_spinner.spinner(beep=False, disable=False, force=False, stream=sys.stdout):
-            _ = cluster.start()
-
-    # console
-    # if success:
-    #     console.info("Now connecting Telepresence daemon. You probably have to enter your 'sudo' password.")
-    #     provider_data = cluster.storage.get()
-    #     k8s = KubeAPI(provider_data)
-    #     timeout = time() + 60  # wait one minute
-    #     while not k8s.is_available or time() > timeout:
-    #         sleep(1)
-    #     if not k8s.is_available:
-    #         console.error(
-    #             "There was an error bringing up the project cluster. The API was not available within the"
-    #             "expiration period.",
-    #             _exit=True,
-    #         )
-    #     Telepresence(cluster.storage.get()).start()
-    #     console.success("The project cluster is up.")
-    # else:
-    #     console.error("The project cluster could not be started.")
+    console.success("The project cluster is up.")
 
 
 @click.command()
@@ -303,35 +259,19 @@ def down(ctx, project=None, organization=None, **kwargs):
             return None
 
     # check if project is in local storage
-    if project_id not in [cluster.id for cluster in cluster_list]:
+    if project_id not in [str(cluster.id) for cluster in cluster_list]:
         console.info(
             f"The project cluster for '{project_id_2_display_name(ctx=ctx, id=project_id)}' is not up or does not exist yet.",
             _exit=True,
         )
 
-    # get cluster
-    cluster = ctx.cluster_manager.select(id=project_id, exit_on_exception=True)
-
-    # cluster down
-    if not cluster.exists():
-        # something went wrong or cluster was already delete from somewhere else
-        console.info(f"No Kubernetes cluster to stop for '{cluster.display_name}'", _exit=True)
-
-    if not cluster.ready():
-        console.info(f"Kubernetes cluster for '{cluster.display_name}' is not running", _exit=True)
-
-    # console.info("Stopping Telepresence daemon.")
-    # Telepresence(cluster.storage.get()).stop()
-
     # stop cluster
-    console.info(f"Stopping Kubernetes cluster for '{cluster.display_name}'")
-    success = cluster.stop()
-
-    # console
-    if success:
-        console.success("The project cluster is down.")
-    else:
+    cluster = ctx.cluster_manager.select(id=project_id, exit_on_exception=True)
+    success = cluster.down()
+    if not success:
         console.error("The cluster could not be stopped.")
+
+    console.success("The project cluster is down.")
 
 
 @click.command()
@@ -351,7 +291,7 @@ def delete(ctx, project=None, organization=None, **kwargs):
     # cluster
     cluster_list = ctx.cluster_manager.get_clusters()
     if len(cluster_list) == 0:
-        console.info("No clusters found.", _exit=True)
+        console.info("No projects found.", _exit=True)
 
     # argument
     if not project_id:
@@ -361,31 +301,25 @@ def delete(ctx, project=None, organization=None, **kwargs):
         if not project_id:
             return None
 
-    if project_id not in [cluster.id for cluster in cluster_list]:
+    if project_id not in [str(cluster.id) for cluster in cluster_list]:
         console.info(
             f"The project cluster for '{project_id_2_display_name(ctx=ctx, id=project_id)}' could not be found.",
             _exit=True,
         )
 
-    # initial warning
+    # warning
     console.warning("Deleting a project will remove the cluster including all of its data.")
-
-    # confirm question
-    confirm = input("Do want to continue [N/y]: ")
-    if confirm not in ["y", "Y", "yes", "Yes"]:
+    confirmed = console.confirm(question="Do you want to remove the cluster? [N/y]: ")
+    if not confirmed:
         console.info("No action taken.", _exit=True)
 
-    # get cluster
-    cluster = ctx.cluster_manager.select(id=project_id, exit_on_exception=True)
-
     # delete cluster
+    cluster = ctx.cluster_manager.select(id=project_id, exit_on_exception=True)
     success = cluster.delete()
+    if not success:
+        console.error("The cluster could not be deleted.", _exit=True)
 
-    # console
-    if success:
-        console.success("The project was deleted successfully.")
-    else:
-        console.error("The cluster could not be deleted.")
+    console.success("The project was deleted successfully.")
 
 
 @click.command()
@@ -419,26 +353,16 @@ def prune(ctx, **kwargs):
 
     # select clusters to prune
     prune_clusters = []
-    for cluster_data in cluster_list:
-        if cluster_data.id not in [project["id"] for project in projects]:
-            prune_clusters.append(cluster_data)
+    for cluster in cluster_list:
+        if cluster.id not in [UUID(project["id"]) for project in projects]:
+            prune_clusters.append(cluster)
 
-    for cluster_data in prune_clusters:
-        console.info(f"It seems like the project for cluster '{cluster_data.name}' has been deleted.")
+    for cluster in prune_clusters:
+        console.info(f"It seems like the project for cluster '{cluster.display_name}' has been deleted.")
 
-        # confirm question
-        confirmed = console.confirm(question="Do want to remove the cluster? [N/y]: ")
-        if not confirmed:
-            console.info("No action taken.")
-            continue
+        # delete cluster
+        success = cluster.delete()
+        if not success:
+            console.error("The project could not be deleted.", _exit=True)
 
-        # delete
-        try:
-            cluster = ctx.cluster_manager.select(cluster_data=cluster_data)
-            success = cluster.delete()
-            if success:
-                console.success("The project was deleted successfully.")
-                ctx.cluster_manager.delete(cluster.id)
-        except Exception as e:
-            console.debug(e)
-            console.error("The cluster could not be deleted.")
+        console.success("The project was deleted successfully.")

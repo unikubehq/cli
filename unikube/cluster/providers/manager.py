@@ -4,6 +4,7 @@ from uuid import UUID
 
 import unikube.cli.console as console
 from unikube import settings
+from unikube.cluster.cluster import Cluster
 from unikube.cluster.providers.abstract_provider import AbstractProvider
 from unikube.cluster.providers.factory import kubernetes_cluster_factory
 from unikube.cluster.providers.types import ProviderType
@@ -74,14 +75,14 @@ class ClusterManager:
         name: str = None,
         provider_type: ProviderType = settings.UNIKUBE_DEFAULT_PROVIDER_TYPE,
         exit_on_exception: bool = False,
-    ) -> Optional[AbstractProvider]:
+    ) -> Optional[Cluster]:
         # create config
         config = {
             "id": id,
         }
 
         if name:
-            config["name"] = name
+            config["display_name"] = name
 
         # get selected cluster from factory
         try:

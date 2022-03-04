@@ -11,24 +11,10 @@ class AbstractProvider(ABC):
     def __init__(
         self,
         id: UUID,
-        name: str = None,
+        cluster_name: str = None,
     ) -> None:
         self.id = id
-        self.name = name
-
-    @property
-    def display_name(self):
-        name = self.name
-        if name:
-            return name
-
-        id = self.id
-        return id
-
-    @property
-    def cluster_name(self):
-        cluster_name = str(self.id).replace("-", "")
-        return cluster_name[:32]  # k3d: cluster name must be <= 32 characters
+        self.cluster_name = cluster_name
 
     @staticmethod
     def _get_random_unused_port() -> int:
@@ -56,10 +42,6 @@ class AbstractProvider(ABC):
 
     @abstractmethod
     def exists(self) -> bool:
-        raise NotImplementedError
-
-    @abstractmethod
-    def ready(self) -> bool:
         raise NotImplementedError
 
     @abstractmethod

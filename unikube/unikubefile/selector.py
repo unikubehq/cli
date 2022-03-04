@@ -38,7 +38,7 @@ class UnikubeFileSelector:
             with click.open_file(path_unikube_file) as unikube_file:
                 data = yaml.load(unikube_file, Loader=yaml.FullLoader)
         except FileNotFoundError:
-            raise UnikubeFileNotFoundError
+            raise UnikubeFileNotFoundError("Unikube file not found.")
 
         # add & format data
         try:

@@ -72,15 +72,15 @@ class CMDWrapper(object):
 class KubeCtl(CMDWrapper):
     base_command = "kubectl"
 
-    def __init__(self, provider_data, debug_output=False):
-        if not provider_data.kubeconfig_path:
+    def __init__(self, kubeconfig_path: str, debug_output: bool = False):
+        if not kubeconfig_path:
             raise ValueError("Project does not contain the kubeconfigPath parameter")
-        self._provider_data = provider_data
+        self._kubeconfig_path = kubeconfig_path
         super(KubeCtl, self).__init__(debug_output)
 
     def _get_environment(self):
         env = super(KubeCtl, self)._get_environment()
-        env["KUBECONFIG"] = self._provider_data.kubeconfig_path
+        env["KUBECONFIG"] = self._kubeconfig_path
         return env
 
     def _get_kwargs(self):
@@ -99,26 +99,6 @@ class KubeCtl(CMDWrapper):
     def delete_str(self, namespace, text: str):
         arguments = ["delete", "--namespace", namespace, "-f", "-"]
         self._execute(arguments, text)
-
-    def get_ingress_data(self, namespace):
-        arguments = ["get", "ingress", "--namespace", namespace]
-        process = self._execute(arguments)
-        output = process.stdout.read()
-        # skip the header
-        ingress_lines = output.split("\n")[1:]
-        result = []
-        for line in ingress_lines:
-            line = list(filter(lambda x: x != "", line.split(" ")))
-            if line:
-                result.append(
-                    {
-                        "name": line[0],
-                        "hosts": line[1],
-                        "address": line[2],
-                        "ports": line[3],
-                    }
-                )
-        return result
 
     def get_pods(self, namespace):
         arguments = ["get", "pods", "--namespace", namespace]
@@ -226,14 +206,14 @@ class Docker(CMDWrapper):
 
 
 class KubeAPI(object):
-    def __init__(self, provider_data, deck=None):
-        self._provider_data = provider_data
+    def __init__(self, kubeconfig_path: str, deck=None):
+        self._kubeconfig_path = kubeconfig_path
         self._deck = deck
         if self._deck:
             self._namespace = self._deck["environment"][0]["namespace"] or "default"
         else:
             self._namespace = "default"
-        self._api_client = config.new_client_from_config(provider_data.kubeconfig_path)
+        self._api_client = config.new_client_from_config(kubeconfig_path)
         self._core_api = client.CoreV1Api(self._api_client)
         self._networking_api = client.NetworkingV1beta1Api(self._api_client)
 

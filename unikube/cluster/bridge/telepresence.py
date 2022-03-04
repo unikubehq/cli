@@ -1,28 +1,48 @@
 # -*- coding: utf-8 -*-
-import os
 import platform
 import re
 import subprocess
-from typing import List, Optional, Tuple, Union
+from time import sleep, time
+from typing import List
 
-import click
-from kubernetes import client, config, watch
-from kubernetes.client.rest import ApiException
-from kubernetes.stream import stream
 from pydantic import BaseModel
-from urllib3.exceptions import MaxRetryError
 
 import unikube.cli.console as console
-from unikube import settings
-from unikube.cluster.system import KubeCtl
+from unikube.cluster.bridge.bridge import AbstractBridge
+from unikube.cluster.system import KubeAPI, KubeCtl
 
 
 class TelepresenceData(BaseModel):
     pass
 
 
-class Telepresence(KubeCtl):
+class Telepresence(AbstractBridge, KubeCtl):
     base_command = "telepresence"
+
+    def pre_cluster_up(self):
+        pass
+
+    def post_cluster_up(self):
+        console.info("Now connecting Telepresence daemon. You probably have to enter your 'sudo' password.")
+        k8s = KubeAPI(self._kubeconfig_path)
+        timeout = time() + 60  # wait one minute
+        while not k8s.is_available or time() > timeout:
+            sleep(1)
+
+        if not k8s.is_available:
+            console.error(
+                "There was an error bringing up the project cluster. The API was not available within the"
+                "expiration period.",
+                _exit=True,
+            )
+
+        self.start()
+
+    def pre_cluster_down(self):
+        self.stop()
+
+    def post_cluster_down(self):
+        pass
 
     def _execute_intercept(self, arguments) -> subprocess.Popen:
         cmd = [self.base_command] + arguments
@@ -140,7 +160,7 @@ class Telepresence(KubeCtl):
         swapped = any(filter(lambda x: x[0] == deployment and x[1] == "intercepted", deployments))
         return swapped
 
-    def count(self) -> int:
+    def intercept_count(self) -> int:
         arguments = ["status"]
         process = self._execute(arguments)
         status = process.stdout.readlines()
@@ -155,3 +175,13 @@ class Telepresence(KubeCtl):
             intercept_count = 0
 
         return intercept_count
+
+
+class TelepresenceBuilder:
+    def __call__(
+        self,
+        kubeconfig_path: str,
+        **kwargs,
+    ):
+        instance = Telepresence(kubeconfig_path=kubeconfig_path)
+        return instance

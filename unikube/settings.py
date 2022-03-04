@@ -3,6 +3,7 @@ import os
 import urllib3
 
 from unikube.cli.helper import exist_or_create
+from unikube.cluster.bridge.types import BridgeType
 from unikube.cluster.providers.types import ProviderType
 
 # disable warnings
@@ -24,6 +25,7 @@ AUTH_DEFAULT_HOST = "https://login.unikube.io"  # "http://keycloak.127.0.0.1.nip
 # unikube
 UNIKUBE_FILE = "unikube.yaml"
 UNIKUBE_DEFAULT_PROVIDER_TYPE = ProviderType.k3d
+UNIKUBE_DEFAULT_BRIDGE_TYPE = BridgeType.telepresence
 
 # token
 TOKEN_REALM = "unikube"

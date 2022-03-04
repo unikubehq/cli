@@ -95,11 +95,6 @@ def list(
     multiselect: bool = False,
     transformer: Callable[[Any], str] = None,
 ) -> Union[None, List[str]]:
-    # choices exist
-    if not len(choices) > 0:
-        console.info(message_no_choices)
-        return None
-
     # handle duplicates
     if not allow_duplicates:
         if identifiers:
@@ -114,6 +109,11 @@ def list(
 
     # exclude
     choices_excluded = exclude_by_identifiers(choices=choices_filtered, identifiers=identifiers, excludes=excludes)
+
+    # choices exist
+    if not len(choices_excluded) > 0:
+        console.info(message_no_choices)
+        return None
 
     # prompt
     answer = inquirer.fuzzy(
@@ -130,7 +130,7 @@ def list(
 
 
 def confirm(
-    question: str = "Do want to continue? [N/y]: ",
+    question: str = "Do you want to continue? [N/y]: ",
     values: List[str] = ["y", "Y", "yes", "Yes"],
 ) -> bool:
     # confirm action by user input

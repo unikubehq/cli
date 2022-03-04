@@ -14,7 +14,7 @@ from unikube.cluster.providers.abstract_provider import AbstractProvider
 from unikube.cluster.providers.k3d.storage import K3dData
 from unikube.cluster.providers.types import ProviderType
 from unikube.cluster.storage.cluster_data import ClusterStorage
-from unikube.cluster.system import CMDWrapper, Docker
+from unikube.cluster.system import CMDWrapper
 
 
 class K3d(AbstractProvider, CMDWrapper):
@@ -23,12 +23,12 @@ class K3d(AbstractProvider, CMDWrapper):
     base_command = "k3d"
     _cluster = []
 
-    def __init__(self, id: UUID, name: str = None, _debug_output=False):
+    def __init__(self, id: UUID, cluster_name: str = None, _debug_output=False):
         # storage
         self.storage = ClusterStorage(id=id)
 
         # abstract kubernetes cluster
-        AbstractProvider.__init__(self, id=id, name=name)
+        AbstractProvider.__init__(self, id=id, cluster_name=cluster_name)
 
         # CMDWrapper
         self._debug_output = _debug_output
@@ -56,6 +56,11 @@ class K3d(AbstractProvider, CMDWrapper):
             self._cluster = clusters
         return self._cluster
 
+    @property
+    def kubeconfig_path(self):
+        config_path = os.path.join(settings.CLI_UNIKUBE_DIRECTORY, "cluster", str(self.id), "kubeconfig.yaml")
+        return config_path
+
     def get_kubeconfig(self, wait=10) -> Optional[str]:
         arguments = ["kubeconfig", "get", self.cluster_name]
         # this is a nasty busy wait, but we don't have another chance
@@ -74,12 +79,8 @@ class K3d(AbstractProvider, CMDWrapper):
         config = process.stdout.read().strip()
         if not os.path.isdir(os.path.join(settings.CLI_UNIKUBE_DIRECTORY, "cluster", str(self.id))):
             os.mkdir(os.path.join(settings.CLI_UNIKUBE_DIRECTORY, "cluster", str(self.id)))
-        config_path = os.path.join(
-            settings.CLI_UNIKUBE_DIRECTORY,
-            "cluster",
-            str(self.id),
-            "kubeconfig.yaml",
-        )
+
+        config_path = self.kubeconfig_path
         file = open(config_path, "w+")
         file.write(config)
         file.close()
@@ -103,6 +104,9 @@ class K3d(AbstractProvider, CMDWrapper):
             publisher_port = self._get_random_unused_port()
         else:
             publisher_port = ingress_port
+
+        if not workers:
+            workers = settings.K3D_DEFAULT_WORKERS
 
         arguments = [
             "cluster",
@@ -169,9 +173,6 @@ class K3d(AbstractProvider, CMDWrapper):
         version_str = re.search(r"(\d+\.\d+\.\d+)", output).group(1)
         return Version(version_str)
 
-    def ready(self) -> bool:
-        return Docker().check_running(self.cluster_name)
-
 
 class K3dBuilder:
     def __init__(self):
@@ -180,8 +181,8 @@ class K3dBuilder:
     def __call__(
         self,
         id: UUID,
-        name: str = None,
-        **_ignored,
+        cluster_name: str = None,
+        **kwargs,
     ):
         # get instance from cache
         instance = self._instances.get(id, None)
@@ -189,7 +190,7 @@ class K3dBuilder:
             return instance
 
         # create instance
-        instance = K3d(id, name=name)
+        instance = K3d(id, cluster_name=cluster_name)
         self._instances[id] = instance
 
         return instance

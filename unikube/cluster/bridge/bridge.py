@@ -1,6 +1,6 @@
-class Bridge:
-    def count(self) -> int:
-        raise NotImplementedError
+class AbstractBridge:
+    def intercept_count(self) -> int:
+        return 0
 
     def pre_cluster_up(self):
         pass
