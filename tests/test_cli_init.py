@@ -15,7 +15,6 @@ class InitTestCase(LoginTestCase):
     @patch("unikube.cli.init.get_target")
     @patch("unikube.cli.init.get_context")
     @patch("unikube.cli.init.get_docker_file")
-    @patch("unikube.cli.init.get_service_name")
     @patch("unikube.cli.init.deck_list")
     @patch("unikube.cli.init.project_list")
     @patch("unikube.cli.init.organization_list")
@@ -24,7 +23,6 @@ class InitTestCase(LoginTestCase):
         organization_list,
         project_list,
         deck_list,
-        service_name,
         get_docker_file,
         get_context,
         get_target,
@@ -38,7 +36,6 @@ class InitTestCase(LoginTestCase):
         organization_list.return_value = "ceba2255-3113-4a2c-af7a-7e0c9e73cd0c"
         project_list.return_value = "b464a6a7-7367-41d3-92a3-d3d98ed10cb5"
         deck_list.return_value = "4634368f-1751-40ae-9cd7-738fcb656a0d"
-        service_name.return_value = "projects"
         get_docker_file.return_value = "Dockerfile"
         get_context.return_value = "."
         get_target.return_value = ""
@@ -58,7 +55,6 @@ class InitTestCase(LoginTestCase):
         assert organization_list.called
         assert project_list.called
         assert deck_list.called
-        assert service_name.called
         assert get_docker_file.called
         assert get_context.called
         assert get_target.called
@@ -71,7 +67,6 @@ class InitTestCase(LoginTestCase):
         self.assertIn(organization_list.return_value, result.output)
         self.assertIn(project_list.return_value, result.output)
         self.assertIn(deck_list.return_value, result.output)
-        self.assertIn(service_name.return_value, result.output)
         self.assertIn(get_docker_file.return_value, result.output)
         self.assertIn(get_deployment.return_value, result.output)
         self.assertIn(get_port.return_value, result.output)
