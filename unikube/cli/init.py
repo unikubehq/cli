@@ -10,7 +10,7 @@ from unikube.cli.console import confirm, deck_list, organization_list, project_l
 
 class UnikubeFileBuild(BaseModel):
     context: str = "."
-    docker_file: str = "Dockerfile"
+    dockerfile: str = "Dockerfile"
     target: str = None
 
 
@@ -149,12 +149,12 @@ def collect_app_data(ctx) -> UnikubeFileApp:
     # Collect docker information
     click.echo("")
     prompt_headline("Docker information")
-    docker_file = get_docker_file()
+    dockerfile = get_docker_file()
     context = get_context()
     target = get_target()
 
     build = UnikubeFileBuild(
-        docker_file=docker_file,
+        dockerfile=dockerfile,
         context=context,
         target=target,
     )
