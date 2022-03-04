@@ -48,7 +48,7 @@ class InitTestCase(LoginTestCase):
 
         result = self.runner.invoke(
             init.init,
-            ["--console"],
+            ["--stdout"],
             obj=ClickContext(),
         )
 
