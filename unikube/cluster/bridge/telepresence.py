@@ -19,6 +19,22 @@ class TelepresenceData(BaseModel):
 class Telepresence(AbstractBridge, KubeCtl):
     base_command = "telepresence"
 
+    def intercept_count(self) -> int:
+        arguments = ["status"]
+        process = self._execute(arguments)
+        status = process.stdout.readlines()
+
+        # parse intercept count
+        try:
+            intercept_line = status[15]
+            match = re.findall("[ ]{1,}Intercepts[ ]{1,}:(.*)[ ]{1,}total", intercept_line)
+            intercept_count = int(match[0])
+        except Exception as e:
+            console.debug(e)
+            intercept_count = 0
+
+        return intercept_count
+
     def pre_cluster_up(self):
         pass
 
@@ -159,22 +175,6 @@ class Telepresence(AbstractBridge, KubeCtl):
         deployments = self.list(namespace)
         swapped = any(filter(lambda x: x[0] == deployment and x[1] == "intercepted", deployments))
         return swapped
-
-    def intercept_count(self) -> int:
-        arguments = ["status"]
-        process = self._execute(arguments)
-        status = process.stdout.readlines()
-
-        # parse intercept count
-        try:
-            intercept_line = status[15]
-            match = re.findall("[ ]{1,}Intercepts[ ]{1,}:(.*)[ ]{1,}total", intercept_line)
-            intercept_count = int(match[0])
-        except Exception as e:
-            console.debug(e)
-            intercept_count = 0
-
-        return intercept_count
 
 
 class TelepresenceBuilder:

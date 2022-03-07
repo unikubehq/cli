@@ -34,7 +34,7 @@ def get_deck(ctx, deck_id: str):
                 }
             }
             """,
-            query_variables={"id": deck_id},
+            query_variables={"id": str(deck_id)},
         )
         deck = data["deck"]
     except Exception as e:
@@ -242,7 +242,7 @@ def install(ctx, organization=None, project=None, deck=None, **kwargs):
             kubectl.apply_str(namespace, file["content"])
 
     # ingress
-    publisher_port = cluster.storage.provider[cluster.cluster_provider_type.name].publisher_port
+    publisher_port = cluster.storage.provider[cluster.cluster_provider_type].publisher_port
     ingress_data = get_ingress_data(deck, kubeconfig_path=kubeconfig_path, publisher_port=publisher_port)
     if not ingress_data:
         console.info("No ingress configuration available.", _exit=True)

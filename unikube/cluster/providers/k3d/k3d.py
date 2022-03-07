@@ -13,7 +13,7 @@ from unikube import settings
 from unikube.cluster.providers.abstract_provider import AbstractProvider
 from unikube.cluster.providers.k3d.storage import K3dData
 from unikube.cluster.providers.types import ProviderType
-from unikube.cluster.storage.cluster_data import ClusterStorage
+from unikube.cluster.storage.cluster_storage import ClusterStorage
 from unikube.cluster.system import CMDWrapper
 
 

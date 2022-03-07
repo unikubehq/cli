@@ -1,4 +1,5 @@
 from unikube.cluster.bridge.bridge import AbstractBridge
+from unikube.cluster.bridge.gefyra import GefyraBuilder
 from unikube.cluster.bridge.telepresence import TelepresenceBuilder
 from unikube.cluster.bridge.types import BridgeType
 from unikube.cluster.cluster import Cluster
@@ -31,7 +32,7 @@ class ClusterFactory:
             raise ValueError(bridge_type)
         return builder(**kwargs)
 
-    def get(self, provider_type: ProviderType, bridge_type: BridgeType = BridgeType.telepresence, **kwargs):
+    def get(self, provider_type: ProviderType, bridge_type: BridgeType, **kwargs):
         cluster = Cluster(**kwargs)
         kwargs["cluster_name"] = cluster.cluster_name
 
@@ -47,4 +48,5 @@ class ClusterFactory:
 
 kubernetes_cluster_factory = ClusterFactory()
 kubernetes_cluster_factory.register_provider_builder(ProviderType.k3d, K3dBuilder())
+kubernetes_cluster_factory.register_bridge_builder(BridgeType.gefyra, GefyraBuilder())
 kubernetes_cluster_factory.register_bridge_builder(BridgeType.telepresence, TelepresenceBuilder())

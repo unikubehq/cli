@@ -11,8 +11,6 @@ import unikube.cli.console as console
 from unikube import settings
 from unikube.authentication.authentication import TokenAuthentication
 from unikube.cache import Cache
-from unikube.cluster.providers.types import ProviderType
-from unikube.context import ClickContext
 from unikube.graphql_utils import EnvironmentType
 
 
@@ -127,7 +125,3 @@ def compare_current_and_latest_versions():
         import traceback
 
         console.info(f"Versions cannot be compared, because of error {traceback.format_exc()}")
-
-
-def compare_decorator(f):
-    compare_current_and_latest_versions()

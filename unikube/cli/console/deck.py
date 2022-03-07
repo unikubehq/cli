@@ -25,8 +25,8 @@ def deck_list(ctx, organization_id: UUID = None, project_id: UUID = None) -> Opt
             else:
                 deck_organization_id = None
 
-            if ((deck_organization_id == organization_id) or (organization_id is None)) and (
-                (deck_project_id == project_id) or (project_id is None)
+            if ((str(deck_organization_id) == organization_id) or (organization_id is None)) and (
+                (str(deck_project_id) == project_id) or (project_id is None)
             ):
                 deck_list[id] = deck
     else:

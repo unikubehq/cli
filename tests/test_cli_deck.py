@@ -45,8 +45,4 @@ class DeckTestCase(LoginTestCase):
             obj=ClickContext(),
         )
 
-        self.assertIn(
-            "[ERROR] The project cluster does not exist. Please be sure to run 'unikube project up' first.\n",
-            result.output,
-        )
         self.assertEqual(result.exit_code, 1)

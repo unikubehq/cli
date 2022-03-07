@@ -4,8 +4,8 @@ from uuid import UUID
 
 import unikube.cli.console as console
 from unikube import settings
+from unikube.cluster.bridge.types import BridgeType
 from unikube.cluster.cluster import Cluster
-from unikube.cluster.providers.abstract_provider import AbstractProvider
 from unikube.cluster.providers.factory import kubernetes_cluster_factory
 from unikube.cluster.providers.types import ProviderType
 
@@ -48,23 +48,25 @@ class ClusterManager:
         ls = []
         for cluster_id in self.get_cluster_ids():
             for provider_type in ProviderType:
-                if self.exists(cluster_id, provider_type):
-                    # handle ready option
-                    cluster = self.select(
-                        id=cluster_id,
-                        provider_type=provider_type,
-                    )
+                for bridge_type in BridgeType:
+                    if self.exists(cluster_id, provider_type, bridge_type):
+                        # handle ready option
+                        cluster = self.select(
+                            id=cluster_id,
+                            provider_type=provider_type,
+                            bridge_type=bridge_type,
+                        )
 
-                    if ready:
-                        if cluster.ready() != ready:
-                            continue
+                        if ready:
+                            if cluster.ready() != ready:
+                                continue
 
-                    # append cluster to list
-                    ls.append(cluster)
+                        # append cluster to list
+                        ls.append(cluster)
         return ls
 
-    def exists(self, id: UUID, provider_type: ProviderType) -> bool:
-        cluster = self.select(id=id, provider_type=provider_type)
+    def exists(self, id: UUID, provider_type: ProviderType, bridge_type: BridgeType) -> bool:
+        cluster = self.select(id=id, provider_type=provider_type, bridge_type=bridge_type)
         if cluster:
             return True
         return False
@@ -74,6 +76,7 @@ class ClusterManager:
         id: UUID,
         name: str = None,
         provider_type: ProviderType = settings.UNIKUBE_DEFAULT_PROVIDER_TYPE,
+        bridge_type: BridgeType = settings.UNIKUBE_DEFAULT_BRIDGE_TYPE,
         exit_on_exception: bool = False,
     ) -> Optional[Cluster]:
         # create config
@@ -88,6 +91,7 @@ class ClusterManager:
         try:
             cluster = kubernetes_cluster_factory.get(
                 provider_type,
+                bridge_type,
                 **config,
             )
             return cluster

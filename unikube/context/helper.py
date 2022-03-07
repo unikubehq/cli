@@ -102,23 +102,20 @@ def convert_deck_argument_to_uuid(
         user_ids = UserIDs(id=cache.userId)
         decks = user_ids.deck
 
+        project_ids = []
+
         # filter
-        filter_ids = []
-        if organization_id and not project_id:
+        if organization_id:
             organization = user_ids.organization.get(organization_id)
-            for project_id in organization.project_ids:
-                project = user_ids.project.get(project_id)
-                filter_ids.append(project.deck_ids)
+            project_ids = getattr(organization, "project_ids", [])
 
-        elif not organization_id and project_id:
-            project = user_ids.project.get(project_id)
-            filter_ids = project.deck_ids
+        if project_id:
+            project_ids = [project_id]
 
-        else:
-            filter_ids = None
-
-        if filter_ids:
-            decks = {key: decks[key] for key in filter_ids}
+        for id in project_ids:
+            project = user_ids.project.get(UUID(id))
+            if project:
+                decks = {key: decks[key] for key in project.deck_ids}
 
         uuid = __select_result(argument_value, decks, exception_message="deck")
     except Exception as e:

@@ -4,7 +4,7 @@ from unikube.cli import console
 from unikube.cluster.bridge.bridge import AbstractBridge
 from unikube.cluster.providers.abstract_provider import AbstractProvider
 from unikube.cluster.providers.types import ProviderType
-from unikube.cluster.storage.cluster_data import ClusterStorage
+from unikube.cluster.storage.cluster_storage import ClusterStorage
 from unikube.cluster.system import Docker
 
 
