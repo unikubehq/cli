@@ -32,7 +32,7 @@ def cache_information(cache: Cache):
                         title
                     }
                 }
-                allProjects {
+                allProjects(limit: 10000) {
                     results {
                         id
                         title
@@ -41,7 +41,7 @@ def cache_information(cache: Cache):
                         }
                     }
                 }
-                allDecks {
+                allDecks(limit: 10000) {
                     results {
                         id
                         title

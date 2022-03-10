@@ -113,7 +113,7 @@ def convert_deck_argument_to_uuid(
             project_ids = [project_id]
 
         for id in project_ids:
-            project = user_ids.project.get(UUID(id))
+            project = user_ids.project.get(id)
             if project:
                 decks = {key: decks[key] for key in project.deck_ids}
 

@@ -93,7 +93,7 @@ class UserIDs(BaseFileCache):
                                 title
                             }
                         }
-                        allProjects {
+                        allProjects(limit: 10000) {
                             results {
                                 id
                                 title
@@ -102,7 +102,7 @@ class UserIDs(BaseFileCache):
                                 }
                             }
                         }
-                        allDecks {
+                        allDecks(limit: 10000) {
                             results {
                                 id
                                 title

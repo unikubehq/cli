@@ -1,7 +1,9 @@
+from typing import Optional
 from uuid import UUID
 
 from unikube.cli import console
 from unikube.cluster.bridge.bridge import AbstractBridge
+from unikube.cluster.bridge.types import BridgeType
 from unikube.cluster.providers.abstract_provider import AbstractProvider
 from unikube.cluster.providers.types import ProviderType
 from unikube.cluster.storage.cluster_storage import ClusterStorage
@@ -36,6 +38,13 @@ class Cluster:
     def cluster_provider_type(self) -> ProviderType:
         return self.storage.provider_type
 
+    @property
+    def cluster_bridge_type(self) -> Optional[BridgeType]:
+        try:
+            return BridgeType(self.storage.bridge_type)
+        except Exception:
+            return None
+
     def get_kubeconfig_path(self, provider_type: ProviderType = None):
         if not provider_type:
             provider_type = self.cluster_provider_type
@@ -59,6 +68,7 @@ class Cluster:
             _ = self.provider.create(
                 ingress_port=ingress,
                 workers=workers,
+                bridge_type=self.cluster_bridge_type,
             )
         else:
             console.info(f"Kubernetes cluster for '{self.display_name}' already exists, starting it now.")

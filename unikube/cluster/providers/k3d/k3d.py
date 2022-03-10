@@ -10,6 +10,7 @@ from semantic_version import Version
 
 import unikube.cli.console as console
 from unikube import settings
+from unikube.cluster.bridge.types import BridgeType
 from unikube.cluster.providers.abstract_provider import AbstractProvider
 from unikube.cluster.providers.k3d.storage import K3dData
 from unikube.cluster.providers.types import ProviderType
@@ -92,11 +93,7 @@ class K3d(AbstractProvider, CMDWrapper):
                 return True
         return False
 
-    def create(
-        self,
-        ingress_port=None,
-        workers=settings.K3D_DEFAULT_WORKERS,
-    ):
+    def create(self, ingress_port=None, workers=settings.K3D_DEFAULT_WORKERS, bridge_type: BridgeType = None):
         v5plus = self.version().major >= 5
         api_port = self._get_random_unused_port()
 
@@ -124,6 +121,14 @@ class K3d(AbstractProvider, CMDWrapper):
             "--timeout",
             "120s",
         ]
+
+        # bridge specific settings
+        if bridge_type == BridgeType.gefyra:
+            arguments += [
+                "--port",
+                f"31820:31820/UDP@agent{':0' if v5plus else '[0]'}",
+            ]
+
         self._execute(arguments)
 
         self.storage.name = self.cluster_name

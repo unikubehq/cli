@@ -1,0 +1,15 @@
+# unikube switch configuration file
+apps:
+  local:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    deployment: buzzword-counter-web
+    container: buzzword-counter
+    command: python3 local.py
+    ports:
+      - 9000:8000
+    volumes:
+      - ./src:/app
+    env:
+      - DJANGO_DEBUG: "True"

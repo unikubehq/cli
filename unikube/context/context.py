@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
-from typing import List, Tuple, Union
+from typing import List, Optional, Tuple, Union
+from uuid import UUID
 
 from unikube import settings
 from unikube.cache import Cache, UserContext
@@ -137,7 +138,7 @@ class Context:
 
     def get_context_ids_from_arguments(
         self, organization_argument: str = None, project_argument: str = None, deck_argument: str = None
-    ) -> Tuple[str, str, str]:
+    ) -> Tuple[Optional[UUID], Optional[UUID], Optional[UUID]]:
         # convert context argments into ids
         organization_id, project_id, deck_id = convert_context_arguments(
             cache=self.cache,
@@ -148,4 +149,21 @@ class Context:
 
         # consider context
         context = self.get(organization=organization_id, project=project_id, deck=deck_id)
-        return context.organization_id, context.project_id, context.deck_id
+
+        # convert to UUID
+        if context.organization_id:
+            organization_id = UUID(context.organization_id)
+        else:
+            organization_id = None
+
+        if context.project_id:
+            project_id = UUID(context.project_id)
+        else:
+            project_id = None
+
+        if deck_id:
+            deck_id = UUID(context.deck_id)
+        else:
+            deck_id = None
+
+        return organization_id, project_id, deck_id

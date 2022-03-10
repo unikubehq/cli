@@ -2,14 +2,16 @@
 import platform
 import re
 import subprocess
+import tempfile
 from time import sleep, time
 from typing import List
 
 from pydantic import BaseModel
 
 import unikube.cli.console as console
+from unikube import settings
 from unikube.cluster.bridge.bridge import AbstractBridge
-from unikube.cluster.system import KubeAPI, KubeCtl
+from unikube.cluster.system import Docker, KubeAPI, KubeCtl
 
 
 class TelepresenceData(BaseModel):
@@ -68,7 +70,37 @@ class Telepresence(AbstractBridge, KubeCtl):
             print(stdout_line, end="", flush=True)
         return process
 
-    def swap(self, deployment, image_name, command=None, namespace=None, envs=None, mounts=None, port=None):
+    def switch(
+        self,
+        deployment,
+        image_name,
+        command=None,
+        namespace=None,
+        envs=None,
+        mounts=None,
+        port=None,
+        cluster=None,
+        deck=None,
+    ):
+
+        # mount service tokens
+        k8s = KubeAPI(cluster.get_kubeconfig_path(), deck)
+        service_account_tokens = k8s.get_serviceaccount_tokens(deployment)
+
+        if service_account_tokens:
+            tmp_sa_token = tempfile.NamedTemporaryFile(delete=True)
+            tmp_sa_cert = tempfile.NamedTemporaryFile(delete=True)
+            tmp_sa_token.write(service_account_tokens[0].encode())
+            tmp_sa_cert.write(service_account_tokens[1].encode())
+            tmp_sa_token.flush()
+            tmp_sa_cert.flush()
+            mounts.append((tmp_sa_token.name, settings.SERVICE_TOKEN_FILENAME))
+            mounts.append((tmp_sa_cert.name, settings.SERVICE_CERT_FILENAME))
+        else:
+            tmp_sa_token = None
+            tmp_sa_cert = None
+
+        # telepresence
         arguments = ["intercept", "--no-report", deployment]
         if namespace:
             arguments = arguments + ["--namespace", namespace]
@@ -102,9 +134,18 @@ class Telepresence(AbstractBridge, KubeCtl):
                 )
         except KeyboardInterrupt:
             pass
+
         console.info("Stopping the switch operation. It takes a few seconds to reset the cluster.")
         self.leave(deployment, namespace, silent=True)
         self.uninstall(deployment, namespace, silent=True)
+
+        docker = Docker()
+        if docker.check_running(image_name):
+            docker.kill(name=image_name)
+
+        if tmp_sa_token:
+            tmp_sa_token.close()
+            tmp_sa_cert.close()
 
     def leave(self, deployment, namespace=None, silent=False):
         arguments = ["leave", "--no-report"]
