@@ -1,9 +1,8 @@
 import re
 from typing import Any, Callable, List, Union
 
-from InquirerPy import inquirer
-
 import unikube.cli.console as console
+from unikube.cli.console.prompt import UpdatableFuzzyPrompt
 
 
 def get_identifier_or_pass(selection: str) -> str:
@@ -82,19 +81,7 @@ def exclude_by_identifiers(choices: List[str], identifiers: List[str], excludes:
     return choices_excluded
 
 
-# input
-def list(
-    message: str,
-    choices: List[str],
-    identifiers: Union[List[str], None] = None,
-    filter: Union[List[str], None] = None,
-    excludes: Union[List[str], None] = None,
-    help_texts: Union[List[str], None] = None,
-    allow_duplicates: bool = False,
-    message_no_choices: str = "No choices available!",
-    multiselect: bool = False,
-    transformer: Callable[[Any], str] = None,
-) -> Union[None, List[str]]:
+def prepare_choices(choices, identifiers, help_texts, filter, allow_duplicates, excludes):
     # handle duplicates
     if not allow_duplicates:
         if identifiers:
@@ -108,21 +95,46 @@ def list(
     choices_filtered = filter_by_identifiers(choices=choices_duplicates, identifiers=identifiers, filter=filter)
 
     # exclude
-    choices_excluded = exclude_by_identifiers(choices=choices_filtered, identifiers=identifiers, excludes=excludes)
+    return exclude_by_identifiers(choices=choices_filtered, identifiers=identifiers, excludes=excludes)
+
+
+# input
+def list(
+        message: str,
+        choices: List[str],
+        identifiers: Union[List[str], None] = None,
+        filter: Union[List[str], None] = None,
+        excludes: Union[List[str], None] = None,
+        help_texts: Union[List[str], None] = None,
+        allow_duplicates: bool = False,
+        message_no_choices: str = "No choices available!",
+        multiselect: bool = False,
+        transformer: Callable[[Any], str] = None,
+        update_func: Callable[[Any], List[str]] = None,
+) -> Union[None, List[str]]:
+    choices_excluded = prepare_choices(choices, identifiers, help_texts, filter, allow_duplicates, excludes)
 
     # choices exist
     if not len(choices_excluded) > 0:
         console.info(message_no_choices)
         return None
 
+    kwargs = {
+        "message": message,
+        "choices": choices_excluded,
+        "multiselect": multiselect,
+        "transformer": transformer,
+        "keybindings": {"toggle": [{"key": "space"}]},
+    }
+
+    if update_func:
+        update_wrapper = lambda: prepare_choices(
+            update_func, identifiers, help_texts, filter, allow_duplicates, excludes
+        )
+        kwargs.update({"update_func": update_wrapper})
+
     # prompt
-    answer = inquirer.fuzzy(
-        message=message,
-        choices=choices_excluded,
-        multiselect=multiselect,
-        transformer=transformer,
-        keybindings={"toggle": [{"key": "space"}]},
-    ).execute()
+    answer = UpdatableFuzzyPrompt(**kwargs).execute()
     if not answer:
         return None
 
