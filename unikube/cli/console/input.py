@@ -110,7 +110,7 @@ def list(
         message_no_choices: str = "No choices available!",
         multiselect: bool = False,
         transformer: Callable[[Any], str] = None,
-        update_func: Callable[[Any], List[str]] = None,
+        update_func: Callable[[], List[str]] = None,
 ) -> Union[None, List[str]]:
     choices_excluded = prepare_choices(choices, identifiers, help_texts, filter, allow_duplicates, excludes)
 
@@ -129,7 +129,7 @@ def list(
 
     if update_func:
         update_wrapper = lambda: prepare_choices(
-            update_func, identifiers, help_texts, filter, allow_duplicates, excludes
+            update_func(), identifiers, help_texts, filter, allow_duplicates, excludes
         )
         kwargs.update({"update_func": update_wrapper})
 
