@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import os
 import subprocess
+from pathlib import Path
 from typing import List, Tuple
 
 import click
@@ -206,13 +207,21 @@ class Docker(CMDWrapper):
 
 
 class KubeAPI(object):
-    def __init__(self, kubeconfig_path: str, deck=None):
+    def __init__(self, kubeconfig_path: str, namespace: str = None, deck=None):
+        file = Path(kubeconfig_path)
+        if not file.is_file():
+            raise Exception(f"kubeconfig does not exist: {kubeconfig_path}")
+
         self._kubeconfig_path = kubeconfig_path
-        self._deck = deck
-        if self._deck:
-            self._namespace = self._deck["environment"][0]["namespace"] or "default"
+
+        if not namespace:
+            if deck:
+                self._namespace = deck["environment"][0]["namespace"] or "default"
+            else:
+                self._namespace = "default"
         else:
-            self._namespace = "default"
+            self._namespace = namespace
+
         self._api_client = config.new_client_from_config(kubeconfig_path)
         self._core_api = client.CoreV1Api(self._api_client)
         self._networking_api = client.NetworkingV1beta1Api(self._api_client)

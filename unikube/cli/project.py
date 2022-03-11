@@ -3,9 +3,11 @@ from uuid import UUID
 import click
 
 import unikube.cli.console as console
+from unikube import settings
 from unikube.authentication.authentication import TokenAuthentication
 from unikube.cli.console.helpers import project_id_2_display_name
 from unikube.cli.helper import check_ports
+from unikube.cluster.bridge.types import BridgeType
 from unikube.cluster.providers.types import ProviderType
 from unikube.cluster.system import Docker
 from unikube.graphql_utils import GraphQL
@@ -132,9 +134,9 @@ def info(ctx, project=None, organization=None, **kwargs):
 @click.argument("project", required=False)
 @click.option("--organization", "-o", help="Select an organization")
 @click.option("--ingress", help="Overwrite the ingress port for the project from cluster settings", default=None)
-@click.option("--workers", help="Specify count of k3d worker nodes", default=1)
+@click.option("--bridge-type", help="Specify the bridge type", default=settings.UNIKUBE_DEFAULT_BRIDGE_TYPE.name)
 @click.pass_obj
-def up(ctx, project=None, organization=None, ingress=None, workers=None, **kwargs):
+def up(ctx, project: str = None, organization: str = None, ingress: str = None, bridge_type: str = None, **kwargs):
     """
     This command starts or resumes a Kubernetes cluster for the specified project. As it is a selection command, the
     project can be specified and/or filtered in several ways:
@@ -149,6 +151,7 @@ def up(ctx, project=None, organization=None, ingress=None, workers=None, **kwarg
     _ = auth.refresh()
     ctx.cache = auth.cache
 
+    # docker deamon
     if not Docker().daemon_active():
         console.error("Docker is not running. Please start Docker before starting a project.", _exit=True)
 
@@ -156,6 +159,13 @@ def up(ctx, project=None, organization=None, ingress=None, workers=None, **kwarg
     organization_id, project_id, _ = ctx.context.get_context_ids_from_arguments(
         organization_argument=organization, project_argument=project
     )
+
+    # bridge type
+    try:
+        bridge_type = BridgeType(bridge_type)
+    except Exception as e:
+        console.debug(e)
+        console.error("Invalid bridge-type parameter.", _exit=True)
 
     # cluster information
     cluster_list = ctx.cluster_manager.get_clusters(ready=True)
@@ -196,11 +206,11 @@ def up(ctx, project=None, organization=None, ingress=None, workers=None, **kwarg
                 "id": str(project_id),
             },
         )
-        project_selected = data["project"]
     except Exception as e:
         console.debug(e)
         console.exit_generic_error()
 
+    project_selected = data.get("project", None)
     if not project_selected:
         console.info(
             f"The project '{project_id_2_display_name(ctx=ctx, id=project_id)}' could not be found.", _exit=True
@@ -225,7 +235,9 @@ def up(ctx, project=None, organization=None, ingress=None, workers=None, **kwarg
     # cluster up
     cluster_id = UUID(project_selected["id"])
     provider_type = ProviderType.k3d
-    cluster = ctx.cluster_manager.select(id=cluster_id, provider_type=provider_type, exit_on_exception=True)
+    cluster = ctx.cluster_manager.select(
+        id=cluster_id, provider_type=provider_type, bridge_type=bridge_type, exit_on_exception=True
+    )
     success = cluster.up()
     if not success:
         console.error("The project cluster could not be started.")
@@ -259,7 +271,7 @@ def down(ctx, project=None, organization=None, **kwargs):
             return None
 
     # check if project is in local storage
-    if project_id not in [str(cluster.id) for cluster in cluster_list]:
+    if project_id not in [cluster.id for cluster in cluster_list]:
         console.info(
             f"The project cluster for '{project_id_2_display_name(ctx=ctx, id=project_id)}' is not up or does not exist yet.",
             _exit=True,
@@ -301,7 +313,7 @@ def delete(ctx, project=None, organization=None, **kwargs):
         if not project_id:
             return None
 
-    if project_id not in [str(cluster.id) for cluster in cluster_list]:
+    if project_id not in [cluster.id for cluster in cluster_list]:
         console.info(
             f"The project cluster for '{project_id_2_display_name(ctx=ctx, id=project_id)}' could not be found.",
             _exit=True,

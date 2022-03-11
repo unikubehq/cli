@@ -12,6 +12,7 @@ import unikube.cli.console as console
 from unikube import settings
 from unikube.cluster.bridge.bridge import AbstractBridge
 from unikube.cluster.system import Docker, KubeAPI, KubeCtl
+from unikube.unikubefile.unikube_file_1_0 import UnikubeFileApp
 
 
 class TelepresenceData(BaseModel):
@@ -54,10 +55,20 @@ class Telepresence(AbstractBridge, KubeCtl):
                 _exit=True,
             )
 
-        self.start()
+        # start
+        arguments = ["connect", "--no-report"]
+        process = self._execute(arguments)
+        if process.returncode and process.returncode != 0:
+            # this is a retry
+            process = self._execute(arguments)
+            if process.returncode and process.returncode != 0:
+                console.error(f"Could not start Telepresence daemon: {process.stdout.readlines()}", _exit=False)
 
     def pre_cluster_down(self):
-        self.stop()
+        arguments = ["quit", "--no-report"]
+        process = self._execute(arguments)
+        if process.returncode and process.returncode != 0:
+            console.error("Could not stop Telepresence daemon", _exit=False)
 
     def post_cluster_down(self):
         pass
@@ -72,21 +83,36 @@ class Telepresence(AbstractBridge, KubeCtl):
 
     def switch(
         self,
-        deployment,
-        image_name,
-        command=None,
-        namespace=None,
-        envs=None,
-        mounts=None,
-        port=None,
-        cluster=None,
-        deck=None,
+        kubeconfig_path: str,
+        deployment: str,
+        namespace: str,
+        ports: List[str],
+        unikube_file_app: UnikubeFileApp,
+        *args,
+        **kwargs,
     ):
-
         # mount service tokens
-        k8s = KubeAPI(cluster.get_kubeconfig_path(), deck)
+        k8s = KubeAPI(kubeconfig_path=kubeconfig_path, namespace=namespace)
         service_account_tokens = k8s.get_serviceaccount_tokens(deployment)
 
+        # arguments
+        port = self._get_intercept_port(unikube_file_app=unikube_file_app, ports=ports)
+        console.debug(f"port: {port}")
+
+        env = unikube_file_app.get_environment()
+        console.debug(f"env: {env}")
+
+        command = unikube_file_app.get_command(port=port)
+        command = " ".join(command)
+        console.debug(f"command: {command}")
+
+        volumes = [":".join(item) for item in unikube_file_app.get_mounts()]
+        console.debug(f"volumes: {volumes}")
+
+        env = ["=".join(item) for item in unikube_file_app.get_environment()]
+        console.debug(f"env: {env}")
+
+        # service account tokens
         if service_account_tokens:
             tmp_sa_token = tempfile.NamedTemporaryFile(delete=True)
             tmp_sa_cert = tempfile.NamedTemporaryFile(delete=True)
@@ -94,8 +120,8 @@ class Telepresence(AbstractBridge, KubeCtl):
             tmp_sa_cert.write(service_account_tokens[1].encode())
             tmp_sa_token.flush()
             tmp_sa_cert.flush()
-            mounts.append((tmp_sa_token.name, settings.SERVICE_TOKEN_FILENAME))
-            mounts.append((tmp_sa_cert.name, settings.SERVICE_CERT_FILENAME))
+            volumes.append(f"{tmp_sa_token.name}:{settings.SERVICE_TOKEN_FILENAME}")
+            volumes.append(f"{tmp_sa_cert.name}:{settings.SERVICE_CERT_FILENAME}")
         else:
             tmp_sa_token = None
             tmp_sa_cert = None
@@ -103,27 +129,31 @@ class Telepresence(AbstractBridge, KubeCtl):
         # telepresence
         arguments = ["intercept", "--no-report", deployment]
         if namespace:
-            arguments = arguments + ["--namespace", namespace]
+            arguments += ["--namespace", namespace]
 
-        arguments = arguments + ["--port", f"{port}:{port}", "--docker-run", "--"]
+        arguments += ["--port", f"{port}:{port}", "--docker-run", "--"]
         if platform.system() != "Darwin":
             arguments.append("--network=host")
+
         arguments += [
             f"--dns-search={namespace}",
             "--rm",
         ]
-        if mounts:
-            for mount in mounts:
-                arguments = arguments + ["-v", f"{mount[0]}:{mount[1]}"]
-        if envs:
-            for env in envs:
-                arguments = arguments + ["--env", f"{env[0]}={env[1]}"]
+
+        if volumes:
+            for volume in volumes:
+                arguments += ["-v", volume]
+
+        if env:
+            for e in env:
+                arguments += ["--env", f"{e[0]}={e[1]}"]
 
         # this name to be retrieved for "app shell" command
-        arguments = arguments + ["--name", image_name.replace(":", "")]
+        image_name = self.get_docker_image_name(deployment=deployment)
+        arguments += ["--name", image_name.replace(":", "")]
         arguments.append(image_name)
         if command:
-            arguments = arguments + ["sh", "-c"] + [f"{' '.join(command)}"]
+            arguments += ["sh", "-c"] + [f"{' '.join(command)}"]
 
         console.debug(arguments)
         try:
@@ -136,60 +166,55 @@ class Telepresence(AbstractBridge, KubeCtl):
             pass
 
         console.info("Stopping the switch operation. It takes a few seconds to reset the cluster.")
-        self.leave(deployment, namespace, silent=True)
-        self.uninstall(deployment, namespace, silent=True)
+        self.kill_switch(deployment=deployment, namespace=namespace)
 
-        docker = Docker()
-        if docker.check_running(image_name):
-            docker.kill(name=image_name)
-
+        # service account tokens
         if tmp_sa_token:
             tmp_sa_token.close()
             tmp_sa_cert.close()
 
-    def leave(self, deployment, namespace=None, silent=False):
+    def is_switched(self, deployment, namespace=None) -> bool:
+        deployments = self.__get_deployments(namespace)
+        swapped = any(filter(lambda x: x[0] == deployment and x[1] == "intercepted", deployments))
+        return swapped
+
+    def kill_switch(self, deployment: str, namespace: str) -> bool:
+        # leave
         arguments = ["leave", "--no-report"]
         if namespace:
             arguments.append(f"{deployment}-{namespace}")
         else:
             arguments.append(deployment)
+
         console.debug(arguments)
         process = self._execute(arguments)
-        if not silent and process.returncode and process.returncode != 0:
+        if process.returncode and process.returncode != 0:
             console.error("There was an error with leaving the deployment, please find details above", _exit=False)
 
-    def uninstall(self, deployment, namespace=None, silent=False):
+        # uninstall
         arguments = ["uninstall", "--agent", deployment]
         arguments.append(deployment)
         if namespace:
             arguments += ["-n", namespace]
+
         console.debug(arguments)
         process = self._execute(arguments)
-        if not silent and process.returncode and process.returncode != 0:
+        if process.returncode and process.returncode != 0:
             console.error(
                 "There was an error with uninstalling the traffic agent, please find details above", _exit=False
             )
 
-    def _get_environment(self):
-        env = super(Telepresence, self)._get_environment()
-        return env
+        # docker
+        image_name = self.get_docker_image_name(deployment=deployment)
+        docker = Docker()
+        if docker.check_running(image_name):
+            docker.kill(name=image_name)
 
-    def start(self) -> None:
-        arguments = ["connect", "--no-report"]
-        process = self._execute(arguments)
-        if process.returncode and process.returncode != 0:
-            # this is a retry
-            process = self._execute(arguments)
-            if process.returncode and process.returncode != 0:
-                console.error(f"Could not start Telepresence daemon: {process.stdout.readlines()}", _exit=False)
+    # def _get_environment(self):
+    #     env = super(Telepresence, self)._get_environment()
+    #     return env
 
-    def stop(self) -> None:
-        arguments = ["quit", "--no-report"]
-        process = self._execute(arguments)
-        if process.returncode and process.returncode != 0:
-            console.error("Could not stop Telepresence daemon", _exit=False)
-
-    def list(self, namespace=None, flat=False) -> List[str]:
+    def __get_deployments(self, namespace=None, flat=False) -> List[str]:
         arguments = ["list", "--no-report"]
         if namespace:
             arguments += ["--namespace", namespace]
@@ -211,11 +236,6 @@ class Telepresence(AbstractBridge, KubeCtl):
         if flat:
             result = [deployment[0] for deployment in result]
         return result
-
-    def is_swapped(self, deployment, namespace=None) -> bool:
-        deployments = self.list(namespace)
-        swapped = any(filter(lambda x: x[0] == deployment and x[1] == "intercepted", deployments))
-        return swapped
 
 
 class TelepresenceBuilder:

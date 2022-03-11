@@ -83,7 +83,7 @@ def cache_information(cache: Cache):
     # cache IDs
     try:
         user_ids = UserIDs(id=user["id"])
-        user_ids.update(data)
+        user_ids.refresh(data)
         user_ids.save()
     except Exception as e:
         console.debug(e)

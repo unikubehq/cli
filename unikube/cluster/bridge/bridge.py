@@ -1,10 +1,6 @@
 import socket
-import sys
-
-import click_spinner
 
 from unikube.cli import console
-from unikube.cli.utils import Spinner
 from unikube.cluster.system import Docker
 from unikube.unikubefile.unikube_file_1_0 import UnikubeFileApp
 

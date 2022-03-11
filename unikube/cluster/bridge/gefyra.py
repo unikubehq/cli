@@ -21,17 +21,27 @@ class Gefyra(AbstractBridge):
 
         return len(intercept_requests)
 
-    def pre_cluster_up(self):
-        pass
+    def pre_cluster_up(self) -> bool:
+        return True
 
     def post_cluster_up(self) -> bool:
-        return gefyra_api.up()
+        try:
+            gefyra_api.up()
+            return True
+        except Exception as e:
+            console.debug(e)
+            return False
 
     def pre_cluster_down(self) -> bool:
-        return gefyra_api.down()
+        try:
+            gefyra_api.down()
+            return True
+        except Exception as e:
+            console.debug(e)
+            return False
 
-    def post_cluster_down(self):
-        pass
+    def post_cluster_down(self) -> bool:
+        return True
 
     def switch(
         self,
@@ -68,7 +78,12 @@ class Gefyra(AbstractBridge):
             raise Exception("No container name provided. Please at a container to the unikube.yml")
         console.debug(f"container: {container_name}")
 
-        k8s = KubeAPI(kubeconfig_path)
+        try:
+            k8s = KubeAPI(kubeconfig_path=kubeconfig_path, namespace=namespace)
+        except Exception as e:
+            console.debug(e)
+            console.error("Does the cluster exist?", _exit=True)
+
         pods = k8s.get_pods_for_workload(name=deployment, namespace=namespace)
         for pod in pods:
             if deployment in pod:
@@ -98,7 +113,9 @@ class Gefyra(AbstractBridge):
             bridge_name=image,
         )
         _ = console.confirm(question="Press ENTER to stop the switch.")
-        # k8s = KubeAPI(kubeconfig_path)
+
+        # print logs? -> gracefull exit currently not working
+        # k8s = KubeAPI(kubeconfig_path=kubeconfig_path, namespace=namespace)
         # _ = k8s.get_logs(pod=pod, follow=True, container=container_name)
 
         console.debug("gefyra kill_switch")

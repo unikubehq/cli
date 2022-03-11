@@ -59,7 +59,9 @@ class Cluster:
     def up(self, ingress: str = None, workers: int = None):
         # pre
         if self.bridge:
-            self.bridge.pre_cluster_up()
+            success = self.bridge.pre_cluster_up()
+            if not success:
+                console.warning("Bridge up failed.")
 
         # create/start cluster
         cluster_exists = self.provider.exists()
@@ -76,14 +78,18 @@ class Cluster:
 
         # post
         if self.bridge:
-            self.bridge.post_cluster_up()
+            success = self.bridge.post_cluster_up()
+            if not success:
+                console.warning("Bridge up failed.")
 
         return True
 
     def down(self):
         # pre
         if self.bridge:
-            self.bridge.pre_cluster_down()
+            success = self.bridge.pre_cluster_down()
+            if not success:
+                console.warning("Bridge down failed.")
 
         # stop cluster
         if not self.provider.exists():
@@ -99,7 +105,9 @@ class Cluster:
 
         # post
         if self.bridge:
-            self.bridge.post_cluster_down()
+            success = self.bridge.post_cluster_down()
+            if not success:
+                console.warning("Bridge down failed.")
 
         return True
 
