@@ -11,7 +11,7 @@ from unikube.cli.console import confirm, deck_list, organization_list, project_l
 class UnikubeFileBuild(BaseModel):
     context: str = "."
     dockerfile: str = "Dockerfile"
-    target: str = None
+    target: str = ""
 
 
 class UnikubeFileContext(BaseModel):
