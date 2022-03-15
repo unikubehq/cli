@@ -107,7 +107,7 @@ def get_port():
     return console.input(
         "What's the port of it's container?",
         mandatory=True,
-        validate=lambda x: x.isnumeric(),
+        validate=lambda x: x.isnumeric,
         invalid_message="Input must be a number.",
     )
 
