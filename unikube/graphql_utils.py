@@ -69,30 +69,29 @@ class GraphQL:
 
     @retry(retry_on_exception=retry_exception, stop_max_attempt_number=2)
     def query(
-        self,
-        query: str,
-        query_variables: dict = None,
+            self,
+            query: str,
+            query_variables: dict = None,
     ) -> Union[dict, None]:
-        with click_spinner.spinner(beep=False, disable=False, force=False, stream=sys.stdout):
-            try:
-                query = gql(query)
-                data = self.client.execute(
-                    document=query,
-                    variable_values=query_variables,
-                )
+        try:
+            query = gql(query)
+            data = self.client.execute(
+                document=query,
+                variable_values=query_variables,
+            )
 
-            except requests.exceptions.HTTPError:
-                from unikube.authentication.authentication import TokenAuthentication
+        except requests.exceptions.HTTPError:
+            from unikube.authentication.authentication import TokenAuthentication
 
-                # refresh token
-                auth = TokenAuthentication(cache=self.cache)
-                response = auth.refresh()
-                if not response["success"]:
-                    console.exit_login_required()
+            # refresh token
+            auth = TokenAuthentication(cache=self.cache)
+            response = auth.refresh()
+            if not response["success"]:
+                console.exit_login_required()
 
-                self.access_token = response["response"]["access_token"]
-                self.client = self._client()
+            self.access_token = response["response"]["access_token"]
+            self.client = self._client()
 
-                raise RetryException("retry")
+            raise RetryException("retry")
 
         return data

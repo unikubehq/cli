@@ -1,5 +1,7 @@
 import re
-from typing import Any, Callable, List, Union
+from typing import Any, Callable, Dict, List, Tuple, Union
+
+from InquirerPy.utils import patched_print
 
 import unikube.cli.console as console
 from unikube.cli.console.prompt import UpdatableFuzzyPrompt
@@ -58,13 +60,13 @@ def resolve_duplicates(
     return choices_resolved
 
 
-def filter_by_identifiers(choices: List[str], identifiers: List[str], filter: Union[List[str], None]) -> List[str]:
-    if filter is None:
+def filter_by_identifiers(choices: List[str], identifiers: List[str], _filter: Union[List[str], None]) -> List[str]:
+    if _filter is None:
         return choices
 
     choices_filtered = []
     for choice, identifier in zip(choices, identifiers):
-        if any(f in choice for f in filter) or identifier in filter:
+        if any(f in choice for f in _filter) or identifier in _filter:
             choices_filtered.append(choice)
     return choices_filtered
 
@@ -81,7 +83,7 @@ def exclude_by_identifiers(choices: List[str], identifiers: List[str], excludes:
     return choices_excluded
 
 
-def prepare_choices(choices, identifiers, help_texts, filter, allow_duplicates, excludes):
+def prepare_choices(identifiers, choices, help_texts, _filter, allow_duplicates, excludes):
     # handle duplicates
     if not allow_duplicates:
         if identifiers:
@@ -92,8 +94,7 @@ def prepare_choices(choices, identifiers, help_texts, filter, allow_duplicates, 
         choices_duplicates = choices
 
     # filter
-    choices_filtered = filter_by_identifiers(choices=choices_duplicates, identifiers=identifiers, filter=filter)
-
+    choices_filtered = filter_by_identifiers(choices=choices_duplicates, identifiers=identifiers, _filter=_filter)
     # exclude
     return exclude_by_identifiers(choices=choices_filtered, identifiers=identifiers, excludes=excludes)
 
@@ -110,9 +111,9 @@ def list(
         message_no_choices: str = "No choices available!",
         multiselect: bool = False,
         transformer: Callable[[Any], str] = None,
-        update_func: Callable[[], List[str]] = None,
+        update_func: Callable[[], Tuple[List[str], List[str], List[str]]] = None,
 ) -> Union[None, List[str]]:
-    choices_excluded = prepare_choices(choices, identifiers, help_texts, filter, allow_duplicates, excludes)
+    choices_excluded = prepare_choices(identifiers, choices, help_texts, filter, allow_duplicates, excludes)
 
     # choices exist
     if not len(choices_excluded) > 0:
@@ -128,9 +129,7 @@ def list(
     }
 
     if update_func:
-        update_wrapper = lambda: prepare_choices(
-            update_func(), identifiers, help_texts, filter, allow_duplicates, excludes
-        )
+        update_wrapper = lambda: prepare_choices(*update_func(), filter, allow_duplicates, excludes)
         kwargs.update({"update_func": update_wrapper})
 
     # prompt
