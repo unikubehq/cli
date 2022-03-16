@@ -8,6 +8,7 @@ from unikube.cli import app as app_cmd
 from unikube.cli import auth as auth_cmd
 from unikube.cli import context as context_cmd
 from unikube.cli import deck as deck_cmd
+from unikube.cli import init as init_cmd
 from unikube.cli import orga as orga_cmd
 from unikube.cli import project as project_cmd
 from unikube.cli import system as system_cmd
@@ -188,6 +189,8 @@ context.add_command(context_cmd.set)
 context.add_command(context_cmd.remove)
 context.add_command(context_cmd.show)
 
+# init
+cli.add_command(init_cmd.init)
 
 # shortcut
 # -> include auth check in functions if required

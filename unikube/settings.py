@@ -1,6 +1,7 @@
 import os
 
 import urllib3
+from InquirerPy import get_style
 
 from unikube.cli.helper import exist_or_create
 from unikube.local.providers.types import K8sProviderType
@@ -69,3 +70,12 @@ KUBECTL_MIN_CLI_VERSION = "1.18.0"
 # Kubernetes
 SERVICE_TOKEN_FILENAME = "/var/run/secrets/kubernetes.io/serviceaccount/token"
 SERVICE_CERT_FILENAME = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+
+INQUIRER_STYLE = get_style(
+    {
+        "answermark": "#45d093 bold",
+        "questionmark": "#fff",
+        "question": "bold",
+    },
+    style_override=False,
+)
