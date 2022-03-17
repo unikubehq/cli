@@ -43,7 +43,16 @@ class UpdatableFuzzyPrompt(FuzzyPrompt):
         self._application.invalidate()
 
     def execute(self, raise_keyboard_interrupt: bool = None) -> Any:
+
+        # new thread
+        # show spinner in loop
+        # get reseluts from thread
+        # publish new choices to loop
+
         loop = asyncio.new_event_loop()
+
+        self.thread = Thread(target=self._update_choices, args=[loop])
+        self.thread.start()
+
         prompt = loop.create_task(self.execute_async())
-        loop.create_task(self._update_choices())
         loop.run_until_complete(prompt)

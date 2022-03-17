@@ -1,4 +1,5 @@
 # heavily inspired by yaspin (https://github.com/pavdmyt/yaspin/blob/master/yaspin/core.py)
+import asyncio
 import sys
 from functools import wraps
 from itertools import cycle
