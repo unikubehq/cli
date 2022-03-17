@@ -1,12 +1,9 @@
 import asyncio
-import sys
 from threading import Thread
-from time import sleep
 from typing import Any, Callable, List
 
 from InquirerPy.prompts import FuzzyPrompt
 
-from unikube.cli.utils import Spinner
 
 
 class UpdatableFuzzyPrompt(FuzzyPrompt):
