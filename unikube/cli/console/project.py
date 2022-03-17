@@ -1,8 +1,5 @@
-import functools
-from typing import Dict, List, Optional, Tuple
+from typing import List, Optional, Tuple
 from uuid import UUID
-
-from InquirerPy.utils import patched_print
 
 import unikube.cli.console as console
 from unikube.authentication.authentication import TokenAuthentication
@@ -60,8 +57,7 @@ def project_list(
         else:
             help_texts.append(None)
 
-    # update_func = lambda: updated_projects
-    update_func = functools.partial(updated_projects, (ctx, organization_id))
+    update_func = lambda: updated_projects(ctx, organization_id)
 
     selection = console.list(
         message="Please select a project",
