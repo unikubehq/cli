@@ -3,8 +3,8 @@ from enum import Enum
 from typing import Union
 
 import click_spinner
-import requests
 from gql import Client, gql
+from gql.transport.exceptions import TransportServerError
 from gql.transport.requests import RequestsHTTPTransport
 from retrying import retry
 
@@ -72,23 +72,23 @@ class GraphQL:
         query: str,
         query_variables: dict = None,
     ) -> Union[dict, None]:
-        with click_spinner.spinner(beep=False, disable=False, force=False, stream=sys.stdout):
-            try:
-                query = gql(query)
+        try:
+            query = gql(query)
+            with click_spinner.spinner(beep=False, disable=False, force=False, stream=sys.stdout):
                 data = self.client.execute(
                     document=query,
                     variable_values=query_variables,
                 )
 
-            except requests.exceptions.HTTPError:
-                # refresh token
-                response = self.authentication.refresh()
-                if not response["success"]:
-                    console.exit_login_required()
+        except TransportServerError:
+            # refresh token
+            response = self.authentication.refresh()
+            if not response["success"]:
+                console.exit_login_required()
 
-                self.access_token = response["response"]["access_token"]
-                self.client = self._client()
+            self.access_token = response["response"]["access_token"]
+            self.client = self._client()
 
-                raise RetryException("retry")
+            raise RetryException("retry")
 
         return data
