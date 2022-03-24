@@ -44,7 +44,7 @@ class ClusterManager:
 
         return ids
 
-    def get_clusters(self, ready: bool = None):
+    def get_clusters(self, ready: Optional[bool] = None):
         ls = []
         for cluster_id in self.get_cluster_ids():
             for provider_type in ProviderType:

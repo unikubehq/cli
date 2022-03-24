@@ -38,10 +38,10 @@ class Telepresence(AbstractBridge, KubeCtl):
 
         return intercept_count
 
-    def pre_cluster_up(self):
-        pass
+    def pre_cluster_up(self) -> bool:
+        return True
 
-    def post_cluster_up(self):
+    def post_cluster_up(self) -> bool:
         console.info("Now connecting Telepresence daemon. You probably have to enter your 'sudo' password.")
         k8s = KubeAPI(self._kubeconfig_path)
         timeout = time() + 60  # wait one minute
@@ -64,14 +64,18 @@ class Telepresence(AbstractBridge, KubeCtl):
             if process.returncode and process.returncode != 0:
                 console.error(f"Could not start Telepresence daemon: {process.stdout.readlines()}", _exit=False)
 
-    def pre_cluster_down(self):
+        return True
+
+    def pre_cluster_down(self) -> bool:
         arguments = ["quit", "--no-report"]
         process = self._execute(arguments)
         if process.returncode and process.returncode != 0:
             console.error("Could not stop Telepresence daemon", _exit=False)
 
-    def post_cluster_down(self):
-        pass
+        return True
+
+    def post_cluster_down(self) -> bool:
+        return True
 
     def _execute_intercept(self, arguments) -> subprocess.Popen:
         cmd = [self.base_command] + arguments
@@ -209,10 +213,6 @@ class Telepresence(AbstractBridge, KubeCtl):
         docker = Docker()
         if docker.check_running(image_name):
             docker.kill(name=image_name)
-
-    # def _get_environment(self):
-    #     env = super(Telepresence, self)._get_environment()
-    #     return env
 
     def __get_deployments(self, namespace=None, flat=False) -> List[str]:
         arguments = ["list", "--no-report"]

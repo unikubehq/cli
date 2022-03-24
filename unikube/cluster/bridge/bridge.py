@@ -30,19 +30,19 @@ class AbstractBridge:
     def intercept_count(self) -> int:
         return 0
 
-    def pre_cluster_up(self):
-        pass
+    def pre_cluster_up(self) -> bool:
+        raise NotImplementedError("Bridge pre_cluster_up os not implemented")
 
-    def post_cluster_up(self):
-        pass
+    def post_cluster_up(self) -> bool:
+        raise NotImplementedError("Bridge post_cluster_up os not implemented")
 
-    def pre_cluster_down(self):
-        pass
+    def pre_cluster_down(self) -> bool:
+        raise NotImplementedError("Bridge pre_cluster_down os not implemented")
 
-    def post_cluster_down(self):
-        pass
+    def post_cluster_down(self) -> bool:
+        raise NotImplementedError("Bridge post_cluster_down os not implemented")
 
-    def switch(self):
+    def switch(self) -> bool:
         raise NotImplementedError("Bridge switch is not implemented.")
 
     def is_switched(self, deployment: str, namespace: str) -> bool:
@@ -108,7 +108,7 @@ class AbstractBridge:
 
         if not _is_local_port_free(port):
             console.error(
-                f"The local port {port} is busy. Please stop the application running on " f"this port and try again.",
+                f"The local port {port} is busy. Please stop the application running on this port and try again.",
                 _exit=True,
             )
 

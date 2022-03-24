@@ -19,8 +19,8 @@ class Cluster:
         self.storage = ClusterStorage(id=id)
 
         # provider + bridge
-        self.provider: AbstractProvider = None
-        self.bridge: AbstractBridge = None
+        self.provider: Optional[AbstractProvider] = None
+        self.bridge: Optional[AbstractBridge] = None
 
     @property
     def display_name(self):

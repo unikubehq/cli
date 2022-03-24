@@ -8,6 +8,10 @@ from unikube.cluster.system import Docker, KubeAPI
 from unikube.unikubefile.unikube_file_1_0 import UnikubeFileApp
 
 
+class GefyraException(Exception):
+    pass
+
+
 class Gefyra(AbstractBridge):
     DOCKER_IMAGE_PREFIX = "gefyra"
     DOCKER_IMAGE_NAME_PREFIX = "gefyra-switch"
@@ -75,7 +79,7 @@ class Gefyra(AbstractBridge):
 
         container_name = unikube_file_app.container
         if not container_name:
-            raise Exception("No container name provided. Please at a container to the unikube.yml")
+            raise GefyraException("No container name provided. Please at a container to the unikube.yml")
         console.debug(f"container: {container_name}")
 
         try:
@@ -89,7 +93,7 @@ class Gefyra(AbstractBridge):
             if deployment in pod:
                 break
         else:
-            raise Exception(f"Could not find a pod for deployment: {deployment}")
+            raise GefyraException(f"Could not find a pod for deployment: {deployment}")
 
         console.debug("gefyra run")
         gefyra_api.run(
@@ -120,6 +124,8 @@ class Gefyra(AbstractBridge):
 
         console.debug("gefyra kill_switch")
         self.kill_switch(deployment=deployment)
+
+        return True
 
     def is_switched(self, deployment: str, namespace: str) -> bool:
         try:

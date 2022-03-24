@@ -31,7 +31,7 @@ class BaseFileCache(BaseModel):
         # create file if not exists
         Path(self.file_path).mkdir(parents=True, exist_ok=True)
 
-        # save user information
+        # save timestamp
         self.timestamp = datetime.now()
         file_location = os.path.join(self.file_path, self.file_name)
         with open(file_location, "w") as f:

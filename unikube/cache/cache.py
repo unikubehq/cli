@@ -52,29 +52,53 @@ class UserContext(BaseFileCache):
 
 
 class Organization(BaseModel):
-    title: str = None
-    project_ids: List[UUID] = None
+    title: str
+    project_ids: Optional[List[UUID]] = None
 
 
 class Project(BaseModel):
-    title: str = None
-    organization_id: UUID = None
-    deck_ids: List[UUID] = None
+    title: str
+    organization_id: UUID
+    deck_ids: Optional[List[UUID]] = None
 
 
 class Deck(BaseModel):
-    title: str = None
-    project_id: UUID = None
+    title: str
+    project_id: UUID
 
 
 class UserIDs(BaseFileCache):
-    organization: Dict[UUID, Organization] = None
-    project: Dict[UUID, Project] = None
-    deck: Dict[UUID, Deck] = None
+    organization: Dict[UUID, Organization] = {}
+    project: Dict[UUID, Project] = {}
+    deck: Dict[UUID, Deck] = {}
 
     def __init__(self, id: UUID, file_path: str = settings.CLI_UNIKUBE_DIRECTORY, file_name: str = "IDs.json", **data):
         file_path = os.path.join(file_path, "user", str(id), "cache")
         super().__init__(file_path=file_path, file_name=file_name, **data)
+
+    @staticmethod
+    def __process_results_organization(cls, data) -> Dict:
+        organization = dict()
+        for item in data["allOrganizations"]["results"]:
+            project_ids = []
+            for project in data["allProjects"]["results"]:
+                if project["organization"]["id"] == item["id"]:
+                    project_ids.append(project["id"])
+            organization[item["id"]] = Organization(title=item["title"], project_ids=project_ids or None)
+        return organization
+
+    @staticmethod
+    def __process_results_project(cls, data) -> Dict:
+        project = dict()
+        for item in data["allProjects"]["results"]:
+            deck_ids = []
+            for deck in data["allDecks"]["results"]:
+                if deck["project"]["id"] == item["id"]:
+                    deck_ids.append(deck["id"])
+            project[item["id"]] = Project(
+                title=item["title"], organization_id=item["organization"]["id"], deck_ids=deck_ids or None
+            )
+        return project
 
     def refresh(self, data=None):
         if not data:
@@ -120,24 +144,10 @@ class UserIDs(BaseFileCache):
                 console.debug(e)
                 return None
 
-        organization = dict()
-        for item in data["allOrganizations"]["results"]:
-            project_ids = []
-            for project in data["allProjects"]["results"]:
-                if project["organization"]["id"] == item["id"]:
-                    project_ids.append(project["id"])
-            organization[item["id"]] = Organization(title=item["title"], project_ids=project_ids or None)
+        organization = UserIDs.__process_results_organization(data=data)
         self.organization = organization
 
-        project = dict()
-        for item in data["allProjects"]["results"]:
-            deck_ids = []
-            for deck in data["allDecks"]["results"]:
-                if deck["project"]["id"] == item["id"]:
-                    deck_ids.append(deck["id"])
-            project[item["id"]] = Project(
-                title=item["title"], organization_id=item["organization"]["id"], deck_ids=deck_ids or None
-            )
+        project = UserIDs.__process_results_project(data=data)
         self.project = project
 
         deck = dict()

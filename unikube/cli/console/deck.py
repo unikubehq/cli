@@ -7,13 +7,7 @@ from unikube.cli.console.input import get_identifier_or_pass
 from unikube.context.helper import convert_deck_argument_to_uuid
 
 
-def deck_list(ctx, organization_id: UUID = None, project_id: UUID = None) -> Optional[UUID]:
-    user_ids = UserIDs(id=ctx.user_id)
-    if not user_ids.deck:
-        user_ids.refresh()
-        user_ids.save()
-
-    # filter
+def _filter_deck_list(user_ids: UserIDs, organization_id: UUID, project_id: UUID):
     if project_id or organization_id:
         deck_list = {}
         for id, deck in user_ids.deck.items():
@@ -31,6 +25,18 @@ def deck_list(ctx, organization_id: UUID = None, project_id: UUID = None) -> Opt
                 deck_list[id] = deck
     else:
         deck_list = user_ids.deck
+
+    return deck_list
+
+
+def deck_list(ctx, organization_id: UUID = None, project_id: UUID = None) -> Optional[UUID]:
+    user_ids = UserIDs(id=ctx.user_id)
+    if not user_ids.deck:
+        user_ids.refresh()
+        user_ids.save()
+
+    # filter
+    deck_list = _filter_deck_list(user_ids=user_ids, organization_id=organization_id, project_id=project_id)
 
     choices = []
     identifiers = []
