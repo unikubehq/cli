@@ -4,7 +4,7 @@ import re
 import subprocess
 import tempfile
 from time import sleep, time
-from typing import List
+from typing import List, Tuple
 
 from pydantic import BaseModel
 
@@ -85,6 +85,25 @@ class Telepresence(AbstractBridge, KubeCtl):
             print(stdout_line, end="", flush=True)
         return process
 
+    def __service_account_tokens(self, kubeconfig_path: str, namespace: str, deployment: str, volumes: list):
+        k8s = KubeAPI(kubeconfig_path=kubeconfig_path, namespace=namespace)
+        service_account_tokens = k8s.get_serviceaccount_tokens(deployment)
+
+        if service_account_tokens:
+            tmp_sa_token = tempfile.NamedTemporaryFile(delete=True)
+            tmp_sa_cert = tempfile.NamedTemporaryFile(delete=True)
+            tmp_sa_token.write(service_account_tokens[0].encode())
+            tmp_sa_cert.write(service_account_tokens[1].encode())
+            tmp_sa_token.flush()
+            tmp_sa_cert.flush()
+            volumes.append(f"{tmp_sa_token.name}:{settings.SERVICE_TOKEN_FILENAME}")
+            volumes.append(f"{tmp_sa_cert.name}:{settings.SERVICE_CERT_FILENAME}")
+        else:
+            tmp_sa_token = None
+            tmp_sa_cert = None
+
+        return volumes, tmp_sa_token, tmp_sa_cert
+
     def switch(
         self,
         kubeconfig_path: str,
@@ -95,10 +114,6 @@ class Telepresence(AbstractBridge, KubeCtl):
         *args,
         **kwargs,
     ):
-        # mount service tokens
-        k8s = KubeAPI(kubeconfig_path=kubeconfig_path, namespace=namespace)
-        service_account_tokens = k8s.get_serviceaccount_tokens(deployment)
-
         # arguments
         port = self._get_intercept_port(unikube_file_app=unikube_file_app, ports=ports)
         console.debug(f"port: {port}")
@@ -117,18 +132,9 @@ class Telepresence(AbstractBridge, KubeCtl):
         console.debug(f"env: {env}")
 
         # service account tokens
-        if service_account_tokens:
-            tmp_sa_token = tempfile.NamedTemporaryFile(delete=True)
-            tmp_sa_cert = tempfile.NamedTemporaryFile(delete=True)
-            tmp_sa_token.write(service_account_tokens[0].encode())
-            tmp_sa_cert.write(service_account_tokens[1].encode())
-            tmp_sa_token.flush()
-            tmp_sa_cert.flush()
-            volumes.append(f"{tmp_sa_token.name}:{settings.SERVICE_TOKEN_FILENAME}")
-            volumes.append(f"{tmp_sa_cert.name}:{settings.SERVICE_CERT_FILENAME}")
-        else:
-            tmp_sa_token = None
-            tmp_sa_cert = None
+        volumes, tmp_sa_token, tmp_sa_cert = self.__service_account_tokens(
+            kubeconfig_path=kubeconfig_path, namespace=namespace, deployment=deployment, volumes=volumes
+        )
 
         # telepresence
         arguments = ["intercept", "--no-report", deployment]
