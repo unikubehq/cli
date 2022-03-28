@@ -3,9 +3,9 @@ from getpass import getpass
 import click
 
 import unikube.cli.console as console
-from unikube.helpers import compare_current_and_latest_versions
-from unikube.authentication.flow import password_flow, web_flow
 from unikube.authentication.authentication import TokenAuthentication
+from unikube.authentication.flow import password_flow, web_flow
+from unikube.helpers import compare_current_and_latest_versions
 
 
 @click.command()
@@ -37,7 +37,6 @@ def login(ctx, email, password, **kwargs):
     if not success:
         console.error("Login failed. Please check email and password.", _exit=True)
 
-    console.success("Login successful.")
     return True
 
 

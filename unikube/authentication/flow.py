@@ -107,6 +107,7 @@ def password_flow(ctx, email: str, password: str) -> bool:
 
     cache_information(cache=ctx.cache)
 
+    console.success("Login successful.")
     return True
 
 
