@@ -76,7 +76,7 @@ class UserIDs(BaseFileCache):
         file_path = os.path.join(file_path, "user", str(id), "cache")
         super().__init__(file_path=file_path, file_name=file_name, **data)
 
-    @staticmethod
+    @classmethod
     def __process_results_organization(cls, data) -> Dict:
         organization = dict()
         for item in data["allOrganizations"]["results"]:
@@ -87,7 +87,7 @@ class UserIDs(BaseFileCache):
             organization[item["id"]] = Organization(title=item["title"], project_ids=project_ids or None)
         return organization
 
-    @staticmethod
+    @classmethod
     def __process_results_project(cls, data) -> Dict:
         project = dict()
         for item in data["allProjects"]["results"]:
