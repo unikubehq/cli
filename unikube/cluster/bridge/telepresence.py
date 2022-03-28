@@ -43,7 +43,7 @@ class Telepresence(AbstractBridge, KubeCtl):
 
     def post_cluster_up(self) -> bool:
         console.info("Now connecting Telepresence daemon. You probably have to enter your 'sudo' password.")
-        k8s = KubeAPI(self._kubeconfig_path)
+        k8s = KubeAPI(kubeconfig_path=self._kubeconfig_path)
         timeout = time() + 60  # wait one minute
         while not k8s.is_available or time() > timeout:
             sleep(1)

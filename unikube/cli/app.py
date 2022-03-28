@@ -97,7 +97,7 @@ def list(ctx, organization, project, deck, **kwargs):
     cluster = ctx.cluster_manager.select(id=cluster_id, exit_on_exception=True)
 
     # list
-    k8s = KubeAPI(cluster.get_kubeconfig_path(), deck)
+    k8s = KubeAPI(kubeconfig_path=cluster.get_kubeconfig_path(), deck=deck)
     pod_table = []
 
     def _ready_ind(c) -> Tuple[bool, str]:
@@ -148,7 +148,7 @@ def info(ctx, app, organization, project, deck, **kwargs):
     cluster = ctx.cluster_manager.select(id=cluster_id, exit_on_exception=True)
 
     # shell
-    k8s = KubeAPI(cluster.get_kubeconfig_path(), deck)
+    k8s = KubeAPI(kubeconfig_path=cluster.get_kubeconfig_path(), deck=deck)
     app = argument_app(k8s, app)
 
     # get the data of the selected pod
@@ -228,7 +228,7 @@ def shell(ctx, app, organization=None, project=None, deck=None, container=None, 
     cluster = ctx.cluster_manager.select(id=cluster_id, exit_on_exception=True)
 
     # shell
-    k8s = KubeAPI(cluster.get_kubeconfig_path(), deck)
+    k8s = KubeAPI(kubeconfig_path=cluster.get_kubeconfig_path(), deck=deck)
     app = argument_app(k8s, app)
 
     # get the data of the selected pod
@@ -385,7 +385,7 @@ def logs(ctx, app, container=None, organization=None, project=None, deck=None, f
     cluster = ctx.cluster_manager.select(id=cluster_id, exit_on_exception=True)
 
     # log
-    k8s = KubeAPI(cluster.get_kubeconfig_path(), deck)
+    k8s = KubeAPI(kubeconfig_path=cluster.get_kubeconfig_path(), deck=deck)
     app = argument_app(k8s, app)
 
     # get the data of the selected pod
@@ -419,7 +419,7 @@ def env(ctx, app, init, organization, project, deck, **kwargs):
     cluster = ctx.cluster_manager.select(id=cluster_id, exit_on_exception=True)
 
     # env
-    k8s = KubeAPI(cluster.get_kubeconfig_path(), deck)
+    k8s = KubeAPI(kubeconfig_path=cluster.get_kubeconfig_path(), deck=deck)
     app = argument_app(k8s, app)
 
     # get the data of the selected pod
@@ -511,7 +511,7 @@ def update(ctx, app, organization, project, deck, **kwargs):
     cluster = ctx.cluster_manager.select(id=cluster_id, exit_on_exception=True)
 
     # delete pod
-    k8s = KubeAPI(cluster.get_kubeconfig_path(), deck)
+    k8s = KubeAPI(kubeconfig_path=cluster.get_kubeconfig_path(), deck=deck)
     apps = argument_apps(k8s, [app] if app else [], multiselect=True)
     [k8s.delete_pod(app) for app in apps]
     console.info(f"The app(s) {', '.join(apps)} are currently updating and do not exist anymore.")

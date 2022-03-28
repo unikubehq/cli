@@ -45,7 +45,7 @@ def get_deck(ctx, deck_id: str):
 
 
 def get_ingress_data(deck, kubeconfig_path: str, publisher_port: str):
-    ingresss = KubeAPI(kubeconfig_path, deck).get_ingress()
+    ingresss = KubeAPI(kubeconfig_path=kubeconfig_path, deck=deck).get_ingress()
     ingress_data = []
     for ingress in ingresss.items:
         hosts = []
