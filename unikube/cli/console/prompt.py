@@ -5,7 +5,6 @@ from typing import Any, Callable, List
 from InquirerPy.prompts import FuzzyPrompt
 
 
-
 class UpdatableFuzzyPrompt(FuzzyPrompt):
     """Based on InquirerPy's FuzzyPrompt.
 
@@ -41,9 +40,10 @@ class UpdatableFuzzyPrompt(FuzzyPrompt):
 
     def execute(self, raise_keyboard_interrupt: bool = None) -> Any:
         loop = asyncio.new_event_loop()
-
-        thread = Thread(target=self._update_choices, args=[loop])
-        thread.start()
+        if hasattr(self, "_update_func"):
+            thread = Thread(target=self._update_choices, args=[loop])
+            thread.start()
 
         prompt = loop.create_task(self.execute_async())
-        loop.run_until_complete(prompt)
+        answer = loop.run_until_complete(prompt)
+        return answer

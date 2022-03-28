@@ -29,7 +29,7 @@ def updated_projects(ctx, organization_id) -> Tuple[List[str], List[str], List[s
 
 
 def project_list(
-        ctx, organization_id: UUID = None, filter: List[str] = None, excludes: List[str] = None
+    ctx, organization_id: UUID = None, filter: List[str] = None, excludes: List[str] = None
 ) -> Optional[UUID]:
     user_ids = UserIDs(id=ctx.user_id)
     if not user_ids.project:
@@ -57,7 +57,7 @@ def project_list(
         else:
             help_texts.append(None)
 
-    update_func = lambda: updated_projects(ctx, organization_id)
+    update_func = lambda: updated_projects(ctx, organization_id)  # noqa: E731
 
     selection = console.list(
         message="Please select a project",
