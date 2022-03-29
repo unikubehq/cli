@@ -238,7 +238,7 @@ def up(ctx, project: str = None, organization: str = None, ingress: str = None, 
     cluster = ctx.cluster_manager.select(
         id=cluster_id, provider_type=provider_type, bridge_type=bridge_type, exit_on_exception=True
     )
-    success = cluster.up()
+    success = cluster.up(ingress=ingress)
     if not success:
         console.error("The project cluster could not be started.")
 
