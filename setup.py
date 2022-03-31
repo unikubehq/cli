@@ -21,7 +21,7 @@ setup(
     version=VERSION,
     py_modules=["unikube"],
     install_requires=[
-        "click==8.0.4",
+        "click==8.1.1",
         "click-spinner==0.1.10",
         "colorama~=0.4.4",
         "inquirerpy>=0.3.3,<0.4.0",
