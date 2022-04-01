@@ -1,5 +1,5 @@
 .. _unikube_app:
 
-.. click:: unikube:app
+.. click:: unikube.commands:app
   :prog: unikube app
   :nested: full
