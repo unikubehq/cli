@@ -356,7 +356,7 @@ def switch(ctx, app, organization, project, deck, unikube_file: str = None, no_b
     cluster.bridge.build(deployment, namespace, unikube_file_app, no_build)
 
     # start switch operation
-    console.info(f"Starting your {cluster.cluster_bridge_type} bridge, this may take a while to become effective")
+    console.info(f"Starting your {cluster.cluster_bridge_type.name} bridge, this may take a while to become effective")
     cluster.bridge.switch(
         kubeconfig_path=cluster.get_kubeconfig_path(),
         deployment=deployment,

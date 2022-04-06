@@ -40,9 +40,9 @@ class UserSettings(BaseFileCache):
 
 
 class UserContext(BaseFileCache):
-    organization_id: Optional[str] = None
-    project_id: Optional[str] = None
-    deck_id: Optional[str] = None
+    organization_id: Optional[UUID] = None
+    project_id: Optional[UUID] = None
+    deck_id: Optional[UUID] = None
 
     def __init__(
         self, id: UUID, file_path: str = settings.CLI_UNIKUBE_DIRECTORY, file_name: str = "context.json", **data

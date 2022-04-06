@@ -152,17 +152,17 @@ class Context:
 
         # convert to UUID
         if context.organization_id:
-            organization_id = UUID(context.organization_id)
+            organization_id = context.organization_id
         else:
             organization_id = None
 
         if context.project_id:
-            project_id = UUID(context.project_id)
+            project_id = context.project_id
         else:
             project_id = None
 
         if deck_id:
-            deck_id = UUID(context.deck_id)
+            deck_id = context.deck_id
         else:
             deck_id = None
 

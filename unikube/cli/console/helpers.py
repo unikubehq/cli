@@ -18,7 +18,12 @@ def organization_id_2_display_name(ctx, id: UUID = None) -> str:
     user_ids.save()
 
     organization = user_ids.organization.get(id, None)
-    return f"{organization.title or '-'} ({id})"
+    if organization:
+        title = organization.get("title", None)
+    else:
+        title = None
+
+    return f"{title or '-'} ({id})"
 
 
 def project_id_2_display_name(ctx, id: UUID = None) -> Optional[str]:
@@ -35,7 +40,12 @@ def project_id_2_display_name(ctx, id: UUID = None) -> Optional[str]:
     user_ids.save()
 
     project = user_ids.project.get(id, None)
-    return f"{project.title or '-'} ({id})"
+    if project:
+        title = project.get("title", None)
+    else:
+        title = None
+
+    return f"{title or '-'} ({id})"
 
 
 def deck_id_2_display_name(ctx, id: UUID = None) -> Optional[str]:
@@ -52,4 +62,9 @@ def deck_id_2_display_name(ctx, id: UUID = None) -> Optional[str]:
     user_ids.save()
 
     deck = user_ids.deck.get(id, None)
-    return f"{deck.title or '-'} ({id})"
+    if deck:
+        title = deck.get("title", None)
+    else:
+        title = None
+
+    return f"{title or '-'} ({id})"

@@ -79,7 +79,7 @@ class Gefyra(AbstractBridge):
 
         container_name = unikube_file_app.container
         if not container_name:
-            raise GefyraException("No container name provided. Please at a container to the unikube.yml")
+            raise GefyraException("No container name provided. Please add a container to the unikube.yml")
         console.debug(f"container: {container_name}")
 
         try:
@@ -96,7 +96,7 @@ class Gefyra(AbstractBridge):
             raise GefyraException(f"Could not find a pod for deployment: {deployment}")
 
         console.debug("gefyra run")
-        gefyra_api.run(
+        result = gefyra_api.run(
             image=image,
             name=image_name,
             command=command,
@@ -105,10 +105,16 @@ class Gefyra(AbstractBridge):
             env=env,
             env_from=f"{pod}/{container_name}",
         )
+        if not result:
+            console.error("Gefyra run failed.", _exit=True)
+
+        console.debug("docker waiting for container")
+        while not Docker().check_running(image_name):
+            continue
 
         # bridge
         console.debug("gefyra bridge")
-        gefyra_api.bridge(
+        result = gefyra_api.bridge(
             name=image_name,
             namespace=namespace,
             deployment=deployment,
@@ -116,6 +122,9 @@ class Gefyra(AbstractBridge):
             container_name=container_name,
             bridge_name=image,
         )
+        if not result:
+            console.error("Gefyra bridge failed.", _exit=True)
+
         _ = console.confirm(question="Press ENTER to stop the switch.")
 
         # print logs? -> gracefull exit currently not working
