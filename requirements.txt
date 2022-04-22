@@ -1,5 +1,5 @@
 # click + console
-click==8.0.4
+click==8.1.2
 click-didyoumean~=0.3.0
 click-spinner==0.1.10
 colorama~=0.4.4  # color logging windows
