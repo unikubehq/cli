@@ -1,6 +1,7 @@
 from typing import List
 
 from gefyra import api as gefyra_api
+from gefyra.configuration import ClientConfiguration
 
 from unikube.cli import console
 from unikube.cluster.bridge.bridge import AbstractBridge
@@ -16,9 +17,15 @@ class Gefyra(AbstractBridge):
     DOCKER_IMAGE_PREFIX = "gefyra"
     DOCKER_IMAGE_NAME_PREFIX = "gefyra-switch"
 
+    def __init__(self, kubeconfig_path: str):
+        if not kubeconfig_path:
+            raise ValueError("Gefyra does not contain the 'kubeconfig_path' parameter")
+
+        self.config = ClientConfiguration(kube_config_file=kubeconfig_path)
+
     def intercept_count(self) -> int:
         try:
-            intercept_requests = gefyra_api.list_interceptrequests()
+            intercept_requests = gefyra_api.list_interceptrequests(config=self.config)
         except Exception as e:
             console.debug(e)
             return 0
@@ -30,7 +37,7 @@ class Gefyra(AbstractBridge):
 
     def post_cluster_up(self) -> bool:
         try:
-            gefyra_api.up()
+            gefyra_api.up(config=self.config)
             return True
         except Exception as e:
             console.debug(e)
@@ -38,7 +45,7 @@ class Gefyra(AbstractBridge):
 
     def pre_cluster_down(self) -> bool:
         try:
-            gefyra_api.down()
+            gefyra_api.down(config=self.config)
             return True
         except Exception as e:
             console.debug(e)
@@ -104,6 +111,7 @@ class Gefyra(AbstractBridge):
             namespace=namespace,
             env=env,
             env_from=f"{pod}/{container_name}",
+            config=self.config,
         )
         if not result:
             console.error("Gefyra run failed.", _exit=True)
@@ -121,6 +129,7 @@ class Gefyra(AbstractBridge):
             ports=unikube_file_app.ports,
             container_name=container_name,
             bridge_name=image,
+            config=self.config,
         )
         if not result:
             console.error("Gefyra bridge failed.", _exit=True)
@@ -138,7 +147,7 @@ class Gefyra(AbstractBridge):
 
     def is_switched(self, deployment: str, namespace: str) -> bool:
         try:
-            intercept_requests = gefyra_api.list_interceptrequests()
+            intercept_requests = gefyra_api.list_interceptrequests(config=self.config)
         except Exception as e:
             console.debug(e)
             return 0
@@ -154,7 +163,7 @@ class Gefyra(AbstractBridge):
         # unbridge
         console.debug("gefyra unbridge")
         try:
-            gefyra_api.unbridge(name=image)
+            gefyra_api.unbridge(name=image, config=self.config)
         except Exception as e:
             console.debug(e)
 

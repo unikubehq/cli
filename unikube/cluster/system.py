@@ -75,7 +75,8 @@ class KubeCtl(CMDWrapper):
 
     def __init__(self, kubeconfig_path: str, debug_output: bool = False):
         if not kubeconfig_path:
-            raise ValueError("Project does not contain the kubeconfigPath parameter")
+            raise ValueError("KubeCtl does not contain the 'kubeconfig_path' parameter")
+
         self._kubeconfig_path = kubeconfig_path
         super(KubeCtl, self).__init__(debug_output)
 
