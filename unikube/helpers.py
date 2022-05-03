@@ -109,20 +109,25 @@ def check_running_cluster(ctx: ClickContext, cluster_provider_type: K8sProviderT
                 )
 
 
+def get_current_version():
+    current_version = None
+    try:
+        path = Path(__file__).parent / "../VERSION"
+        with path.open("r") as f:
+            current_version = f.read()
+    except (FileNotFoundError, PermissionError):
+        console.debug("Could not read current version.")
+
+    if not current_version:
+        dist = pkg_resources.working_set.by_key.get("unikube")
+        if dist:
+            current_version = dist.version
+    return current_version
+
+
 def compare_current_and_latest_versions():
     try:
-        current_version = None
-        try:
-            path = Path(__file__).parent / "../VERSION"
-            with path.open("r") as f:
-                current_version = f.read()
-        except (FileNotFoundError, PermissionError):
-            console.debug("Could not read current version.")
-
-        if not current_version:
-            dist = pkg_resources.working_set.by_key.get("unikube")
-            if dist:
-                current_version = dist.version
+        current_version = get_current_version()
 
         release = requests.get("https://api.github.com/repos/unikubehq/cli/releases/latest")
         if release.status_code == 403:
