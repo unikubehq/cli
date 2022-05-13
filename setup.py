@@ -30,7 +30,7 @@ setup(
         "pyyaml>=5.4",
         "tinydb>=3.15.2,<4.8.0",
         "requests>=2.25.1,<2.28.0",
-        "pyjwt[crypto]>=2.0.1,<2.4.0",
+        "pyjwt[crypto]>=2.0.1,<2.5.0",
         "gql>=3.2,<3.3",
         "semantic-version>=2.8.4,<2.10.0",
         "kubernetes>=11.0.0,<22.0.0",
