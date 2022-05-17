@@ -5,6 +5,7 @@ from typing import Union
 import click_spinner
 import requests
 from gql import Client, gql
+from gql.transport.exceptions import TransportServerError
 from gql.transport.requests import RequestsHTTPTransport
 from retrying import retry
 
@@ -69,9 +70,9 @@ class GraphQL:
 
     @retry(retry_on_exception=retry_exception, stop_max_attempt_number=2)
     def query(
-            self,
-            query: str,
-            query_variables: dict = None,
+        self,
+        query: str,
+        query_variables: dict = None,
     ) -> Union[dict, None]:
         try:
             query = gql(query)
@@ -86,6 +87,15 @@ class GraphQL:
             # refresh token
             auth = TokenAuthentication(cache=self.cache)
             response = auth.refresh()
+            with click_spinner.spinner(beep=False, disable=False, force=False, stream=sys.stdout):
+                data = self.client.execute(
+                    document=query,
+                    variable_values=query_variables,
+                )
+
+        except TransportServerError:
+            # refresh token
+            response = self.authentication.refresh()
             if not response["success"]:
                 console.exit_login_required()
 

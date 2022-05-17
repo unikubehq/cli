@@ -1,10 +1,12 @@
 import re
-from typing import Any, Callable, Dict, List, Tuple, Union
+from typing import Any, Callable, List, Tuple, Union
 
-from InquirerPy.utils import patched_print
+from InquirerPy import inquirer
+from InquirerPy.utils import InquirerPyValidate
 
 import unikube.cli.console as console
 from unikube.cli.console.prompt import UpdatableFuzzyPrompt
+from unikube.settings import INQUIRER_STYLE
 
 
 def get_identifier_or_pass(selection: str) -> str:
@@ -101,17 +103,17 @@ def prepare_choices(identifiers, choices, help_texts, _filter, allow_duplicates,
 
 # input
 def list(
-        message: str,
-        choices: List[str],
-        identifiers: Union[List[str], None] = None,
-        filter: Union[List[str], None] = None,
-        excludes: Union[List[str], None] = None,
-        help_texts: Union[List[str], None] = None,
-        allow_duplicates: bool = False,
-        message_no_choices: str = "No choices available!",
-        multiselect: bool = False,
-        transformer: Callable[[Any], str] = None,
-        update_func: Callable[[], Tuple[List[str], List[str], List[str]]] = None,
+    message: str,
+    choices: List[str],
+    identifiers: Union[List[str], None] = None,
+    filter: Union[List[str], None] = None,
+    excludes: Union[List[str], None] = None,
+    help_texts: Union[List[str], None] = None,
+    allow_duplicates: bool = False,
+    message_no_choices: str = "No choices available!",
+    multiselect: bool = False,
+    transformer: Callable[[Any], str] = None,
+    update_func: Callable[[], Tuple[List[str], List[str], List[str]]] = None,
 ) -> Union[None, List[str]]:
     choices_excluded = prepare_choices(identifiers, choices, help_texts, filter, allow_duplicates, excludes)
 
@@ -129,7 +131,7 @@ def list(
     }
 
     if update_func:
-        update_wrapper = lambda: prepare_choices(*update_func(), filter, allow_duplicates, excludes)
+        update_wrapper = lambda: prepare_choices(*update_func(), filter, allow_duplicates, excludes)  # noqa: E731
         kwargs.update({"update_func": update_wrapper})
 
     # prompt
@@ -138,6 +140,29 @@ def list(
         return None
 
     return answer
+
+
+def input(
+    text: str,
+    default: str = "",
+    mandatory: bool = False,
+    validate: InquirerPyValidate = None,
+    invalid_message: str = "",
+):
+    kwargs = {}
+    if mandatory:
+        kwargs.update(
+            {
+                "validate": lambda result: len(result) > 0,
+                "invalid_message": "Input cannot be empty.",
+            }
+        )
+    if validate and invalid_message:
+        kwargs.update({"validate": validate, "invalid_message": invalid_message})
+    result = inquirer.text(
+        text, default=default, style=INQUIRER_STYLE, mandatory=mandatory, amark="✔", **kwargs
+    ).execute()
+    return result
 
 
 def confirm(

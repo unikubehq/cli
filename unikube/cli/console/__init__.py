@@ -1,7 +1,7 @@
 from .container import container_list
 from .deck import deck_list
 from .exit import exit_generic_error, exit_login_required
-from .input import confirm, list
+from .input import confirm, input, list
 from .logger import debug, echo, error, info, link, success, warning
 from .orga import organization_list
 from .output import table
