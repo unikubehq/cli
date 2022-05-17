@@ -179,7 +179,8 @@ class Gefyra(AbstractBridge):
 class GefyraBuilder:
     def __call__(
         self,
+        kubeconfig_path: str,
         **kwargs,
     ):
-        instance = Gefyra()
+        instance = Gefyra(kubeconfig_path=kubeconfig_path)
         return instance

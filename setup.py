@@ -39,7 +39,7 @@ setup(
         "python-slugify>=5.0.2,<6.2.0",
         "click-didyoumean~=0.3.0",
         "requests-toolbelt~=0.9.1",
-        "gefyra~=0.7.2",
+        "gefyra~=0.7.3",
     ],
     python_requires="~=3.7",
     packages=find_packages(),
