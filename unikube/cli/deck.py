@@ -103,8 +103,8 @@ def list(ctx, organization=None, project=None, **kwargs):
             }
             """,
             query_variables={
-                "organization_id": organization_id,
-                "project_id": project_id,
+                "organization_id": str(organization_id),
+                "project_id": str(project_id),
             },
         )
         deck_list = data["allDecks"]["results"]
@@ -170,7 +170,7 @@ def info(ctx, organization=None, project=None, deck=None, **kwargs):
                 }
             }
             """,
-            query_variables={"id": deck_id},
+            query_variables={"id": str(deck_id)},
         )
         deck_selected = data["deck"]
     except Exception as e:

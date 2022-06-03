@@ -161,7 +161,7 @@ class Context:
         else:
             project_id = None
 
-        if deck_id:
+        if context.deck_id:
             deck_id = context.deck_id
         else:
             deck_id = None

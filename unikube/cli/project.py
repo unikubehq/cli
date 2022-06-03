@@ -43,7 +43,7 @@ def list(ctx, organization, **kwargs):
                 }
             }
             """,
-            query_variables={"organization_id": organization_id},
+            query_variables={"organization_id": str(organization_id)},
         )
         project_list = data["allProjects"]["results"]
     except Exception as e:
@@ -106,7 +106,7 @@ def info(ctx, project=None, organization=None, **kwargs):
                 }
             }
             """,
-            query_variables={"id": project_id},
+            query_variables={"id": str(project_id)},
         )
         project_selected = data["project"]
     except Exception as e:

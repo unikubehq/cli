@@ -84,9 +84,9 @@ class GraphQL:
         except requests.exceptions.HTTPError:
             from unikube.authentication.authentication import TokenAuthentication
 
-            # refresh token
             auth = TokenAuthentication(cache=self.cache)
             response = auth.refresh()
+
             with click_spinner.spinner(beep=False, disable=False, force=False, stream=sys.stdout):
                 data = self.client.execute(
                     document=query,
@@ -94,8 +94,10 @@ class GraphQL:
                 )
 
         except TransportServerError:
-            # refresh token
-            response = self.authentication.refresh()
+            from unikube.authentication.authentication import TokenAuthentication
+
+            auth = TokenAuthentication(cache=self.cache)
+            response = auth.refresh()
             if not response["success"]:
                 console.exit_login_required()
 

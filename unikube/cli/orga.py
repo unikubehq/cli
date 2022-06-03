@@ -87,7 +87,7 @@ def info(ctx, organization, **kwargs):
                 }
             }
             """,
-            query_variables={"id": organization_id},
+            query_variables={"id": str(organization_id)},
         )
         organization_selected = data["organization"]
     except Exception as e:
