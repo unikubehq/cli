@@ -103,8 +103,8 @@ def list(ctx, organization=None, project=None, **kwargs):
             }
             """,
             query_variables={
-                "organization_id": organization_id,
-                "project_id": project_id,
+                "organization_id": str(organization_id) if organization_id else None,
+                "project_id": str(project_id) if project_id else None,
             },
         )
         deck_list = data["allDecks"]["results"]
