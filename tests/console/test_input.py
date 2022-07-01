@@ -70,7 +70,7 @@ class TestFilterByIdentifiers:
         filter_ = None
 
         choices_resolved = resolve_duplicates(choices=choices, identifiers=identifiers)
-        choices_filtered = filter_by_identifiers(choices=choices_resolved, identifiers=identifiers, filter=filter_)
+        choices_filtered = filter_by_identifiers(choices=choices_resolved, identifiers=identifiers, _filter=filter_)
         assert choices_filtered == [CHOICE_01, CHOICE_02]
 
     def test_filter_empty_list(self):
@@ -79,7 +79,7 @@ class TestFilterByIdentifiers:
         filter_ = []
 
         choices_resolved = resolve_duplicates(choices=choices, identifiers=identifiers)
-        choices_filtered = filter_by_identifiers(choices=choices_resolved, identifiers=identifiers, filter=filter_)
+        choices_filtered = filter_by_identifiers(choices=choices_resolved, identifiers=identifiers, _filter=filter_)
         assert choices_filtered == []
 
     def test_filter_existing_01(self):
@@ -88,7 +88,7 @@ class TestFilterByIdentifiers:
         filter_ = ["1"]
 
         choices_resolved = resolve_duplicates(choices=choices, identifiers=identifiers)
-        choices_filtered = filter_by_identifiers(choices=choices_resolved, identifiers=identifiers, filter=filter_)
+        choices_filtered = filter_by_identifiers(choices=choices_resolved, identifiers=identifiers, _filter=filter_)
         assert choices_filtered == [CHOICE_01]
 
     def test_filter_existing_02(self):
@@ -97,7 +97,7 @@ class TestFilterByIdentifiers:
         filter_ = ["2"]
 
         choices_resolved = resolve_duplicates(choices=choices, identifiers=identifiers)
-        choices_filtered = filter_by_identifiers(choices=choices_resolved, identifiers=identifiers, filter=filter_)
+        choices_filtered = filter_by_identifiers(choices=choices_resolved, identifiers=identifiers, _filter=filter_)
         assert choices_filtered == ["choice"]
 
     def test_filter_non_existing(self):
@@ -106,7 +106,7 @@ class TestFilterByIdentifiers:
         filter_ = ["3"]
 
         choices_resolved = resolve_duplicates(choices=choices, identifiers=identifiers)
-        choices_filtered = filter_by_identifiers(choices=choices_resolved, identifiers=identifiers, filter=filter_)
+        choices_filtered = filter_by_identifiers(choices=choices_resolved, identifiers=identifiers, _filter=filter_)
         assert choices_filtered == []
 
 

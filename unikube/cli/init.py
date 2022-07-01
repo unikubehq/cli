@@ -4,6 +4,7 @@ import click
 import yaml
 from pydantic import BaseModel
 
+from unikube.authentication.authentication import TokenAuthentication
 from unikube.cli import console
 from unikube.cli.console import confirm, deck_list, organization_list, project_list
 
@@ -216,7 +217,8 @@ def collect_app_data(ctx) -> UnikubeFileApp:
 @click.option("--stdout", "-s", help="Print file output to console.", is_flag=True)
 @click.pass_obj
 def init(ctx, stdout):
-    _ = ctx.auth.refresh()
+    auth = TokenAuthentication(cache=ctx.cache)
+    _ = auth.refresh()
 
     # We plan to support multiple apps in the future.
     results = [collect_app_data(ctx)]

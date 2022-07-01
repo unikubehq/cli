@@ -17,7 +17,6 @@ class DeckTestCase(LoginTestCase):
         self.assertEqual(result.exit_code, 0)
 
     def test_info_not_existing_deck(self):
-
         result = self.runner.invoke(
             deck.info,
             ["not_existing_deck"],
@@ -26,7 +25,6 @@ class DeckTestCase(LoginTestCase):
         self.assertIn("[ERROR] Deck name/slug does not exist.\n", result.output)
 
     def test_deck_list(self):
-
         result = self.runner.invoke(
             deck.list,
             obj=ClickContext(),
