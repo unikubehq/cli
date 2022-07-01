@@ -1,26 +1,24 @@
+from unittest.mock import patch
+
 from tests.login_testcase import LoginTestCase
+from unikube.authentication.authentication import TokenAuthentication
 from unikube.cli import app
-from unikube.commands import ClickContext
-
-
-def check():
-    """Function used to mock check function"""
-    pass
+from unikube.context import ClickContext
 
 
 class AppTestCase(LoginTestCase):
-    def test_list(self):
+    @patch.object(TokenAuthentication, "check")
+    def test_list(self, *args, **kwargs):
         obj = ClickContext()
-        obj.auth.check = check
         result = self.runner.invoke(
             app.list,
             obj=obj,
         )
         assert result.exit_code == 1
 
-    def test_shell_invalid_arguments(self):
+    @patch.object(TokenAuthentication, "check")
+    def test_shell_invalid_arguments(self, *args, **kwargs):
         obj = ClickContext()
-        obj.auth.check = check
         result = self.runner.invoke(
             app.shell,
             [

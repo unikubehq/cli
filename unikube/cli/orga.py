@@ -1,8 +1,8 @@
 import click
 
 import unikube.cli.console as console
+from unikube.authentication.authentication import TokenAuthentication
 from unikube.graphql_utils import GraphQL
-from unikube.keycloak.permissions import KeycloakPermissions
 
 
 @click.command()
@@ -12,37 +12,44 @@ def list(ctx, **kwargs):
     List all your organizations.
     """
 
-    _ = ctx.auth.refresh()
-    context = ctx.context.get()
+    auth = TokenAuthentication(cache=ctx.cache)
+    _ = auth.refresh()
+    ctx.cache = auth.cache
 
-    # keycloak
+    # GraphQL
     try:
-        keycloak_permissions = KeycloakPermissions(authentication=ctx.auth)
-        permission_list = keycloak_permissions.get_permissions_by_scope("organization:*")
+        graph_ql = GraphQL(cache=ctx.cache)
+        data = graph_ql.query(
+            """
+            query {
+                allOrganizations {
+                    results {
+                        title
+                        id
+                        description
+                    }
+                }
+            }
+            """
+        )
+        organization_list = data["allOrganizations"]["results"]
     except Exception as e:
         console.debug(e)
         console.exit_generic_error()
 
-    # append "(active)"
-    if context.organization_id:
-        for permission in permission_list:
-            if permission.rsid == context.organization_id:
-                permission.rsid += " (active)"
-
     # console
-    organization_list = [
-        {
-            "id": permission.rsid,
-            "name": permission.rsname.replace("organization ", ""),
-        }
-        for permission in permission_list
-    ]
+    if len(organization_list) < 1:
+        console.info(
+            "No organization available. Please go to https://app.unikube.io and create an organization.", _exit=True
+        )
+
     console.table(
-        data=organization_list,
-        headers={
-            "id": "id",
-            "name": "name",
+        data={
+            "id": [item["id"] for item in organization_list],
+            "title": [item["title"] for item in organization_list],
+            "description": [item["description"] for item in organization_list],
         },
+        headers=["id", "name", "description"],
     )
 
 
@@ -54,7 +61,9 @@ def info(ctx, organization, **kwargs):
     Display further information of the selected organization.
     """
 
-    _ = ctx.auth.refresh()
+    auth = TokenAuthentication(cache=ctx.cache)
+    _ = auth.refresh()
+    ctx.cache = auth.cache
 
     # context
     organization_id, _, _ = ctx.context.get_context_ids_from_arguments(organization_argument=organization)
@@ -67,7 +76,7 @@ def info(ctx, organization, **kwargs):
 
     # GraphQL
     try:
-        graph_ql = GraphQL(authentication=ctx.auth)
+        graph_ql = GraphQL(cache=ctx.cache)
         data = graph_ql.query(
             """
             query($id: UUID!) {
@@ -78,7 +87,7 @@ def info(ctx, organization, **kwargs):
                 }
             }
             """,
-            query_variables={"id": organization_id},
+            query_variables={"id": str(organization_id)},
         )
         organization_selected = data["organization"]
     except Exception as e:

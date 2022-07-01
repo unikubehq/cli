@@ -1,5 +1,5 @@
 from tests.login_testcase import LoginTestCase
-from unikube.cli import orga, project
+from unikube.cli import project
 from unikube.commands import ClickContext
 
 

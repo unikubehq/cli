@@ -1,11 +1,9 @@
 import click
 
 import unikube.cli.console as console
+from unikube.cache import UserContext
 from unikube.cli.context import show_context
 from unikube.graphql_utils import GraphQL
-from unikube.local.providers.helper import get_cluster_or_exit
-from unikube.local.system import Telepresence
-from unikube.storage.user import get_local_storage_user
 
 
 @click.command()
@@ -16,12 +14,12 @@ def ps(ctx, **kwargs):
     """
 
     # cluster
-    cluster_list = ctx.cluster_manager.get_cluster_list(ready=True)
+    cluster_list = ctx.cluster_manager.get_clusters(ready=True)
     cluster_id_list = [cluster.id for cluster in cluster_list]
 
     # GraphQL
     try:
-        graph_ql = GraphQL(authentication=ctx.auth)
+        graph_ql = GraphQL(cache=ctx.cache)
         data = graph_ql.query(
             """
             query {
@@ -59,19 +57,14 @@ def ps(ctx, **kwargs):
     # switch
     intercept_count = 0
     if cluster_data:
-        cluster = get_cluster_or_exit(ctx, cluster_data[0]["id"])
-        provider_data = cluster.storage.get()
-
-        telepresence = Telepresence(provider_data)
-        intercept_count = telepresence.intercept_count()
-
-    if intercept_count == 0 or not intercept_count:
+        cluster = ctx.cluster_manager.select(cluster_data[0]["id"], exit_on_exception=True)
+        intercept_count = cluster.bridge.intercept_count()
+    if intercept_count == 0:
         console.info("No app switched!")
     else:
         console.info(f"Apps switched: #{intercept_count}")
     console.echo("")
 
     # context
-    local_storage_user = get_local_storage_user()
-    user_data = local_storage_user.get()
-    show_context(ctx=ctx, context=user_data.context)
+    user_context = UserContext(id=ctx.user_id)
+    show_context(ctx=ctx, context=user_context)

@@ -1,29 +1,15 @@
-import os
-import socket
 import sys
-import tempfile
 from collections import OrderedDict
 from typing import List, Tuple
 
 import click
 import click_spinner
 
-from unikube import settings
 from unikube.cli import console
 from unikube.cli.helper import age_from_timestamp
+from unikube.cluster.system import Docker, KubeAPI, KubeCtl
 from unikube.graphql_utils import GraphQL
-from unikube.local.providers.helper import get_cluster_or_exit
-from unikube.local.system import Docker, KubeAPI, KubeCtl, Telepresence
-from unikube.settings import UNIKUBE_FILE
 from unikube.unikubefile.selector import unikube_file_selector
-
-
-def _is_local_port_free(port):
-    a_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    if a_socket.connect_ex(("127.0.0.1", int(port))) == 0:
-        return False
-    else:
-        return True
 
 
 def get_deck_from_arguments(ctx, organization_id: str, project_id: str, deck_id: str):
@@ -40,7 +26,7 @@ def get_deck_from_arguments(ctx, organization_id: str, project_id: str, deck_id:
 
     # GraphQL
     try:
-        graph_ql = GraphQL(authentication=ctx.auth)
+        graph_ql = GraphQL(cache=ctx.cache)
         data = graph_ql.query(
             """
             query($id: UUID) {
@@ -56,7 +42,7 @@ def get_deck_from_arguments(ctx, organization_id: str, project_id: str, deck_id:
                 }
             }
             """,
-            query_variables={"id": deck_id},
+            query_variables={"id": str(deck_id)},
         )
         deck = data["deck"]
         project_id = deck["project"]["id"]
@@ -64,16 +50,7 @@ def get_deck_from_arguments(ctx, organization_id: str, project_id: str, deck_id:
         console.debug(e)
         console.exit_generic_error()
 
-    # cluster data
-    cluster_list = ctx.cluster_manager.get_cluster_list(ready=True)
-    if project_id not in [cluster.id for cluster in cluster_list]:
-        console.info(f"The project cluster for '{project_id}' is not up or does not exist yet.", _exit=True)
-
-    cluster_data = ctx.cluster_manager.get(id=project_id)
-    if not cluster_data:
-        console.error("The cluster could not be found.", _exit=True)
-
-    return cluster_data, deck
+    return project_id, deck
 
 
 def argument_apps(k8s, apps: List[str], multiselect: bool = False) -> List[str]:
@@ -116,14 +93,11 @@ def argument_app(k8s, app: str) -> str:
 def list(ctx, organization, project, deck, **kwargs):
     """List all apps."""
 
-    cluster_data, deck = get_deck_from_arguments(ctx, organization, project, deck)
-
-    # get cluster
-    cluster = get_cluster_or_exit(ctx, cluster_data.id)
-    provider_data = cluster.storage.get()
+    cluster_id, deck = get_deck_from_arguments(ctx, organization, project, deck)
+    cluster = ctx.cluster_manager.select(id=cluster_id, exit_on_exception=True)
 
     # list
-    k8s = KubeAPI(provider_data, deck)
+    k8s = KubeAPI(kubeconfig_path=cluster.get_kubeconfig_path(), deck=deck)
     pod_table = []
 
     def _ready_ind(c) -> Tuple[bool, str]:
@@ -170,14 +144,11 @@ def list(ctx, organization, project, deck, **kwargs):
 def info(ctx, app, organization, project, deck, **kwargs):
     """Display the status for the given app name."""
 
-    cluster_data, deck = get_deck_from_arguments(ctx, organization, project, deck)
-
-    # get cluster
-    cluster = get_cluster_or_exit(ctx, cluster_data.id)
-    provider_data = cluster.storage.get()
+    cluster_id, deck = get_deck_from_arguments(ctx, organization, project, deck)
+    cluster = ctx.cluster_manager.select(id=cluster_id, exit_on_exception=True)
 
     # shell
-    k8s = KubeAPI(provider_data, deck)
+    k8s = KubeAPI(kubeconfig_path=cluster.get_kubeconfig_path(), deck=deck)
     app = argument_app(k8s, app)
 
     # get the data of the selected pod
@@ -253,38 +224,30 @@ def shell(ctx, app, organization=None, project=None, deck=None, container=None, 
     Drop into an interactive shell.
     """
 
-    cluster_data, deck = get_deck_from_arguments(ctx, organization, project, deck)
-
-    # get cluster
-    cluster = get_cluster_or_exit(ctx, cluster_data.id)
-    provider_data = cluster.storage.get()
+    cluster_id, deck = get_deck_from_arguments(ctx, organization, project, deck)
+    cluster = ctx.cluster_manager.select(id=cluster_id, exit_on_exception=True)
 
     # shell
-    k8s = KubeAPI(provider_data, deck)
+    k8s = KubeAPI(kubeconfig_path=cluster.get_kubeconfig_path(), deck=deck)
     app = argument_app(k8s, app)
 
     # get the data of the selected pod
     data = k8s.get_pod(app)
-    telepresence = Telepresence(provider_data)
 
     # the corresponding deployment by getting rid of the pod name suffix
     deployment = "-".join(data.metadata.name.split("-")[0:-2])
 
-    # 1. check if this pod is of a switched deployment (in case of an active Telepresence)
-    if telepresence.is_swapped(deployment, namespace=data.metadata.namespace):
+    # 1. check if this pod is of a switched deployment
+    if cluster.bridge.is_switched(deployment=deployment, namespace=data.metadata.namespace):
         # the container name generated in "app switch" for that pod
-        container_name = settings.TELEPRESENCE_DOCKER_IMAGE_FORMAT.format(
-            project=cluster_data.name.lower(), deck=deck["title"].lower(), name=deployment.lower()
-        ).replace(":", "")
+        image_name = cluster.bridge.get_docker_image_name(deployment=deployment)
 
-        if Docker().check_running(container_name):
-            # 2. Connect to that container
-            # 2.a connect using Docker
-            Docker().exec(container_name, "/bin/sh", interactive=True)
+        if Docker().check_running(image_name):
+            # 2. connect to that container using Docker
+            Docker().exec(image_name, "/bin/sh", interactive=True)
         else:
             console.error(
-                "This is a Telepresence Pod with no corresponding Docker container "
-                "running in order to connect (inconsistent state?)"
+                "This is a switched app with no corresponding docker container (inconsistent state?).", _exit=True
             )
 
     else:
@@ -294,7 +257,7 @@ def shell(ctx, app, organization=None, project=None, deck=None, container=None, 
                 return None
 
         # 2.b connect using kubernetes
-        KubeCtl(provider_data).exec_pod(
+        KubeCtl(cluster.get_kubeconfig_path()).exec_pod(
             app, deck["environment"][0]["namespace"], "/bin/sh", interactive=True, container=container
         )
 
@@ -314,50 +277,30 @@ def exec(ctx, **kwargs):
 @click.option("--organization", "-o", help="Select an organization")
 @click.option("--project", "-p", help="Select a project")
 @click.option("--deck", "-d", help="Select a deck")
-@click.option("--deployment", help="Specify the deployment if not set in the Unikubefile")
-@click.option("--unikubefile", help="Specify the path to the Unikubefile", type=str)
+@click.option("--unikube-file", help="Specify the path to the Unikubefile", type=str)
 @click.option(
     "--no-build", "-n", is_flag=True, help="Do not build a new container image for the switch operation", default=False
 )
 @click.pass_obj
-def switch(
-    ctx, app, organization, project, deck, deployment, unikubefile: str = None, no_build: bool = False, **kwargs
-):
+def switch(ctx, app, organization, project, deck, unikube_file: str = None, no_build: bool = False, **kwargs):
     """
     Switch a running deployment with a local Docker container.
     """
 
-    cluster_data, deck = get_deck_from_arguments(ctx, organization, project, deck)
+    cluster_id, deck = get_deck_from_arguments(ctx, organization, project, deck)
+    cluster = ctx.cluster_manager.select(id=cluster_id, exit_on_exception=True)
 
-    # get cluster
-    cluster = get_cluster_or_exit(ctx, cluster_data.id)
-
-    # unikube file input
+    # unikube file
     try:
-        unikube_file = unikube_file_selector.get(path_unikube_file=unikubefile)
+        unikube_file = unikube_file_selector.get(path_unikube_file=unikube_file)
         unikube_file_app = unikube_file.get_app(name=app)
     except Exception as e:
         console.debug(e)
-        console.error("Invalid 'app' argument.", _exit=True)
+        console.error("Invalid unikube file 'app' argument.", _exit=True)
 
-    # 2: Get a deployment
-    # 2.1.a Check the deployment identifier
-    if not deployment and unikube_file_app:
-        # 1.1.b check the unikubefile
-        deployment = unikube_file_app.get_deployment()
-        if not deployment:
-            console.error("Please specify the 'deployment' key of your app in your unikube.yaml.", _exit=True)
-    else:
-        console.error(
-            "Please specify the deployment either using the '--deployment' option or in the unikube.yaml. "
-            "Run 'unikube app switch' in a directory containing the unikube.yaml file.",
-            _exit=True,
-        )
-
-    # 2.2 Fetch available "deployment:", deployments
     # GraphQL
     try:
-        graph_ql = GraphQL(authentication=ctx.auth)
+        graph_ql = GraphQL(cache=ctx.cache)
         data = graph_ql.query(
             """
             query($id: UUID) {
@@ -379,135 +322,48 @@ def switch(
             }
             """,
             query_variables={
-                "id": deck["id"],
+                "id": str(deck["id"]),
             },
         )
     except Exception as e:
         console.debug(e)
         console.exit_generic_error()
 
-    target_deployment = None
-    for _deployment in data["deck"]["deployments"]:
-        if _deployment["title"] == deployment:
-            target_deployment = _deployment
-
-    # 2.3 Check and select deployment data
-    if target_deployment is None:
-        console.error(
-            f"The deployment '{deployment}' you specified could not be found.",
-            _exit=True,
-        )
-
-    ports = target_deployment["ports"].split(",")
-    deployment = target_deployment["title"]
-    namespace = deck["environment"][0]["namespace"]
-
-    console.info("Please wait while unikube prepares the switch.")
-    with click_spinner.spinner(beep=False, disable=False, force=False, stream=sys.stdout):
-        # check telepresence
-        provider_data = cluster.storage.get()
-        telepresence = Telepresence(provider_data)
-
-        available_deployments = telepresence.list(namespace, flat=True)
-        if deployment not in available_deployments:
-            console.error(
-                "The given deployment cannot be switched. " f"You may have to run 'unikube deck install {deck}' first.",
-                _exit=True,
-            )
-
-        is_swapped = telepresence.is_swapped(deployment, namespace)
-
-        k8s = KubeAPI(provider_data, deck)
-        # service account token, service cert
-        service_account_tokens = k8s.get_serviceaccount_tokens(deployment)
-
-    # 3: Build an new Docker image
-    # 3.1 Grab the docker file
-    context, dockerfile, target = unikube_file_app.get_docker_build()
-    if not target:
-        target = ""
-    console.debug(f"{context}, {dockerfile}, {target}")
-
-    # 3.2 Set an image name
-    image_name = settings.TELEPRESENCE_DOCKER_IMAGE_FORMAT.format(
-        project=cluster_data.name.replace(" ", "").lower(), deck=deck["title"], name=deployment
-    )
-
-    docker = Docker()
-
-    if is_swapped:
-        console.warning("It seems this app is already switched in another process. ")
-        if click.confirm("Do you want to kill it and switch here?"):
-            telepresence.leave(deployment, namespace, silent=True)
-            if docker.check_running(image_name):
-                docker.kill(name=image_name)
-        else:
-            sys.exit(0)
-
-    # 3.3 Build image
-    if not docker.image_exists(image_name) or not no_build:
-        if no_build:
-            console.warning(f"Ignoring --no-build since the required image '{image_name}' does not exist")
-        console.info(f"Building a Docker image for {dockerfile} with context {context}")
-        with click_spinner.spinner(beep=False, disable=False, force=False, stream=sys.stdout):
-            status, msg = docker.build(image_name, context, dockerfile, target)
-        if not status:
-            console.debug(msg)
-            console.error("Failed to build Docker image.", _exit=True)
-
-        console.info(f"Docker image successfully built: {image_name}")
-
-    # 4. Start the Telepresence session
-    # 4.1 Set the right intercept port
-    port = unikube_file_app.get_port()
-    if port is None:
-        port = str(ports[0])
-        if len(ports) > 1:
-            console.warning(
-                f"No port specified although there are multiple ports available: {ports}. "
-                f"Defaulting to port {port} which might not be correct."
-            )
-    if port not in ports:
-        console.error(f"The specified port {port} is not in the rage of available options: {ports}", _exit=True)
-    if not _is_local_port_free(port):
-        console.error(
-            f"The local port {port} is busy. Please stop the application running on " f"this port and try again.",
-            _exit=True,
-        )
-
-    # 4.2 See if there are volume mounts
-    mounts = unikube_file_app.get_mounts()
-    console.debug(f"Volumes requested: {mounts}")
-    # mount service tokens
-    if service_account_tokens:
-        tmp_sa_token = tempfile.NamedTemporaryFile(delete=True)
-        tmp_sa_cert = tempfile.NamedTemporaryFile(delete=True)
-        tmp_sa_token.write(service_account_tokens[0].encode())
-        tmp_sa_cert.write(service_account_tokens[1].encode())
-        tmp_sa_token.flush()
-        tmp_sa_cert.flush()
-        mounts.append((tmp_sa_token.name, settings.SERVICE_TOKEN_FILENAME))
-        mounts.append((tmp_sa_cert.name, settings.SERVICE_CERT_FILENAME))
+    # select target deployment
+    deployment = unikube_file_app.get_deployment()
+    for target_deployment in data["deck"]["deployments"]:
+        if target_deployment["title"] == deployment:
+            break
     else:
-        tmp_sa_token = None
-        tmp_sa_cert = None
+        console.error(f"The deployment '{deployment}' you specified could not be found.", _exit=True)
 
-    # 4.3 See if there special env variables
-    envs = unikube_file_app.get_environment()
-    console.debug(f"Envs requested: {envs}")
+    namespace = deck["environment"][0]["namespace"]
+    ports = target_deployment["ports"].split(",")
 
-    # 4.4 See if there is a run command to be executed
-    command = unikube_file_app.get_command(port=port)
-    console.debug(f"Run command: {command}")
+    # check if deployment exists
+    with click_spinner.spinner(beep=False, disable=False, force=False, stream=sys.stdout):
+        # TODO:
+        # available_deployments = cluster.bridge.list(namespace, flat=True)
+        # if deployment not in available_deployments:
+        #     console.error(
+        #         "The given deployment cannot be switched. " f"You may have to run 'unikube deck install {deck}' first.",
+        #         _exit=True,
+        #     )
+        pass
 
-    console.info("Starting your container, this may take a while to become effective")
+    # build a (new) docker image
+    console.info("Please wait while unikube prepares the switch.")
+    cluster.bridge.build(deployment, namespace, unikube_file_app, no_build)
 
-    telepresence.swap(deployment, image_name, command, namespace, envs, mounts, port)
-    if docker.check_running(image_name):
-        docker.kill(name=image_name)
-    if tmp_sa_token:
-        tmp_sa_token.close()
-        tmp_sa_cert.close()
+    # start switch operation
+    console.info(f"Starting your {cluster.cluster_bridge_type.name} bridge, this may take a while to become effective")
+    cluster.bridge.switch(
+        kubeconfig_path=cluster.get_kubeconfig_path(),
+        deployment=deployment,
+        namespace=namespace,
+        ports=ports,
+        unikube_file_app=unikube_file_app,
+    )
 
 
 @click.command()
@@ -525,14 +381,11 @@ def logs(ctx, app, container=None, organization=None, project=None, deck=None, f
     ``-f`` flag.
     """
 
-    cluster_data, deck = get_deck_from_arguments(ctx, organization, project, deck)
-
-    # get cluster
-    cluster = get_cluster_or_exit(ctx, cluster_data.id)
-    provider_data = cluster.storage.get()
+    cluster_id, deck = get_deck_from_arguments(ctx, organization, project, deck)
+    cluster = ctx.cluster_manager.select(id=cluster_id, exit_on_exception=True)
 
     # log
-    k8s = KubeAPI(provider_data, deck)
+    k8s = KubeAPI(kubeconfig_path=cluster.get_kubeconfig_path(), deck=deck)
     app = argument_app(k8s, app)
 
     # get the data of the selected pod
@@ -562,14 +415,11 @@ def env(ctx, app, init, organization, project, deck, **kwargs):
     can print the environment variables for all init containers with the ``-i`` flag.
     """
 
-    cluster_data, deck = get_deck_from_arguments(ctx, organization, project, deck)
-
-    # get cluster
-    cluster = get_cluster_or_exit(ctx, cluster_data.id)
-    provider_data = cluster.storage.get()
+    cluster_id, deck = get_deck_from_arguments(ctx, organization, project, deck)
+    cluster = ctx.cluster_manager.select(id=cluster_id, exit_on_exception=True)
 
     # env
-    k8s = KubeAPI(provider_data, deck)
+    k8s = KubeAPI(kubeconfig_path=cluster.get_kubeconfig_path(), deck=deck)
     app = argument_app(k8s, app)
 
     # get the data of the selected pod
@@ -657,14 +507,11 @@ def update(ctx, app, organization, project, deck, **kwargs):
     Trigger a forced update of the given app. This command creates a new app instance.
     """
 
-    cluster_data, deck = get_deck_from_arguments(ctx, organization, project, deck)
-
-    # get cluster
-    cluster = get_cluster_or_exit(ctx, cluster_data.id)
-    provider_data = cluster.storage.get()
+    cluster_id, deck = get_deck_from_arguments(ctx, organization, project, deck)
+    cluster = ctx.cluster_manager.select(id=cluster_id, exit_on_exception=True)
 
     # delete pod
-    k8s = KubeAPI(provider_data, deck)
+    k8s = KubeAPI(kubeconfig_path=cluster.get_kubeconfig_path(), deck=deck)
     apps = argument_apps(k8s, [app] if app else [], multiselect=True)
     [k8s.delete_pod(app) for app in apps]
     console.info(f"The app(s) {', '.join(apps)} are currently updating and do not exist anymore.")

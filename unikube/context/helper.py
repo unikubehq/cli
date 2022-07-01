@@ -1,13 +1,18 @@
 from typing import Tuple
 from uuid import UUID
 
+from retrying import retry
 from slugify import slugify
 
+from unikube.cache import UserIDs
 from unikube.cli import console
-from unikube.graphql_utils import GraphQL
 
 
 class ArgumentError(Exception):
+    pass
+
+
+class RetryError(Exception):
     pass
 
 
@@ -21,12 +26,14 @@ def is_valid_uuid4(uuid: str):
 
 
 # context arguments
-def __select_result(argument_value: str, results: list, exception_message: str = "context"):
+def __select_result(argument_value: str, results: list, exception_message: str = "context") -> UUID:
     # slugify
     if slugify(argument_value) != argument_value:
-        title_list = [item["title"] for item in results]
+        title_list = [item.title for item in results.values()]
     else:
-        title_list = [slugify(item["title"]) for item in results]
+        title_list = [slugify(item.title) for item in results.values()]
+
+    uuid_list = list(results.keys())
 
     # check if name/title exists and is unique
     count = title_list.count(argument_value)
@@ -43,111 +50,105 @@ def __select_result(argument_value: str, results: list, exception_message: str =
         raise ArgumentError(f"Invalid {exception_message} name/slug.")
 
     # convert name/title to uuid
-    return results[index]["id"]
+    return uuid_list[index]
 
 
-def convert_organization_argument_to_uuid(auth, argument_value: str) -> str:
+@retry(stop_max_attempt_number=2)
+def convert_organization_argument_to_uuid(cache, argument_value: str) -> UUID:
     # uuid provided (no conversion required)
     if is_valid_uuid4(argument_value):
-        return argument_value
+        return UUID(argument_value)
 
-    # get available context options or use provided data (e.g. from previous query)
-    graph_ql = GraphQL(authentication=auth)
-    data = graph_ql.query(
-        """
-        query {
-            allOrganizations {
-                results {
-                    title
-                    id
-                }
-            }
-        }
-        """
-    )
+    try:
+        user_ids = UserIDs(id=cache.userId)
+        uuid = __select_result(argument_value, user_ids.organization, exception_message="organization")
+    except Exception as e:
+        user_ids.refresh()
+        raise RetryError(e)
 
-    results = data["allOrganizations"]["results"]
-    return __select_result(argument_value, results, exception_message="organization")
+    return uuid
 
 
-def convert_project_argument_to_uuid(auth, argument_value: str, organization_id: str = None) -> str:
+def convert_project_argument_to_uuid(cache, argument_value: str, organization_id: UUID = None) -> UUID:
     # uuid provided (no conversion required)
     if is_valid_uuid4(argument_value):
-        return argument_value
+        return UUID(argument_value)
 
-    # get available context options or use provided data (e.g. from previous query)
-    graph_ql = GraphQL(authentication=auth)
-    data = graph_ql.query(
-        """
-        query($organization_id: UUID) {
-            allProjects(organizationId: $organization_id) {
-                results {
-                    title
-                    id
-                }
-            }
-        }
-        """,
-        query_variables={
-            "organization_id": organization_id,
-        },
-    )
+    try:
+        user_ids = UserIDs(id=cache.userId)
+        projects = user_ids.project
 
-    results = data["allProjects"]["results"]
-    return __select_result(argument_value, results, exception_message="project")
+        # filter
+        if organization_id:
+            organization = user_ids.organization.get(organization_id)
+            projects = {key: projects[key] for key in organization.project_ids}
+
+        uuid = __select_result(argument_value, projects, exception_message="project")
+    except Exception as e:
+        user_ids.refresh()
+        raise RetryError(e)
+
+    return uuid
 
 
 def convert_deck_argument_to_uuid(
-    auth, argument_value: str, organization_id: str = None, project_id: str = None
-) -> str:
+    cache, argument_value: str, organization_id: UUID = None, project_id: UUID = None
+) -> UUID:
     # uuid provided (no conversion required)
     if is_valid_uuid4(argument_value):
         return argument_value
 
-    # get available context options or use provided data (e.g. from previous query)
-    graph_ql = GraphQL(authentication=auth)
-    data = graph_ql.query(
-        """
-        query($organization_id: UUID, $project_id: UUID) {
-            allDecks(organizationId: $organization_id, projectId: $project_id) {
-                results {
-                    title
-                    id
-                }
-            }
-        }
-        """,
-        query_variables={
-            "organization_id": organization_id,
-            "project_id": project_id,
-        },
-    )
+    try:
+        user_ids = UserIDs(id=cache.userId)
+        decks = user_ids.deck
 
-    results = data["allDecks"]["results"]
-    return __select_result(argument_value, results, exception_message="deck")
+        project_ids = []
+
+        # filter
+        if organization_id:
+            organization = user_ids.organization.get(organization_id)
+            project_ids = getattr(organization, "project_ids", [])
+
+        if project_id:
+            project_ids = [project_id]
+
+        for id in project_ids:
+            project = user_ids.project.get(id)
+            if project:
+                decks = {key: decks[key] for key in project.deck_ids}
+
+        uuid = __select_result(argument_value, decks, exception_message="deck")
+    except Exception as e:
+        user_ids.refresh()
+        raise RetryError(e)
+
+    return uuid
 
 
 def convert_context_arguments(
-    auth, organization_argument: str = None, project_argument: str = None, deck_argument: str = None
+    cache, organization_argument: str = None, project_argument: str = None, deck_argument: str = None
 ) -> Tuple[str, str, str]:
     try:
         # organization
         if organization_argument:
-            organization_id = convert_organization_argument_to_uuid(auth, organization_argument)
+            organization_id = convert_organization_argument_to_uuid(cache, organization_argument)
+            organization_id = str(organization_id)
         else:
             organization_id = None
 
         # project
         if project_argument:
-            project_id = convert_project_argument_to_uuid(auth, project_argument, organization_id=organization_id)
+            project_id = convert_project_argument_to_uuid(cache, project_argument, organization_id=organization_id)
+            project_id = str(project_id)
         else:
             project_id = None
 
         # deck
         if deck_argument:
             deck_id = convert_deck_argument_to_uuid(
-                auth, deck_argument, organization_id=organization_id, project_id=project_id
+                cache, deck_argument, organization_id=organization_id, project_id=project_id
             )
+            deck_id = str(deck_id)
         else:
             deck_id = None
     except Exception as e:

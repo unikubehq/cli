@@ -1,6 +1,7 @@
 import click
 
 import unikube.cli.console as console
+from unikube.cache import UserContext
 from unikube.cli.console.helpers import (
     deck_id_2_display_name,
     organization_id_2_display_name,
@@ -8,7 +9,6 @@ from unikube.cli.console.helpers import (
 )
 from unikube.context.helper import convert_context_arguments
 from unikube.graphql_utils import GraphQL
-from unikube.storage.user import get_local_storage_user
 
 
 def show_context(ctx, context):
@@ -34,7 +34,7 @@ def set(ctx, organization=None, project=None, deck=None, **kwargs):
     """
 
     organization_id, project_id, deck_id = convert_context_arguments(
-        auth=ctx.auth, organization_argument=organization, project_argument=project, deck_argument=deck
+        cache=ctx.cache, organization_argument=organization, project_argument=project, deck_argument=deck
     )
 
     if not (organization or project or deck):
@@ -44,20 +44,19 @@ def set(ctx, organization=None, project=None, deck=None, **kwargs):
         console.echo("")
 
     # user_data / context
-    local_storage_user = get_local_storage_user()
-    user_data = local_storage_user.get()
+    user_context = UserContext(id=ctx.user_id)
 
     if organization_id:
         # set organization
-        user_data.context.deck_id = None
-        user_data.context.project_id = None
-        user_data.context.organization_id = organization_id
-        local_storage_user.set(user_data)
+        user_context.deck_id = None
+        user_context.project_id = None
+        user_context.organization_id = organization_id
+        user_context.save()
 
     if project_id:
         if not organization_id:
             try:
-                graph_ql = GraphQL(authentication=ctx.auth)
+                graph_ql = GraphQL(cache=ctx.cache)
                 data = graph_ql.query(
                     """
                     query($id: UUID) {
@@ -78,15 +77,15 @@ def set(ctx, organization=None, project=None, deck=None, **kwargs):
                 console.exit_generic_error()
 
         # set project
-        user_data.context.deck_id = None
-        user_data.context.project_id = project_id
-        user_data.context.organization_id = organization_id
-        local_storage_user.set(user_data)
+        user_context.deck_id = None
+        user_context.project_id = project_id
+        user_context.organization_id = organization_id
+        user_context.save()
 
     if deck_id:
         if not organization_id or not project_id:
             try:
-                graph_ql = GraphQL(authentication=ctx.auth)
+                graph_ql = GraphQL(cache=ctx.cache)
                 data = graph_ql.query(
                     """
                     query($id: UUID) {
@@ -111,12 +110,12 @@ def set(ctx, organization=None, project=None, deck=None, **kwargs):
                 console.exit_generic_error()
 
         # set deck
-        user_data.context.deck_id = deck_id
-        user_data.context.project_id = project_id
-        user_data.context.organization_id = organization_id
-        local_storage_user.set(user_data)
+        user_context.deck_id = deck_id
+        user_context.project_id = project_id
+        user_context.organization_id = organization_id
+        user_context.save()
 
-    show_context(ctx=ctx, context=user_data.context)
+    show_context(ctx=ctx, context=user_context)
 
 
 @click.command()
@@ -130,32 +129,31 @@ def remove(ctx, organization=None, project=None, deck=None, **kwargs):
     """
 
     # user_data / context
-    local_storage_user = get_local_storage_user()
-    user_data = local_storage_user.get()
+    user_context = UserContext(id=ctx.user_id)
 
     if organization:
-        user_data.context.deck_id = None
-        user_data.context.project_id = None
-        user_data.context.organization_id = None
-        local_storage_user.set(user_data)
+        user_context.deck_id = None
+        user_context.project_id = None
+        user_context.organization_id = None
+        user_context.save()
         console.success("Organization context removed.", _exit=True)
 
     if project:
-        user_data.context.deck_id = None
-        user_data.context.project_id = None
-        local_storage_user.set(user_data)
+        user_context.deck_id = None
+        user_context.project_id = None
+        user_context.save()
         console.success("Project context removed.", _exit=True)
 
     if deck:
-        user_data.context.deck_id = None
-        local_storage_user.set(user_data)
+        user_context.deck_id = None
+        user_context.save()
         console.success("Deck context removed.", _exit=True)
 
     # remove complete context
-    user_data.context.deck_id = None
-    user_data.context.project_id = None
-    user_data.context.organization_id = None
-    local_storage_user.set(user_data)
+    user_context.deck_id = None
+    user_context.project_id = None
+    user_context.organization_id = None
+    user_context.save()
     console.success("Context removed.", _exit=True)
 
 
@@ -167,7 +165,5 @@ def show(ctx, **kwargs):
     """
 
     # user_data / context
-    local_storage_user = get_local_storage_user()
-    user_data = local_storage_user.get()
-
-    show_context(ctx=ctx, context=user_data.context)
+    user_context = UserContext(id=ctx.user_id)
+    show_context(ctx=ctx, context=user_context)

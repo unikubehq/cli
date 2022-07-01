@@ -3,6 +3,7 @@ from enum import Enum
 from typing import Union
 
 import click_spinner
+import requests
 from gql import Client, gql
 from gql.transport.exceptions import TransportServerError
 from gql.transport.requests import RequestsHTTPTransport
@@ -10,6 +11,7 @@ from retrying import retry
 
 import unikube.cli.console as console
 from unikube import settings
+from unikube.cache import Cache
 
 
 # EnvironmentType
@@ -30,16 +32,16 @@ def retry_exception(exception):
 class GraphQL:
     def __init__(
         self,
-        authentication,
+        cache: Cache,
         url=settings.GRAPHQL_URL,
         timeout=settings.GRAPHQL_TIMEOUT,
     ):
         self.url = url
         self.timeout = timeout
 
-        # automatic token refresh
-        self.authentication = authentication
-        self.access_token = str(authentication.general_data.authentication.access_token)
+        # cache / access token
+        self.cache = cache
+        self.access_token = str(cache.auth.access_token)
 
         # client
         self.client = self._client()
@@ -74,6 +76,17 @@ class GraphQL:
     ) -> Union[dict, None]:
         try:
             query = gql(query)
+            data = self.client.execute(
+                document=query,
+                variable_values=query_variables,
+            )
+
+        except requests.exceptions.HTTPError:
+            from unikube.authentication.authentication import TokenAuthentication
+
+            auth = TokenAuthentication(cache=self.cache)
+            response = auth.refresh()
+
             with click_spinner.spinner(beep=False, disable=False, force=False, stream=sys.stdout):
                 data = self.client.execute(
                     document=query,
@@ -81,8 +94,10 @@ class GraphQL:
                 )
 
         except TransportServerError:
-            # refresh token
-            response = self.authentication.refresh()
+            from unikube.authentication.authentication import TokenAuthentication
+
+            auth = TokenAuthentication(cache=self.cache)
+            response = auth.refresh()
             if not response["success"]:
                 console.exit_login_required()
 

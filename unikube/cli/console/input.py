@@ -1,10 +1,11 @@
 import re
-from typing import Any, Callable, List, Union
+from typing import Any, Callable, List, Tuple, Union
 
 from InquirerPy import inquirer
 from InquirerPy.utils import InquirerPyValidate
 
 import unikube.cli.console as console
+from unikube.cli.console.prompt import UpdatableFuzzyPrompt
 from unikube.settings import INQUIRER_STYLE
 
 
@@ -61,13 +62,13 @@ def resolve_duplicates(
     return choices_resolved
 
 
-def filter_by_identifiers(choices: List[str], identifiers: List[str], filter: Union[List[str], None]) -> List[str]:
-    if filter is None:
+def filter_by_identifiers(choices: List[str], identifiers: List[str], _filter: Union[List[str], None]) -> List[str]:
+    if _filter is None:
         return choices
 
     choices_filtered = []
     for choice, identifier in zip(choices, identifiers):
-        if any(f in choice for f in filter) or identifier in filter:
+        if any(f in choice for f in _filter) or identifier in _filter:
             choices_filtered.append(choice)
     return choices_filtered
 
@@ -84,6 +85,22 @@ def exclude_by_identifiers(choices: List[str], identifiers: List[str], excludes:
     return choices_excluded
 
 
+def prepare_choices(identifiers, choices, help_texts, _filter, allow_duplicates, excludes):
+    # handle duplicates
+    if not allow_duplicates:
+        if identifiers:
+            choices_duplicates = resolve_duplicates(choices=choices, identifiers=identifiers, help_texts=help_texts)
+        else:
+            choices_duplicates = set(choices)
+    else:
+        choices_duplicates = choices
+
+    # filter
+    choices_filtered = filter_by_identifiers(choices=choices_duplicates, identifiers=identifiers, _filter=_filter)
+    # exclude
+    return exclude_by_identifiers(choices=choices_filtered, identifiers=identifiers, excludes=excludes)
+
+
 # input
 def list(
     message: str,
@@ -96,37 +113,29 @@ def list(
     message_no_choices: str = "No choices available!",
     multiselect: bool = False,
     transformer: Callable[[Any], str] = None,
+    update_func: Callable[[], Tuple[List[str], List[str], List[str]]] = None,
 ) -> Union[None, List[str]]:
+    choices_excluded = prepare_choices(identifiers, choices, help_texts, filter, allow_duplicates, excludes)
+
     # choices exist
-    if not len(choices) > 0:
+    if not len(choices_excluded) > 0:
         console.info(message_no_choices)
         return None
 
-    # handle duplicates
-    if not allow_duplicates:
-        if identifiers:
-            choices_duplicates = resolve_duplicates(choices=choices, identifiers=identifiers, help_texts=help_texts)
-        else:
-            choices_duplicates = set(choices)
-    else:
-        choices_duplicates = choices
+    kwargs = {
+        "message": message,
+        "choices": choices_excluded,
+        "multiselect": multiselect,
+        "transformer": transformer,
+        "keybindings": {"toggle": [{"key": "space"}]},
+    }
 
-    # filter
-    choices_filtered = filter_by_identifiers(choices=choices_duplicates, identifiers=identifiers, filter=filter)
-
-    # exclude
-    choices_excluded = exclude_by_identifiers(choices=choices_filtered, identifiers=identifiers, excludes=excludes)
+    if update_func:
+        update_wrapper = lambda: prepare_choices(*update_func(), filter, allow_duplicates, excludes)  # noqa: E731
+        kwargs.update({"update_func": update_wrapper})
 
     # prompt
-    answer = inquirer.fuzzy(
-        message=message,
-        choices=choices_excluded,
-        multiselect=multiselect,
-        transformer=transformer,
-        keybindings={"toggle": [{"key": "space"}]},
-        style=INQUIRER_STYLE,
-        amark="✔",
-    ).execute()
+    answer = UpdatableFuzzyPrompt(**kwargs).execute()
     if not answer:
         return None
 
@@ -157,7 +166,7 @@ def input(
 
 
 def confirm(
-    question: str = "Do want to continue? [N/y]: ",
+    question: str = "Do you want to continue? [N/y]: ",
     values: List[str] = ["y", "Y", "yes", "Yes"],
 ) -> bool:
     # confirm action by user input

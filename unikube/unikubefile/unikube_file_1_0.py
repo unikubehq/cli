@@ -25,7 +25,9 @@ class UnikubeFileApp(BaseModel):
     name: str
     build: UnikubeFileBuild
     deployment: str
+    container: Optional[str] = None
     port: Optional[int] = None
+    ports: Optional[List[str]] = None
     command: str
     volumes: Optional[List[str]] = None
     env: Optional[List[dict]] = None

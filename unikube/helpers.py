@@ -1,4 +1,3 @@
-import re
 import sys
 from pathlib import Path
 from urllib.parse import urljoin
@@ -11,10 +10,8 @@ from requests import HTTPError, Session
 import unikube.cli.console as console
 from unikube import settings
 from unikube.authentication.authentication import TokenAuthentication
-from unikube.context import ClickContext
+from unikube.cache import Cache
 from unikube.graphql_utils import EnvironmentType
-from unikube.local.providers.types import K8sProviderType
-from unikube.local.system import Telepresence
 
 
 def get_requests_session(access_token) -> Session:
@@ -35,12 +32,12 @@ def download_specs(access_token: str, environment_id: str):
     return manifest
 
 
-def download_manifest(deck: dict, authentication: TokenAuthentication, access_token: str, environment_index: int = 0):
+def download_manifest(deck: dict, cache: Cache, environment_index: int = 0):
     try:
         environment_id = deck["environment"][environment_index]["id"]
         console.info("Requesting manifests. This process may take a few seconds.")
         manifest = download_specs(
-            access_token=access_token,
+            access_token=cache.auth.access_token,
             environment_id=environment_id,
         )
     except HTTPError as e:
@@ -55,7 +52,9 @@ def download_manifest(deck: dict, authentication: TokenAuthentication, access_to
         elif e.response.status_code == 403:
             console.warning("Refreshing access token")
             environment_id = deck["environment"][environment_index]["id"]
-            response = authentication.refresh()
+
+            auth = TokenAuthentication(cache=cache)
+            response = auth.refresh()
             if not response["success"]:
                 console.exit_login_required()
 
@@ -93,22 +92,6 @@ def check_environment_type_local_or_exit(deck: dict, environment_index: int = 0)
         console.error("This deck cannot be installed locally.", _exit=True)
 
 
-def check_running_cluster(ctx: ClickContext, cluster_provider_type: K8sProviderType.k3d, project_instance: dict):
-    for cluster_data in ctx.cluster_manager.get_all():
-        cluster = ctx.cluster_manager.select(cluster_data=cluster_data, cluster_provider_type=cluster_provider_type)
-        if cluster.exists() and cluster.ready():
-            if cluster.name == project_instance["title"] and cluster.id == project_instance["id"]:
-                Telepresence(cluster.storage.get()).start()
-                console.info(f"Kubernetes cluster for '{cluster.display_name}' is already running.", _exit=True)
-            else:
-                console.error(
-                    f"You cannot start multiple projects at the same time. Project {cluster.name} ({cluster.id}) is "
-                    f"currently running. Please run 'unikube project down {cluster.id}' first and "
-                    f"try again.",
-                    _exit=True,
-                )
-
-
 def compare_current_and_latest_versions():
     try:
         current_version = None
@@ -142,7 +125,3 @@ def compare_current_and_latest_versions():
         import traceback
 
         console.info(f"Versions cannot be compared, because of error {traceback.format_exc()}")
-
-
-def compare_decorator(f):
-    compare_current_and_latest_versions()

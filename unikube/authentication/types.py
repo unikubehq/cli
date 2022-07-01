@@ -6,4 +6,3 @@ class AuthenticationData(BaseModel):
     access_token: str = ""
     refresh_token: str = ""
     requesting_party_token: bool = False
-    public_key: str = ""

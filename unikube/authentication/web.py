@@ -4,9 +4,12 @@ from socket import AF_INET, SOCK_STREAM, gethostbyname, socket
 from threading import Thread
 from urllib.parse import parse_qs
 
-from oic.oic import AccessTokenResponse, AuthorizationResponse, Client
+from oic.oic import Client
 
+from unikube.authentication.authentication import TokenAuthentication
+from unikube.authentication.flow import cache_information
 from unikube.authentication.types import AuthenticationData
+from unikube.cache import Cache
 from unikube.cli import console
 from unikube.context import ClickContext
 
@@ -50,7 +53,8 @@ def run_callback_server(state: str, nonce: str, client: Client, ctx: ClickContex
             if POST["state"] != state:
                 raise Exception(f"Invalid state: {POST['state']}")
 
-            response = ctx.auth._get_requesting_party_token(POST["access_token"])
+            auth = TokenAuthentication(cache=ctx.cache)
+            response = auth._get_requesting_party_token(POST["access_token"])
 
             login_file = open(os.path.join(os.path.dirname(os.path.realpath(__file__)), "login.html"))
             text = login_file.read()
@@ -65,20 +69,21 @@ def run_callback_server(state: str, nonce: str, client: Client, ctx: ClickContex
                 )
             else:
                 try:
-                    token = ctx.auth.token_from_response(response)
+                    token = auth.token_from_response(response)
                 except Exception as e:
                     console.debug(e)
                     console.debug(response)
                     console.error("Login failed!")
                     text = "Login failed! Your token does not match."
                 else:
-                    ctx.auth.general_data.authentication = AuthenticationData(
+                    cache = Cache()
+                    cache.auth = AuthenticationData(
                         email=token["email"],
                         access_token=response["response"]["access_token"],
                         refresh_token=response["response"]["refresh_token"],
                         requesting_party_token=True,
                     )
-                    ctx.auth.local_storage_general.set(ctx.auth.general_data)
+                    cache_information(cache=cache)
 
                     if given_name := token.get("given_name", ""):
                         greeting = f"Hello {given_name}!"
@@ -86,7 +91,6 @@ def run_callback_server(state: str, nonce: str, client: Client, ctx: ClickContex
                         greeting = "Hello!"
 
                     html_close = "close"
-
                     text_html = (
                         f"You have successfully logged in. You can {html_close} this browser tab and return "
                         f"to the shell."

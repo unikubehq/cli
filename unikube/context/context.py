@@ -1,12 +1,12 @@
-import os
 from abc import ABC, abstractmethod
-from typing import List, Tuple, Union
+from typing import List, Optional, Tuple, Union
+from uuid import UUID
 
 from unikube import settings
+from unikube.cache import Cache, UserContext
 from unikube.cli import console
 from unikube.context.helper import convert_context_arguments, is_valid_uuid4
 from unikube.context.types import ContextData
-from unikube.storage.user import LocalStorageUser, get_local_storage_user
 from unikube.unikubefile.selector import unikube_file_selector
 from unikube.unikubefile.unikube_file import UnikubeFile
 
@@ -66,15 +66,19 @@ class UnikubeFileContext(IContext):
 
 
 class LocalContext(IContext):
-    def __init__(self, local_storage_user: Union[LocalStorageUser, None]):
-        self.local_storage_user = local_storage_user
+    def __init__(self, user_context: Union[UserContext, None]):
+        self.user_context = user_context
 
     def get(self, **kwargs) -> ContextData:
-        if not self.local_storage_user:
+        if not self.user_context:
             return ContextData()
 
-        user_data = self.local_storage_user.get()
-        return user_data.context
+        context_data = ContextData(
+            organization_id=self.user_context.organization_id or None,
+            project_id=self.user_context.project_id or None,
+            deck_id=self.user_context.deck_id or None,
+        )
+        return context_data
 
 
 class ContextLogic:
@@ -107,11 +111,11 @@ class ContextLogic:
 
 
 class Context:
-    def __init__(self, auth):
-        self._auth = auth
+    def __init__(self, cache: Cache):
+        self.cache = cache
 
     def get(self, **kwargs) -> ContextData:
-        local_storage_user = get_local_storage_user()
+        user_context = UserContext(id=self.cache.userId)
 
         context_logic = ContextLogic(
             [
@@ -119,7 +123,7 @@ class Context:
                     click_options={key: kwargs[key] for key in ("organization", "project", "deck") if key in kwargs}
                 ),
                 UnikubeFileContext(path_unikube_file="unikube.yaml"),
-                LocalContext(local_storage_user=local_storage_user),
+                LocalContext(user_context=user_context),
             ]
         )
         context = context_logic.get()
@@ -134,10 +138,10 @@ class Context:
 
     def get_context_ids_from_arguments(
         self, organization_argument: str = None, project_argument: str = None, deck_argument: str = None
-    ) -> Tuple[str, str, str]:
+    ) -> Tuple[Optional[UUID], Optional[UUID], Optional[UUID]]:
         # convert context argments into ids
         organization_id, project_id, deck_id = convert_context_arguments(
-            auth=self._auth,
+            cache=self.cache,
             organization_argument=organization_argument,
             project_argument=project_argument,
             deck_argument=deck_argument,
@@ -145,4 +149,21 @@ class Context:
 
         # consider context
         context = self.get(organization=organization_id, project=project_id, deck=deck_id)
-        return context.organization_id, context.project_id, context.deck_id
+
+        # convert to UUID
+        if context.organization_id:
+            organization_id = context.organization_id
+        else:
+            organization_id = None
+
+        if context.project_id:
+            project_id = context.project_id
+        else:
+            project_id = None
+
+        if context.deck_id:
+            deck_id = context.deck_id
+        else:
+            deck_id = None
+
+        return organization_id, project_id, deck_id

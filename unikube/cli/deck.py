@@ -1,15 +1,17 @@
+from uuid import UUID
+
 import click
 
 import unikube.cli.console as console
+from unikube.cluster.system import KubeAPI, KubeCtl
 from unikube.graphql_utils import GraphQL
 from unikube.helpers import check_environment_type_local_or_exit, download_manifest
-from unikube.local.system import KubeAPI, KubeCtl, Telepresence
 
 
 def get_deck(ctx, deck_id: str):
     # GraphQL
     try:
-        graph_ql = GraphQL(authentication=ctx.auth)
+        graph_ql = GraphQL(cache=ctx.cache)
         data = graph_ql.query(
             """
             query($id: UUID) {
@@ -32,7 +34,7 @@ def get_deck(ctx, deck_id: str):
                 }
             }
             """,
-            query_variables={"id": deck_id},
+            query_variables={"id": str(deck_id)},
         )
         deck = data["deck"]
     except Exception as e:
@@ -42,30 +44,14 @@ def get_deck(ctx, deck_id: str):
     return deck
 
 
-def get_cluster(ctx, deck: dict):
-    cluster_data = ctx.cluster_manager.get(id=deck["project"]["id"])
-    if not cluster_data.name:
-        console.error(
-            "The project cluster does not exist. Please be sure to run 'unikube project up' first.", _exit=True
-        )
-
-    cluster = ctx.cluster_manager.select(cluster_data=cluster_data)
-
-    # check if kubernetes cluster is running/ready
-    if not cluster.ready():
-        console.error(f"The project cluster for '{cluster.display_name}' is not running.", _exit=True)
-
-    return cluster
-
-
-def get_ingress_data(deck, provider_data):
-    ingresss = KubeAPI(provider_data, deck).get_ingress()
+def get_ingress_data(deck, kubeconfig_path: str, publisher_port: str):
+    ingresss = KubeAPI(kubeconfig_path=kubeconfig_path, deck=deck).get_ingress()
     ingress_data = []
     for ingress in ingresss.items:
         hosts = []
         paths = []
         for rule in ingress.spec.rules:
-            hosts.append(f"http://{rule.host}:{provider_data.publisher_port}")  # NOSONAR
+            hosts.append(f"http://{rule.host}:{publisher_port}")  # NOSONAR
             for path in rule.http.paths:
                 paths.append(f"{path.path} -> {path.backend.service_name}")
                 # this is an empty line in output
@@ -98,7 +84,7 @@ def list(ctx, organization=None, project=None, **kwargs):
 
     # GraphQL
     try:
-        graph_ql = GraphQL(authentication=ctx.auth)
+        graph_ql = GraphQL(cache=ctx.cache)
         data = graph_ql.query(
             """
             query($organization_id: UUID, $project_id: UUID) {
@@ -117,8 +103,8 @@ def list(ctx, organization=None, project=None, **kwargs):
             }
             """,
             query_variables={
-                "organization_id": organization_id,
-                "project_id": project_id,
+                "organization_id": str(organization_id) if organization_id else None,
+                "project_id": str(project_id) if project_id else None,
             },
         )
         deck_list = data["allDecks"]["results"]
@@ -171,7 +157,7 @@ def info(ctx, organization=None, project=None, deck=None, **kwargs):
 
     # GraphQL
     try:
-        graph_ql = GraphQL(authentication=ctx.auth)
+        graph_ql = GraphQL(cache=ctx.cache)
         data = graph_ql.query(
             """
             query($id: UUID) {
@@ -184,7 +170,7 @@ def info(ctx, organization=None, project=None, deck=None, **kwargs):
                 }
             }
             """,
-            query_variables={"id": deck_id},
+            query_variables={"id": str(deck_id)},
         )
         deck_selected = data["deck"]
     except Exception as e:
@@ -229,26 +215,23 @@ def install(ctx, organization=None, project=None, deck=None, **kwargs):
     deck = get_deck(ctx, deck_id=deck_id)
 
     # cluster
-    cluster = get_cluster(ctx=ctx, deck=deck)
+    cluster = ctx.cluster_manager.select(id=UUID(deck["project"]["id"]), exit_on_exception=True)
+    if not cluster.ready():
+        console.error(f"The project cluster for '{cluster.display_name}' is not running.", _exit=True)
 
     # check environment type
     check_environment_type_local_or_exit(deck=deck)
 
     # check for switched app
-    provider_data = cluster.storage.get()
-    telepresence = Telepresence(provider_data)
-    if telepresence.intercept_count():
+    if cluster.bridge.intercept_count():
         console.error("It is not possible to install a deck while having an active switch.", _exit=True)
 
     # download manifest
-    general_data = ctx.storage_general.get()
-    manifest = download_manifest(
-        deck=deck, authentication=ctx.auth, access_token=general_data.authentication.access_token
-    )
+    manifest = download_manifest(deck=deck, cache=ctx.cache)
 
     # KubeCtl
-    provider_data = cluster.storage.get()
-    kubectl = KubeCtl(provider_data=provider_data)
+    kubeconfig_path = cluster.get_kubeconfig_path()
+    kubectl = KubeCtl(kubeconfig_path=kubeconfig_path)
     namespace = deck["environment"][0]["namespace"]
     kubectl.create_namespace(namespace)
     with click.progressbar(
@@ -259,7 +242,8 @@ def install(ctx, organization=None, project=None, deck=None, **kwargs):
             kubectl.apply_str(namespace, file["content"])
 
     # ingress
-    ingress_data = get_ingress_data(deck, provider_data)
+    publisher_port = cluster.storage.provider[cluster.cluster_provider_type].publisher_port
+    ingress_data = get_ingress_data(deck, kubeconfig_path=kubeconfig_path, publisher_port=publisher_port)
     if not ingress_data:
         console.info("No ingress configuration available.", _exit=True)
 
@@ -293,16 +277,15 @@ def uninstall(ctx, organization=None, project=None, deck=None, **kwargs):
     deck = get_deck(ctx, deck_id=deck_id)
 
     # cluster
-    cluster = get_cluster(ctx=ctx, deck=deck)
+    cluster = ctx.cluster_manager.select(id=deck["project"]["id"], exit_on_exception=True)
+    if not cluster.ready():
+        console.error(f"The project cluster for '{cluster.display_name}' is not running.", _exit=True)
 
     # check environment type
     check_environment_type_local_or_exit(deck=deck)
 
     # download manifest
-    general_data = ctx.storage_general.get()
-    manifest = download_manifest(
-        deck=deck, authentication=ctx.auth, access_token=general_data.authentication.access_token
-    )
+    manifest = download_manifest(deck=deck, cache=ctx.cache)
 
     # KubeCtl
     provider_data = cluster.storage.get()
@@ -344,16 +327,21 @@ def ingress(ctx, organization=None, project=None, deck=None, **kwargs):
     deck = get_deck(ctx, deck_id=deck_id)
 
     # get cluster
-    cluster = get_cluster(ctx=ctx, deck=deck)
-    provider_data = cluster.storage.get()
+    cluster = ctx.cluster_manager.select(id=deck["project"]["id"], exit_on_exception=True)
+    if not cluster.ready():
+        console.error(f"The project cluster for '{cluster.display_name}' is not running.", _exit=True)
 
-    ingress_data = get_ingress_data(deck, provider_data)
+    kubeconfig_path = cluster.get_kubeconfig_path()
+    publisher_port = cluster.storage.provider[cluster.cluster_provider_type].publisher_port
+    ingress_data = get_ingress_data(deck, kubeconfig_path=kubeconfig_path, publisher_port=publisher_port)
+
+    if not ingress_data:
+        console.warning(
+            f"Are you sure the deck is installed? You may have to run 'unikube deck install {deck['title']}' first.",
+            _exit=True,
+        )
+
     console.table(
         ingress_data,
         headers={"name": "Name", "url": "URLs"},
     )
-
-    if not ingress_data:
-        console.warning(
-            f"Are you sure the deck is installed? You may have to run 'unikube deck install {deck['title']}' first."
-        )

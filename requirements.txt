@@ -21,3 +21,4 @@ semantic-version~=2.9.0
 kubernetes>=11.0.0,<22.0.0
 retrying~=1.3.3
 oic==1.3.0
+gefyra~=0.8.1
